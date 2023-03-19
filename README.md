@@ -1,6 +1,6 @@
 # Go Mock Server
 
-Go Mock Server is a tool built in Go to support HTTP requests mocking with a main goal in mind: To be very **easy to use** along with being very **powerful** and **flexible**. 
+Go Mock Server is a tool built with Go to support HTTP requests mocking with a main goal in mind: To be very **easy to use** along with being very **powerful** and **flexible**. 
 
 <br />
 
