@@ -46,14 +46,14 @@ So you only have to download the appropriate binary and run on your machine.
 
 PS: You may need to give execution permission to the binary after downloading it:
 
- ```bash
+ ```shell
 # giving execution permission on linux
 chmod +x ./mock-server_linux
 ```
 
 If you have **Go** configured on your environment, you can build your own binaries as well:
 
-```bash
+```shell
 # building a MacOS on AMD64 binary
 CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s -w' -o ./mock-server-darwin-amd64 cmd/mock-server/main.go
 ```
@@ -64,7 +64,7 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -ldflags '-extldflags "-stati
 
 Example:
 
-```bash
+```shell
 # starting the server
 ./mock-server_mac --mocks-directory ./path-for-the-mocks-directory
 ```
