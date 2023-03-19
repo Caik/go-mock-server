@@ -10,9 +10,8 @@ Contents
  * [Features](#-features)
  * [Installation](#-installation)
  * [Usage](#-usage)
- * [Configuration](#-configuration)
  * [Want to contribute?](#-want-to-contribute)
- * [License](#-license)
+ * [License](#%EF%B8%8F-license)
 
 <br />
 
