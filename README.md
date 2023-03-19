@@ -6,13 +6,13 @@ Go Mock Server is a tool built with Go to support HTTP requests mocking with a m
 
 Contents
 ========
- * [Why?](#why)
- * [Features](#features)
- * [Installation](#installation)
- * [Usage](#usage)
- * [Configuration](#configuration)
- * [Want to contribute?](#want-to-contribute)
- * [License](#license)
+ * [Why?](#-why)
+ * [Features](#-features)
+ * [Installation](#-installation)
+ * [Usage](#-usage)
+ * [Configuration](#-configuration)
+ * [Want to contribute?](#-want-to-contribute)
+ * [License](#-license)
 
 <br />
 
