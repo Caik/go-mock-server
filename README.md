@@ -79,6 +79,6 @@ Please take a look at our [contributing](https://github.com/Caik/go-mock-server/
 
 ## ⚖️ License
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](/https://github.com/Caik/go-mock-server/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Caik/go-mock-server/blob/main/LICENSE)
 
 Released 2023 by [Carlos Henrique Severino](https://github.com/Caik)
