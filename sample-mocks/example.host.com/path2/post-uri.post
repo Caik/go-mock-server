@@ -1,0 +1,4 @@
+{
+    "msg": "Example of a mocked response in JSON format",
+    "path": "POST path2/post-uri"
+}

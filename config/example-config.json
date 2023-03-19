@@ -1,0 +1,44 @@
+{
+    "hosts": {
+        "example.host.com": {
+            "latency": {
+                "min": 100,
+                "p95": 1800,
+                "p99": 1900,
+                "max": 2000
+            },
+            "errors": {
+                "500": {
+                    "percentage": 20,
+                    "latency": {
+                        "min": 100,
+                        "p95": 195,
+                        "p99": 199,
+                        "max": 200
+                    }
+                }
+            },
+            "uris": {
+                "/path1/": {
+                    "latency": {
+                        "min": 500,
+                        "p95": 1500,
+                        "p99": 4800,
+                        "max": 5000
+                    },
+                    "errors": {
+                        "400": {
+                            "percentage": 80,
+                            "latency": {
+                                "min": 200,
+                                "p95": 295,
+                                "p99": 299,
+                                "max": 300
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
