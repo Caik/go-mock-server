@@ -17,7 +17,7 @@ Contents
 <br />
 
 ## 🤔 Why?
----
+
 Have you ever needed to mock an API response to start the development because the actual API was not yet ready to use? 
 
 What about that performance testing you needed to do in our app but you could not confidently rely upon your upstream services? 
@@ -36,13 +36,12 @@ So please check out the [usage](#usage) section so you can fully understand how 
 <br />
 
 ## 📝 Features
----
 WIP
 
 <br />
 
 ## 💿 Installation
----
+
 There is already a compiled binary for **[Linux](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_linux)**, **[Mac](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_linux)** and another one for **[Windows](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server.exe)** on the **dist/** directory.
 So you only have to download the appropriate binary and run on your machine.
 
@@ -63,7 +62,7 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -ldflags '-extldflags "-stati
 <br />
 
 ## 📖 Usage
----
+
 Example:
 
 ```bash
@@ -74,13 +73,13 @@ Example:
 <br />
 
 ## 🔧 Want to Contribute?
----
+
 Please take a look at our [contributing](https://github.com/Caik/go-mock-server/blob/main/CONTRIBUTING.md) guidelines if you're interested in helping!
 
 <br />
 
 ## ⚖️ License
----
+
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/https://github.com/Caik/go-mock-server/blob/main/LICENSE)
 
 Released 2023 by [Carlos Henrique Severino](https://github.com/Caik)
