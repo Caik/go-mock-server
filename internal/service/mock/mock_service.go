@@ -1,6 +1,10 @@
 package mock
 
-import "github.com/Caik/go-mock-server/internal/config"
+import (
+	"strings"
+
+	"github.com/Caik/go-mock-server/internal/config"
+)
 
 type mockService interface {
 	getMockResponse(mockRequest MockRequest) *MockResponse
@@ -21,4 +25,8 @@ type MockResponse struct {
 	ContentType         string
 	activeErrorConfig   *config.ErrorConfig
 	activeLatencyConfig *config.LatencyConfig
+}
+
+func GenerateCacheKey(mockRequest MockRequest) string {
+	return strings.Join([]string{mockRequest.Host, mockRequest.Method, mockRequest.URI}, ":")
 }

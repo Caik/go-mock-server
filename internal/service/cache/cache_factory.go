@@ -14,7 +14,11 @@ func GetCacheService() CacheService {
 }
 
 func ensureInit() {
+	if cacheService != nil {
+		return
+	}
+
 	once.Do(func() {
-		cacheService = &localCacheService{}
+		cacheService = newLocalCacheService()
 	})
 }

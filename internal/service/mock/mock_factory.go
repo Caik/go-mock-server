@@ -20,6 +20,10 @@ func GetMockResponse(mockRequest MockRequest) *MockResponse {
 }
 
 func ensureInit() {
+	if mockServiceChain != nil {
+		return
+	}
+
 	once.Do(func() {
 		appConfig, err := config.GetAppConfig()
 
@@ -44,24 +48,27 @@ func ensureInit() {
 
 		// latency
 		if !appConfig.DisableLatency {
-			addNextFn(&latencyMockService{})
+			addNextFn(NewLatencyMockService())
 		}
 
 		// error
 		if !appConfig.DisableError {
-			addNextFn(&errorMockService{})
+			addNextFn(NewErrorMockService())
 		}
 
 		// content type
-		addNextFn(&contentTypeMockService{})
+		addNextFn(NewContentTypeMockService())
+
+		// host resolution
+		addNextFn(NewHostResolutionMockService())
 
 		// cache
 		if !appConfig.DisableCache {
-			addNextFn(&cacheMockService{})
+			addNextFn(NewCacheMockService())
 		}
 
-		// file
-		addNextFn(&fileMockService{})
+		// content
+		addNextFn(NewContentMockService())
 
 		// setting the chain
 		mockServiceChain = first

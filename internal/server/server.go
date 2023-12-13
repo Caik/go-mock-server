@@ -27,7 +27,9 @@ func Init() error {
 
 	log.Info(fmt.Sprintf("starting server on port %d", appConfig.ServerPort))
 
-	r.Run(fmt.Sprintf(":%d", appConfig.ServerPort))
+	if err := r.Run(fmt.Sprintf(":%d", appConfig.ServerPort)); err != nil {
+		return err
+	}
 
 	return nil
 }

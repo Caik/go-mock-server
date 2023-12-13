@@ -13,7 +13,7 @@ func Logger(ctx *gin.Context) {
 	log.WithField("uuid", ctx.GetString(util.UuidKey)).
 		WithField("host", ctx.Request.Host).
 		WithField("uri", ctx.Request.RequestURI).
-		WithField("method", ctx.Request.RequestURI).
+		WithField("method", ctx.Request.Method).
 		Info("request received")
 
 	start := time.Now()

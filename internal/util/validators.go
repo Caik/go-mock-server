@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	HostRegex       = regexp.MustCompile(`^(?:\w+\.)+\w+$`)
+	HostRegex       = regexp.MustCompile(`^(?:[\w-]+\.)+\w+$`)
+	IpAddressRegex  = regexp.MustCompile(`^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$`)
 	UriRegex        = regexp.MustCompile(`^/?(?:[\w-]+/)*[\w-]+/?(?:\?(?:[\w-]+=[\w-]+)(?:&[\w-]+=[\w-]+)*)?$`)
 	HttpMethodRegex = regexp.MustCompile(fmt.Sprintf(`^(%s)$`, strings.Join([]string{
 		http.MethodGet,

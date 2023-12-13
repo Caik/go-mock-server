@@ -3,7 +3,6 @@ package mock
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	log "github.com/sirupsen/logrus"
@@ -23,7 +22,7 @@ func (c cacheMockService) getMockResponse(mockRequest MockRequest) *MockResponse
 		return c.nextOrNil(mockRequest)
 	}
 
-	cacheKey := c.generateCacheKey(mockRequest)
+	cacheKey := GenerateCacheKey(mockRequest)
 	data, exists := cacheService.Get(cacheKey, mockRequest.Uuid)
 
 	if !exists {
@@ -51,10 +50,6 @@ func (c cacheMockService) getMockResponse(mockRequest MockRequest) *MockResponse
 
 func (c *cacheMockService) setNext(next mockService) {
 	c.next = next
-}
-
-func (c cacheMockService) generateCacheKey(mockRequest MockRequest) string {
-	return strings.Join([]string{mockRequest.Host, mockRequest.Method, mockRequest.URI}, ":")
 }
 
 func (c cacheMockService) deserialize(data *[]byte) (MockResponse, error) {
@@ -101,4 +96,9 @@ func (c cacheMockService) refreshCache(mockRequest MockRequest, cacheKey string,
 	cacheService.Set(cacheKey, &serializedData, mockRequest.Uuid)
 
 	return freshResponse
+}
+
+func NewCacheMockService() *cacheMockService {
+	// TODO listen to content changes to remove stuff from cache
+	return &cacheMockService{}
 }

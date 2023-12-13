@@ -16,7 +16,7 @@ type latencyMockService struct {
 	hostsConfig *config.HostsConfig
 }
 
-func (l latencyMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
+func (l *latencyMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
 	startTime := time.Now()
 
 	if err := l.ensureInit(); err != nil {
@@ -58,6 +58,10 @@ func (l *latencyMockService) setNext(next mockService) {
 }
 
 func (l *latencyMockService) ensureInit() error {
+	if l.hostsConfig != nil {
+		return nil
+	}
+
 	l.once.Do(func() {
 		newHostsConfig, err := config.GetHostsConfig()
 
@@ -75,7 +79,7 @@ func (l *latencyMockService) ensureInit() error {
 	return nil
 }
 
-func (l latencyMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
+func (l *latencyMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
 	if l.next == nil {
 		return nil
 	}
@@ -83,7 +87,7 @@ func (l latencyMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
 	return l.next.getMockResponse(mockRequest)
 }
 
-func (l latencyMockService) drawLatency(latencyConfig *config.LatencyConfig) int {
+func (l *latencyMockService) drawLatency(latencyConfig *config.LatencyConfig) int {
 	hasP95 := latencyConfig.P95 != nil
 	hasP99 := latencyConfig.P99 != nil
 
@@ -111,4 +115,11 @@ func (l latencyMockService) drawLatency(latencyConfig *config.LatencyConfig) int
 
 	// hasP99
 	return drawLatencyWithUpperAndLowerBounds(latencyConfig.Min, latencyConfig.P99)
+}
+
+func NewLatencyMockService() *latencyMockService {
+	service := latencyMockService{}
+	service.ensureInit()
+
+	return &service
 }

@@ -7,8 +7,7 @@ import (
 )
 
 func Uuid(ctx *gin.Context) {
-	uuid := uuid.New()
-	ctx.Set(util.UuidKey, uuid.String())
+	ctx.Set(util.UuidKey, uuid.NewString())
 
 	ctx.Next()
 }

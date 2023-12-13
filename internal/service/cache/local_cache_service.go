@@ -29,5 +29,11 @@ func (l *localCacheService) Set(cacheKey string, data *[]byte, uuid string) {
 
 	log.WithField("uuid", uuid).
 		WithField("cache_key", cacheKey).
-		Info("data stored on cache")
+		Info("data stored in cache")
+}
+
+func newLocalCacheService() *localCacheService {
+	return &localCacheService{
+		cache: map[string]*[]byte{},
+	}
 }

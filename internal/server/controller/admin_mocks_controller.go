@@ -67,7 +67,9 @@ func handleMockAddUpdate(c *gin.Context) {
 		return
 	}
 
-	log.WithField("uuid", c.GetString(util.UuidKey)).
+	uuid := c.GetString(util.UuidKey)
+
+	log.WithField("uuid", uuid).
 		WithField("host", addReq.Host).
 		WithField("uri", addReq.Uri).
 		WithField("method", addReq.Method).
@@ -78,7 +80,7 @@ func handleMockAddUpdate(c *gin.Context) {
 		URI:    addReq.Uri,
 		Method: addReq.Method,
 		Data:   &data,
-	})
+	}, uuid)
 
 	if err != nil {
 		msg := fmt.Sprintf("error while adding/updating mock: %v", err)
@@ -88,7 +90,7 @@ func handleMockAddUpdate(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", c.GetString(util.UuidKey)).
+		log.WithField("uuid", uuid).
 			WithField("host", addReq.Host).
 			WithField("uri", addReq.Uri).
 			WithField("method", addReq.Method).
@@ -125,7 +127,9 @@ func handleMockDelete(c *gin.Context) {
 		return
 	}
 
-	log.WithField("uuid", c.GetString(util.UuidKey)).
+	uuid := c.GetString(util.UuidKey)
+
+	log.WithField("uuid", uuid).
 		WithField("host", addReq.Host).
 		WithField("uri", addReq.Uri).
 		WithField("method", addReq.Method).
@@ -135,7 +139,7 @@ func handleMockDelete(c *gin.Context) {
 		Host:   addReq.Host,
 		URI:    addReq.Uri,
 		Method: addReq.Method,
-	})
+	}, uuid)
 
 	if err != nil {
 		msg := fmt.Sprintf("error while deleting mock: %v", err)
@@ -145,7 +149,7 @@ func handleMockDelete(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", c.GetString(util.UuidKey)).
+		log.WithField("uuid", uuid).
 			WithField("host", addReq.Host).
 			WithField("uri", addReq.Uri).
 			WithField("method", addReq.Method).

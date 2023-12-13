@@ -23,7 +23,7 @@ type errorPercentageWrapper struct {
 	originalErrorConfig config.ErrorConfig
 }
 
-func (e errorMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
+func (e *errorMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
 	if err := e.ensureInit(); err != nil {
 		return e.nextOrNil(mockRequest)
 	}
@@ -59,6 +59,10 @@ func (e *errorMockService) setNext(next mockService) {
 }
 
 func (e *errorMockService) ensureInit() error {
+	if e.hostsConfig != nil {
+		return nil
+	}
+
 	e.once.Do(func() {
 		newHostsConfig, err := config.GetHostsConfig()
 
@@ -77,7 +81,7 @@ func (e *errorMockService) ensureInit() error {
 	return nil
 }
 
-func (e errorMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
+func (e *errorMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
 	if e.next == nil {
 		return nil
 	}
@@ -85,7 +89,7 @@ func (e errorMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
 	return e.next.getMockResponse(mockRequest)
 }
 
-func (e errorMockService) drawError(errorsConfig *map[string]config.ErrorConfig) *errorPercentageWrapper {
+func (e *errorMockService) drawError(errorsConfig *map[string]config.ErrorConfig) *errorPercentageWrapper {
 	errorsWrapper := make([]errorPercentageWrapper, len(*errorsConfig))
 	i := 0
 
@@ -113,4 +117,11 @@ func (e errorMockService) drawError(errorsConfig *map[string]config.ErrorConfig)
 	}
 
 	return nil
+}
+
+func NewErrorMockService() *errorMockService {
+	service := errorMockService{}
+	service.ensureInit()
+
+	return &service
 }

@@ -35,7 +35,16 @@ So please check out the [usage](#usage) section so you can fully understand how 
 <br />
 
 ## 📝 Features
-WIP
+
+ * Easy configuration
+ * Latency simulation
+ * Error simulation
+ * Caching
+ * Content-type awareness
+ * Dynamic mock creation
+ * Dynamic configuration via API
+
+### 
 
 <br />
 
