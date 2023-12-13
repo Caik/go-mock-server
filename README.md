@@ -39,6 +39,7 @@ So please check out the [usage](#usage) section so you can fully understand how 
  * Easy configuration
  * Latency simulation
  * Error simulation
+ * Host resolution
  * Caching
  * Content-type awareness
  * Dynamic mock creation
