@@ -38,7 +38,7 @@ build_linux: ./cmd/mock-server/main.go
 build_windows: ./cmd/mock-server/main.go
 	@echo ""
 	@echo "########################################"
-	@echo "## Building Mock Server for Windows ##"
+	@echo "##  Building Mock Server for Windows  ##"
 	@echo "########################################"
 	@echo ""
 	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s -w' -o dist/mock-server.exe $<
@@ -46,7 +46,7 @@ build_windows: ./cmd/mock-server/main.go
 build_docker_image: ./build/docker/Dockerfile
 	@echo ""
 	@echo "########################################"
-	@echo "##      Building docker image       ##"
+	@echo "##       Building docker image        ##"
 	@echo "########################################"
 	@echo ""
 	@docker build -f $< -t caik/go-mock-server:latest .
@@ -54,7 +54,7 @@ build_docker_image: ./build/docker/Dockerfile
 push_docker_image: ./build/docker/Dockerfile
 	@echo ""
 	@echo "########################################"
-	@echo "##      Pushing docker image        ##"
+	@echo "##       Pushing docker image         ##"
 	@echo "########################################"
 	@echo ""
 	@docker push caik/go-mock-server:latest
@@ -62,7 +62,7 @@ push_docker_image: ./build/docker/Dockerfile
 run_docker: ./build/docker/docker-compose.yml
 	@echo ""
 	@echo "########################################"
-	@echo "##    Running docker environment    ##"
+	@echo "##     Running docker environment     ##"
 	@echo "########################################"
 	@echo ""
 	@docker-compose -f $< up --build --force-recreate
