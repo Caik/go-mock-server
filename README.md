@@ -51,7 +51,7 @@ So please check out the [usage](#usage) section so you can fully understand how 
 
 ## 💿 Installation
 
-There is already a compiled binary for **[Linux](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_linux)**, **[Mac](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_linux)** and another one for **[Windows](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server.exe)** on the **dist/** directory.
+There is already a compiled binary for **[Linux](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_linux)**, **[Mac AMD64](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_mac_amd64)**, **[Mac ARM64](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_mac_arm64)** and another one for **[Windows](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server.exe)** on the **dist/** directory.
 So you only have to download the appropriate binary and run on your machine.
 
 PS: You may need to give execution permission to the binary after downloading it:
