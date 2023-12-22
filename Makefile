@@ -8,8 +8,10 @@
 # make build_docker_image               # build docker image binary
 # make run_docker                       # run docker environment
 
-all: build_linux build_mac_amd64 build_mac_arm64 build_windows
-.PHONY: all build_mac_amd64 build_mac_arm64 build_linux build_windows build_docker_image push_docker_image run_docker
+GO_SWAGGER:=$(shell whereis -q swagger)
+
+all: build_linux build_mac_amd64 build_mac_arm64 build_windows build_swagger_doc
+.PHONY: all build_mac_amd64 build_mac_arm64 build_linux build_windows build_swagger_doc build_docker_image push_docker_image run_docker
 
 build_mac_amd64: ./cmd/mock-server/main.go
 	@echo ""
@@ -42,6 +44,14 @@ build_windows: ./cmd/mock-server/main.go
 	@echo "########################################"
 	@echo ""
 	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s -w' -o dist/mock-server.exe $<
+
+build_swagger_doc:
+	@echo ""
+	@echo "########################################"
+	@echo "##  Building Swagger (Open API) docs  ##"
+	@echo "########################################"
+	@echo ""
+	@$(GO_SWAGGER) generate spec -o ./docs/swagger.json --scan-models
 
 build_docker_image: ./build/docker/Dockerfile
 	@echo ""

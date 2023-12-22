@@ -1,0 +1,985 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Go Mock Server",
+    "description": "HTTP Mock Server written in Go",
+    "contact": {
+      "name": "Caik",
+      "url": "https://github.com/Caik",
+      "email": "carloshenrique.dev@gmail.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "http://opensource.org/licenses/MIT"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local dev server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Mock Admin",
+      "description": "Managing mocks"
+    },
+    {
+      "name": "Host Config Admin",
+      "description": "Managing hosts configurations"
+    }
+  ],
+  "paths": {
+    "/admin/config/hosts": {
+      "get": {
+        "description": "List all the active configurations for all hosts",
+        "tags": [
+          "Host Config Admin"
+        ],
+        "summary": "List the active hosts configuration",
+        "operationId": "listHosts",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostsConfigResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a new host config for the specified host or updates if there's already an existing one",
+        "tags": [
+          "Host Config Admin"
+        ],
+        "summary": "Saves or updates a host config",
+        "operationId": "addUpdateHostConfig",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddHostConfigRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/config/hosts/{host}": {
+      "get": {
+        "description": "Gets the active configuration for the specified host",
+        "tags": [
+          "Host Config Admin"
+        ],
+        "summary": "Gets the active host configuration",
+        "operationId": "getHost",
+        "parameters": [
+          {
+            "description": "Host whose configuration will be returned",
+            "name": "host",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example.host.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Deletes the active configuration for the specified host",
+        "tags": [
+          "Host Config Admin"
+        ],
+        "summary": "Deletes the host configuration",
+        "operationId": "deleteHost",
+        "parameters": [
+          {
+            "description": "Host whose configuration will be returned",
+            "name": "host",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example.host.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/200Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/config/hosts/{host}/errors": {
+      "post": {
+        "description": "Creates a new errors configuration for the specified host, or updates it if there's already an existing one",
+        "tags": [
+          "Host Config Admin"
+        ],
+        "summary": "Saves or updates the host errors configuration",
+        "operationId": "addUpdateHostErrors",
+        "parameters": [
+          {
+            "description": "Host whose configuration will be returned",
+            "name": "host",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example.host.com"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddHostErrrorsConfigRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/config/hosts/{host}/errors/{errorCode}": {
+      "delete": {
+        "description": "Deletes the error configuration for the specified host and error code",
+        "tags": [
+          "Host Config Admin"
+        ],
+        "summary": "Deletes the host error configuration",
+        "operationId": "deleteHostError",
+        "parameters": [
+          {
+            "description": "Host whose configuration will be updated",
+            "name": "host",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example.host.com"
+          },
+          {
+            "description": "Error code whose configuration will be deleted",
+            "name": "errorCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "400"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/config/hosts/{host}/latencies": {
+      "post": {
+        "description": "Creates a new default latency configuration for the specified host, or updates it if there's already an existing one",
+        "tags": [
+          "Host Config Admin"
+        ],
+        "summary": "Saves or updates the host default latency configuration",
+        "operationId": "addUpdateHostLatencies",
+        "parameters": [
+          {
+            "description": "Host whose configuration will be updated",
+            "name": "host",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example.host.com"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddHostLatencyConfigRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Deletes the default latency configuration for the specified host",
+        "tags": [
+          "Host Config Admin"
+        ],
+        "summary": "Deletes the host default latency configuration",
+        "operationId": "deleteHostLatencies",
+        "parameters": [
+          {
+            "description": "Host whose configuration will be updated",
+            "name": "host",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example.host.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/config/hosts/{host}/uris": {
+      "post": {
+        "description": "Creates a new URI-based configuration for the specified host, or updates it if there's already an existing one",
+        "tags": [
+          "Host Config Admin"
+        ],
+        "summary": "Saves or updates the host URI-based configuration",
+        "operationId": "addUpdateHostUris",
+        "parameters": [
+          {
+            "description": "Host whose configuration will be updated",
+            "name": "host",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example.host.com"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddHostURIConfigRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/mocks": {
+      "post": {
+        "description": "Creates a new mock for the specified host, HTTP method and URI or updates it if there's already an existing one",
+        "tags": [
+          "Mock Admin"
+        ],
+        "summary": "Saves or updates a mock",
+        "operationId": "addUpdateMock",
+        "parameters": [
+          {
+            "description": "Host to be mocked",
+            "name": "x-mock-host",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "URI (including any query string) to be mocked",
+            "name": "x-mock-uri",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "HTTP method to be mocked",
+            "name": "x-mock-method",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "text/plain": {
+              "examples": {
+                "text": {
+                  "summary": "Simple text file",
+                  "value": "This is an example of a simple text file that can be mocked\n\nline 2\n\nline 3\n\nAnother line"
+                },
+                "json": {
+                  "summary": "JSON file",
+                  "value": "{\"key1\": \"value1\", \"key2\": \"value2\"}"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/200Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Deletes a mock for the specified host, HTTP method and URI",
+        "tags": [
+          "Mock Admin"
+        ],
+        "summary": "Deletes a mock",
+        "operationId": "deleteMock",
+        "parameters": [
+          {
+            "description": "Host to be mocked",
+            "name": "x-mock-host",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "URI (including any query string) to be mocked",
+            "name": "x-mock-uri",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "HTTP method to be mocked",
+            "name": "x-mock-method",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/200Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LatencyConfig": {
+        "type": "object",
+        "description": "Object that holds the latency configuration for a specific host and/or URI",
+        "required": [
+          "min",
+          "max"
+        ],
+        "properties": {
+          "min": {
+            "type": "integer",
+            "description": "Minimum latency value (in milliseconds) to be simulated",
+            "examples": [
+              10
+            ]
+          },
+          "p95": {
+            "type": "integer",
+            "description": "P95 latency value (in milliseconds) to be simulated",
+            "examples": [
+              250
+            ]
+          },
+          "p99": {
+            "type": "integer",
+            "description": "P99 latency value (in milliseconds) to be simulated",
+            "examples": [
+              700
+            ]
+          },
+          "max": {
+            "type": "integer",
+            "description": "Maximum latency value (in milliseconds) to be simulated",
+            "examples": [
+              1500
+            ]
+          }
+        }
+      },
+      "ErrorConfig": {
+        "type": "object",
+        "description": "Error configuration for a specific host and/or URI",
+        "properties": {
+          "percentage": {
+            "type": "integer",
+            "description": "Percentage value (0 - 100) which defines how frequent the error code will be returned",
+            "examples": [
+              20
+            ]
+          },
+          "latency": {
+            "$ref": "#/components/schemas/LatencyConfig"
+          }
+        }
+      },
+      "UriConfig": {
+        "type": "object",
+        "description": "Holds a URI-based configuration for a specific host",
+        "properties": {
+          "latency": {
+            "$ref": "#/components/schemas/LatencyConfig"
+          },
+          "errors": {
+            "type": "object",
+            "description": "Holds all the errors configurations for a specific host and/or URI\n\nEach entry in the object represents an error configuration where the key is the HTTP error code and the value is an ErrorConfig object",
+            "additionalProperties": {
+              "type": "object",
+              "$ref": "#/components/schemas/ErrorConfig"
+            }
+          }
+        }
+      },
+      "HostConfig": {
+        "type": "object",
+        "description": "Holds all the configurations for a specific host",
+        "properties": {
+          "latency": {
+            "$ref": "#/components/schemas/LatencyConfig"
+          },
+          "errors": {
+            "type": "object",
+            "description": "Holds all the errors configurations for a specific host and/or URI\n\nEach entry in the object represents an error configuration where the key is the HTTP error code and the value is an ErrorConfig object",
+            "additionalProperties": {
+              "type": "object",
+              "$ref": "#/components/schemas/ErrorConfig"
+            }
+          },
+          "uris": {
+            "type": "object",
+            "description": "Holds all the URI-based configurations for a specific host\n\nEach entry in the object represents an URI-based configuration where the key is an URI and the value is an UriConfig object",
+            "additionalProperties": {
+              "type": "object",
+              "$ref": "#/components/schemas/UriConfig"
+            }
+          }
+        }
+      },
+      "HostsConfig": {
+        "type": "object",
+        "description": "Holds all the configurations for all the hosts\n\nEach entry in the object represents a host configuration where the key is the host name and the value is a HostConfig object",
+        "additionalProperties": {
+          "type": "object",
+          "$ref": "#/components/schemas/HostConfig"
+        }
+      },
+      "AddHostConfigRequest": {
+        "type": "object",
+        "description": "Holds all the configuration to be applied for a specific host",
+        "properties": {
+          "host": {
+            "type": "string",
+            "description": "Host which configuration will be applied to",
+            "examples": [
+              "example.host.com"
+            ]
+          },
+          "latency": {
+            "$ref": "#/components/schemas/LatencyConfig"
+          },
+          "errors": {
+            "type": "object",
+            "description": "Holds all the default errors configurations for a specific host\n\nEach entry in the object represents an error configuration where the key is the HTTP error code and the value is an ErrorConfig object",
+            "additionalProperties": {
+              "type": "object",
+              "$ref": "#/components/schemas/ErrorConfig"
+            }
+          },
+          "uris": {
+            "type": "object",
+            "description": "Holds all the URI-based configurations for a specific host\n\nEach entry in the object represents an URI-based configuration where the key is an URI and the value is an UriConfig object",
+            "additionalProperties": {
+              "type": "object",
+              "$ref": "#/components/schemas/UriConfig"
+            }
+          }
+        }
+      },
+      "AddHostErrrorsConfigRequest": {
+        "type": "object",
+        "description": "Holds the errors configuration to be applied for a specific host",
+        "properties": {
+          "host": {
+            "type": "string",
+            "description": "Host which configuration will be applied to",
+            "examples": [
+              "example.host.com"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "description": "Holds all the default errors configurations for a specific host\n\nEach entry in the object represents an error configuration where the key is the HTTP error code and the value is an ErrorConfig object",
+            "additionalProperties": {
+              "type": "object",
+              "$ref": "#/components/schemas/ErrorConfig"
+            }
+          }
+        }
+      },
+      "AddHostLatencyConfigRequest": {
+        "type": "object",
+        "description": "Holds the latency configuration to be applied for a specific host",
+        "properties": {
+          "host": {
+            "type": "string",
+            "description": "Host which configuration will be applied to",
+            "examples": [
+              "example.host.com"
+            ]
+          },
+          "latency": {
+            "$ref": "#/components/schemas/LatencyConfig"
+          }
+        }
+      },
+      "AddHostURIConfigRequest": {
+        "type": "object",
+        "description": "Holds the latency configuration to be applied for a specific host",
+        "properties": {
+          "host": {
+            "type": "string",
+            "description": "Host which configuration will be applied to",
+            "examples": [
+              "example.host.com"
+            ]
+          },
+          "uris": {
+            "type": "object",
+            "description": "Holds all the URI-based configurations for a specific host\n\nEach entry in the object represents an URI-based configuration where the key is an URI and the value is an UriConfig object",
+            "additionalProperties": {
+              "type": "object",
+              "$ref": "#/components/schemas/UriConfig"
+            }
+          }
+        }
+      },
+      "ResponseStatus": {
+        "type": "string",
+        "description": "success means the request finished successfully\n\nfail means there was a client-side error\n\nerror means there was a server-side error",
+        "enum": [
+          "success",
+          "fail",
+          "error"
+        ]
+      },
+      "HostConfigResponse": {
+        "type": "object",
+        "description": "API response containing a HostsConfig",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus"
+          },
+          "message": {
+            "type": "string",
+            "description": "Descriptive message for the response",
+            "examples": [
+              "host config updated with success"
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/HostConfig"
+          }
+        }
+      },
+      "HostsConfigResponse": {
+        "type": "object",
+        "description": "API response containing a HostsConfig",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus"
+          },
+          "message": {
+            "type": "string",
+            "description": "Descriptive message for the response",
+            "examples": [
+              "hosts config retrieved with success"
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/HostsConfig"
+          }
+        }
+      },
+      "500Response": {
+        "type": "object",
+        "description": "API response for an internal server error",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "examples": [
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Descriptive message for the response",
+            "examples": [
+              "unable to get hosts config"
+            ]
+          }
+        }
+      },
+      "400Response": {
+        "type": "object",
+        "description": "API response for a bad request error",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "examples": [
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Descriptive message for the response",
+            "examples": [
+              "invalid request: invalid host provided: it should not be empty"
+            ]
+          }
+        }
+      },
+      "200Response": {
+        "type": "object",
+        "description": "API response for an empty success response",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "examples": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Descriptive message for the response",
+            "examples": [
+              "host config deleted with success"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
