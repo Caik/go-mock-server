@@ -46,6 +46,9 @@ func ensureInit() {
 			last = next
 		}
 
+		// host resolution
+		addNextFn(NewHostResolutionMockService())
+
 		// latency
 		if !appConfig.DisableLatency {
 			addNextFn(NewLatencyMockService())
@@ -58,9 +61,6 @@ func ensureInit() {
 
 		// content type
 		addNextFn(NewContentTypeMockService())
-
-		// host resolution
-		addNextFn(NewHostResolutionMockService())
 
 		// cache
 		if !appConfig.DisableCache {
