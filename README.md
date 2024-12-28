@@ -115,7 +115,7 @@ docker run --name mock-server --rm -p 8080:8080 -v $(pwd)/sample-mocks:/mocks ca
 Where `$(pwd)/sample-mocks` is the path in your host machine where you have stored the mocks files. In case you want to start the application without any pre-existing mock files, you can also omit it:
 
 ```bash
-docker run --name mock-server --rm -p 8080:8080 --mocks-directory /mocks
+docker run --name mock-server --rm -p 8080:8080 caik/go-mock-server:latest --mocks-directory /mocks
 ```
 
 Please also note that you change the port mapping from `8080` to any other port of your preference. 
