@@ -74,13 +74,13 @@ cd go-mock-server
 2. Build the project
 
 ```bash
-make
+go build ./...
 ```
 
-3. Run the server:
+3. Run the application:
 
 ```bash
-./dist/mock-server_{your-distro/arch}
+go run cmd/mock-server/main.go --mocks-directory $(pwd)/sample-mocks 
 ```
 
 <br />
