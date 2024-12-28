@@ -119,7 +119,7 @@ func (e *errorMockService) drawError(errorsConfig *map[string]config.ErrorConfig
 	return nil
 }
 
-func NewErrorMockService() *errorMockService {
+func newErrorMockService() *errorMockService {
 	service := errorMockService{}
 	service.ensureInit()
 

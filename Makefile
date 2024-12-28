@@ -65,4 +65,4 @@ run_docker: ./build/docker/docker-compose.yml
 	@echo "##     Running docker environment     ##"
 	@echo "########################################"
 	@echo ""
-	@docker-compose -f $< up --build --force-recreate
+	@docker compose -f $< up --build --force-recreate

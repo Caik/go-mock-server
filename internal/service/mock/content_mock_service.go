@@ -23,7 +23,7 @@ func (f contentMockService) getMockResponse(mockRequest MockRequest) *MockRespon
 	data, err := f.readMockFile(mockRequest)
 
 	if err != nil {
-		if err == errContentServiceNotFound {
+		if errors.Is(err, errContentServiceNotFound) {
 			return f.new500Response(err)
 		}
 
@@ -93,6 +93,6 @@ func (f contentMockService) new500Response(err error) *MockResponse {
 	}
 }
 
-func NewContentMockService() *contentMockService {
+func newContentMockService() *contentMockService {
 	return &contentMockService{}
 }

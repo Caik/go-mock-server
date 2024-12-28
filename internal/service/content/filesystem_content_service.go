@@ -123,7 +123,7 @@ func (f *filesystemContentService) ListContents(uuid string) (*[]ContentData, er
 
 	contents := make([]ContentData, 0)
 
-	if err := filepath.Walk(f.mocksDirConfig.Path, func(path string, info fs.FileInfo, err error) error {
+	if err := f.retrieveContents(f.mocksDirConfig.Path, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -265,8 +265,7 @@ func (f *filesystemContentService) ensureInit() error {
 }
 
 func (f *filesystemContentService) startContentWatcher() {
-	// Watching host directories
-	hostDirWatcher, err := fsnotify.NewWatcher()
+	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
 		log.Errorf("error while starting new watcher: %v", err)
@@ -278,122 +277,24 @@ func (f *filesystemContentService) startContentWatcher() {
 			return nil
 		}
 
-		if strings.Compare(strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator), strings.TrimSuffix(path, pathSeparator)) == 0 {
-			return nil
-		}
-
-		return hostDirWatcher.Add(path)
+		return watcher.Add(path)
 	}); err != nil {
 		log.Errorf("error while watching host directories: %v", err)
 		return
 	}
 
-	// Watching main mock directory to find new hosts created
-	mockDirWatcher, err := fsnotify.NewWatcher()
-
-	if err != nil {
-		log.Errorf("error while starting new watcher: %v", err)
-
-		hostDirWatcher.Close()
-
-		return
-	}
-
-	if err = mockDirWatcher.Add(f.mocksDirConfig.Path); err != nil {
-		log.Errorf("error while adding new path to be watched: %v", err)
-
-		mockDirWatcher.Close()
-
-		return
-	}
-
-	// starting to receive events from the host dir watcher
+	// starting to receive events from the watcher
 	go func() {
 		for {
 			select {
-			case event, ok := <-hostDirWatcher.Events:
+			case event, ok := <-watcher.Events:
 				if !ok {
 					continue
 				}
 
-				// ignoring CHMOD changes
-				if event.Has(fsnotify.Chmod) {
-					continue
-				}
+				f.handleFilesystemEvent(event, watcher)
 
-				uuid := uuid.NewString()
-
-				if err != nil {
-					log.Error("error while generating new uuid")
-					continue
-				}
-
-				log.WithField("uuid", uuid).
-					WithField("operation", event.Op).
-					WithField("filepath", event.Name).
-					Info("received change from filesystem")
-
-				var eventType ContentEventType
-
-				if event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename) {
-					eventType = Removed
-				} else if event.Has(fsnotify.Create) {
-					eventType = Created
-				} else {
-					eventType = Updated
-				}
-
-				data, err := f.filePathToContentData(event.Name)
-
-				if err != nil {
-					log.WithField("uuid", uuid).
-						WithField("operation", event.Op).
-						WithField("filepath", event.Name).
-						Warn(fmt.Sprintf("error while converting filepath to content data: %v", err))
-
-					continue
-				}
-
-				f.broadcaster.Publish(ContentEvent{Type: eventType, Data: *data}, uuid)
-
-			case err, ok := <-hostDirWatcher.Errors:
-				if !ok {
-					continue
-				}
-
-				log.Errorf("error received while watching filesystem: %v", err)
-			}
-		}
-	}()
-
-	// starting to receive events from the mock dir watcher
-	go func() {
-		for {
-			select {
-			case event, ok := <-mockDirWatcher.Events:
-				if !ok {
-					continue
-				}
-
-				// ignoring CHMOD and REMOVE changes
-				if event.Has(fsnotify.Chmod) || event.Has(fsnotify.Remove) {
-					continue
-				}
-
-				uuid := uuid.NewString()
-
-				if err != nil {
-					log.Error("error while generating new uuid")
-					continue
-				}
-
-				log.WithField("uuid", uuid).
-					WithField("filepath", event.Name).
-					Info("new host directory found, starting to watch it for changes")
-
-				// adding new path to the host dir watcher
-				hostDirWatcher.Add(event.Name)
-			case err, ok := <-mockDirWatcher.Errors:
+			case err, ok := <-watcher.Errors:
 				if !ok {
 					continue
 				}
@@ -409,4 +310,107 @@ func newFilesystemContentService() *filesystemContentService {
 	service.ensureInit()
 
 	return &service
+}
+
+func (f *filesystemContentService) retrieveContents(path string, fn func(path string, info fs.FileInfo, err error) error) error {
+	if err := filepath.Walk(path, fn); err != nil {
+		return fmt.Errorf("error while listing contents: %v", err)
+	}
+
+	return nil
+}
+
+func (f *filesystemContentService) handleFilesystemEvent(event fsnotify.Event, watcher *fsnotify.Watcher) {
+	// ignoring CHMOD changes
+	if event.Has(fsnotify.Chmod) {
+		return
+	}
+
+	uuid := uuid.NewString()
+
+	log.WithField("uuid", uuid).
+		WithField("operation", event.Op).
+		WithField("filepath", event.Name).
+		Info("received change from filesystem")
+
+	var eventType ContentEventType
+
+	if event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename) {
+		eventType = Removed
+	} else if event.Has(fsnotify.Create) {
+		eventType = Created
+	} else {
+		eventType = Updated
+	}
+
+	if eventType != Removed {
+		// it's only possible to get stats from a file/dir in case it still exists, which wouldn't be the case when
+		// a Removed event is sent
+		info, err := os.Stat(event.Name)
+
+		if err != nil {
+			log.WithField("uuid", uuid).
+				WithField("operation", event.Op).
+				WithField("filepath", event.Name).
+				Warn(fmt.Sprintf("error while reading file info: %v", err))
+
+			return
+		}
+
+		// in case a dir is added/changed, we want to make sure that all its subdirectories are also watched and
+		// any files found along the way are broadcast
+		if info.IsDir() {
+			// recursively adding new dirs to be watched
+			if err = f.retrieveContents(event.Name, func(path string, fileInfo fs.FileInfo, err2 error) error {
+				if err2 != nil {
+					return err2
+				}
+
+				if fileInfo.IsDir() {
+					log.WithField("uuid", uuid).
+						WithField("filepath", path).
+						Info("new directory found, starting to watch it for changes")
+
+					watcher.Add(path)
+
+					return nil
+				}
+
+				if data, err := f.filePathToContentData(path); err == nil {
+					f.broadcaster.Publish(ContentEvent{Type: eventType, Data: *data}, uuid)
+				}
+
+				return nil
+			}); err != nil {
+				log.WithField("uuid", uuid).
+					WithField("operation", event.Op).
+					WithField("filepath", event.Name).
+					Warn(fmt.Sprintf("error while retrieving contents of new directory: %v", err))
+			}
+
+			// given we know at this point that the event was a dir that was created/updated,
+			// nothing else needs to be done apart from adding the new dirs (recursively) to the watch list
+			// and publishing the files that were found
+			return
+		}
+
+	}
+
+	data, err := f.filePathToContentData(event.Name)
+
+	if err != nil {
+		// for remove events it might happen that the object deleted was a dir, and in that case an error would be thrown
+		// It is not possible to know if the deleted object is a dir or a file in advance
+		if eventType != Removed {
+			log.WithField("uuid", uuid).
+				WithField("operation", event.Op).
+				WithField("filepath", event.Name).
+				Warn(fmt.Sprintf("error while converting filepath to content data: %v", err))
+		}
+
+		return
+	}
+
+	// publishing filesystem event
+	f.broadcaster.Publish(ContentEvent{Type: eventType, Data: *data}, uuid)
 }

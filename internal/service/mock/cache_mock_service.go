@@ -98,7 +98,7 @@ func (c cacheMockService) refreshCache(mockRequest MockRequest, cacheKey string,
 	return freshResponse
 }
 
-func NewCacheMockService() *cacheMockService {
+func newCacheMockService() *cacheMockService {
 	// TODO listen to content changes to remove stuff from cache
 	return &cacheMockService{}
 }

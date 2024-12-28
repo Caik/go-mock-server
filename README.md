@@ -9,6 +9,9 @@ Contents
 - [Why Use Go Mock Server?](#-why-use-go-mock-server)
 - [Key Features](#-key-features)
 - [Installation](#-installation)
+  - [Docker](#1-docker)
+  - [Pre-compiled Binaries](#2-pre-compiled-binaries)
+  - [Compiling Your Own Binary](#3-compiling-your-own-binary)
 - [Usage](#-usage)
   - [Running the App](#1-running-the-app)
   - [Creating Mocks](#2-creating-mocks)
@@ -101,8 +104,26 @@ Explore these features and more to streamline your API mocking workflow and acce
 
 ## 💿 Installation
 
-There is already a compiled binary for **[Linux](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_linux)**, **[Mac AMD64](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_mac_amd64)**, **[Mac ARM64](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_mac_arm64)** and another one for **[Windows](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server.exe)** on the **dist/** directory.
-So you only have to download the appropriate binary and run on your machine.
+### 1. Docker
+
+The easiest and recommended way to run **Go Mock Server** is via **Docker**: 
+
+```bash
+docker run --name mock-server --rm -p 8080:8080 -v $(pwd)/sample-mocks:/mocks caik/go-mock-server:latest --mocks-directory /mocks
+```
+
+Where `$(pwd)/sample-mocks` is the path in your host machine where you have stored the mocks files. In case you want to start the application without any pre-existing mock files, you can also omit it:
+
+```bash
+docker run --name mock-server --rm -p 8080:8080 --mocks-directory /mocks
+```
+
+Please also note that you change the port mapping from `8080` to any other port of your preference. 
+
+### 2. Pre-compiled Binaries
+
+Alternatively, you can download and run the already pre-compiled binaries. There are versions for **[Linux](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_linux)**, **[Mac AMD64](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_mac_amd64)**, **[Mac ARM64](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_mac_arm64)** and another one for **[Windows](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server.exe)** on the **dist/** directory.
+So you only have to choose the appropriate binary and run on your machine.
 
 PS: You may need to give execution permission to the binary after downloading it:
 
@@ -111,7 +132,9 @@ PS: You may need to give execution permission to the binary after downloading it
 chmod +x ./mock-server_linux
 ```
 
-If you have **Go** configured on your environment, you can build your own binaries as well:
+### 3. Compiling Your Own Binary
+
+If you have **Go** configured on your environment, you can also choose to build your own binary as well:
 
 ```shell
 # building a MacOS on AMD64 binary
@@ -292,7 +315,7 @@ To customize Go Mock Server's behavior, you can use the following command-line o
 
 ## 🔧 Want to Contribute?
 
-We welcome contributions from the community! If you're interested in helping improve Go Mock Server, please take a moment to review our [contributing guidelines](https://github.com/Caik/go-mock-server/blob/main/CONTRIBUTING.md).
+We welcome contributions from the community! If you're interested in helping improve Go Mock Server, please take a moment to review our [contribution guidelines](https://github.com/Caik/go-mock-server/blob/main/CONTRIBUTING.md).
 
 <br />
 

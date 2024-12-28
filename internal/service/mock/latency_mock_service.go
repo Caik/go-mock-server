@@ -23,7 +23,7 @@ func (l *latencyMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 		return l.nextOrNil(mockRequest)
 	}
 
-	// caling next in the chain
+	// calling next in the chain
 	mockResponse := l.nextOrNil(mockRequest)
 
 	// getting default appropriate latency config
@@ -117,7 +117,7 @@ func (l *latencyMockService) drawLatency(latencyConfig *config.LatencyConfig) in
 	return drawLatencyWithUpperAndLowerBounds(latencyConfig.Min, latencyConfig.P99)
 }
 
-func NewLatencyMockService() *latencyMockService {
+func newLatencyMockService() *latencyMockService {
 	service := latencyMockService{}
 	service.ensureInit()
 

@@ -61,6 +61,6 @@ func (c contentTypeMockService) setAppropriateContentType(acceptHeader string) s
 	return gin.MIMEPlain
 }
 
-func NewContentTypeMockService() *contentTypeMockService {
+func newContentTypeMockService() *contentTypeMockService {
 	return &contentTypeMockService{}
 }

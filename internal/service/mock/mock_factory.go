@@ -46,29 +46,31 @@ func ensureInit() {
 			last = next
 		}
 
+		// TODO: add CORS MockService
+
 		// host resolution
-		addNextFn(NewHostResolutionMockService())
+		addNextFn(newHostResolutionMockService())
 
 		// latency
 		if !appConfig.DisableLatency {
-			addNextFn(NewLatencyMockService())
+			addNextFn(newLatencyMockService())
 		}
 
 		// error
 		if !appConfig.DisableError {
-			addNextFn(NewErrorMockService())
+			addNextFn(newErrorMockService())
 		}
 
 		// content type
-		addNextFn(NewContentTypeMockService())
+		addNextFn(newContentTypeMockService())
 
 		// cache
 		if !appConfig.DisableCache {
-			addNextFn(NewCacheMockService())
+			addNextFn(newCacheMockService())
 		}
 
 		// content
-		addNextFn(NewContentMockService())
+		addNextFn(newContentMockService())
 
 		// setting the chain
 		mockServiceChain = first

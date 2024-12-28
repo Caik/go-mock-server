@@ -23,7 +23,7 @@ func (h *hostResolutionMockService) getMockResponse(mockRequest MockRequest) *Mo
 
 	mockRequest = h.evaluate(mockRequest)
 
-	// caling next in the chain
+	// calling next in the chain
 	return h.nextOrNil(mockRequest)
 }
 
@@ -125,7 +125,7 @@ func (h *hostResolutionMockService) nextOrNil(mockRequest MockRequest) *MockResp
 	return h.next.getMockResponse(mockRequest)
 }
 
-func NewHostResolutionMockService() *hostResolutionMockService {
+func newHostResolutionMockService() *hostResolutionMockService {
 	service := hostResolutionMockService{}
 	service.ensureInit()
 
