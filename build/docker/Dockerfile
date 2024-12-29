@@ -8,13 +8,13 @@ WORKDIR /tmp/go-mock-server
 COPY . .
 
 RUN go mod download
-RUN make build_linux
+RUN make build
 
 ## Creating final image ##
 FROM alpine:latest 
 
 RUN apk add ca-certificates
 
-COPY --from=builder /tmp/go-mock-server/dist/mock-server_linux /app/mock-server
+COPY --from=builder /tmp/go-mock-server/dist/mock-server /app/mock-server
 
 ENTRYPOINT ["/app/mock-server"]
