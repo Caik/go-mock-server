@@ -1,3 +1,8 @@
 build/
+config/
+docs/
 dist/
+sample-mocks/
 .gitignore
+*.md
+LICENSE
