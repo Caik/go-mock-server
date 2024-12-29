@@ -2,8 +2,7 @@ version: '3.5'
 services:
   mock-server:
     build:
-      context: ../..
-      dockerfile: build/docker/Dockerfile
+      context: .
     image: caik/go-mock-server:latest
     container_name: mock-server
     networks:
@@ -11,7 +10,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ../../sample-mocks/:/mocks:ro
+      - ./sample-mocks/:/mocks
     command:
       - --mocks-directory
       - /mocks

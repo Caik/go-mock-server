@@ -51,7 +51,7 @@ build_windows: ./cmd/mock-server/main.go
 	@echo ""
 	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s -w' -o dist/mock-server.exe $<
 
-build_and_push_docker_image: ./build/docker/Dockerfile
+build_and_push_docker_image: ./Dockerfile
 	@echo ""
 	@echo "########################################"
 	@echo "##       Building docker image        ##"
@@ -59,7 +59,7 @@ build_and_push_docker_image: ./build/docker/Dockerfile
 	@echo ""
 	@docker buildx build -f $< -t caik/go-mock-server:latest --push --platform=linux/amd64,linux/arm64,linux/arm/v7 .
 
-run_docker: ./build/docker/docker-compose.yml
+run_docker: ./docker-compose.yml
 	@echo ""
 	@echo "########################################"
 	@echo "##     Running docker environment     ##"
