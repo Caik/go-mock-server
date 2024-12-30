@@ -8,9 +8,11 @@ on:
       - 'internal/**'
       - 'go.mod'
       - 'go.sum'
+  workflow_call:
 
 jobs:
   build:
+    name: Build and Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
