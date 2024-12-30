@@ -6,8 +6,6 @@ Go Mock Server is a versatile tool crafted in Go to simplify the process of mock
 [![Version](https://img.shields.io/github/release/Caik/go-mock-server.svg?style=flat-square)](https://github.com/Caik/go-mock-server/releases/latest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Caik/go-mock-server)](https://goreportcard.com/report/github.com/Caik/go-mock-server)
 
-<br />
-
 Contents
 ========
 - [Why Use Go Mock Server?](#-why-use-go-mock-server)
