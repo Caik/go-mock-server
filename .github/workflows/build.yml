@@ -9,6 +9,7 @@ on:
       - 'go.mod'
       - 'go.sum'
   workflow_call:
+  workflow_dispatch: 
 
 jobs:
   build:
