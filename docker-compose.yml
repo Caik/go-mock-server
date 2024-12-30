@@ -10,7 +10,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./sample-mocks/:/mocks
+      - ./_sample-mocks/:/mocks
     command:
       - --mocks-directory
       - /mocks

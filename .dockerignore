@@ -3,7 +3,7 @@ docker-compose.yml
 config/
 docs/
 dist/
-sample-mocks/
+_sample-mocks/
 .gitignore
 *.md
 LICENSE

@@ -80,7 +80,7 @@ go build ./...
 3. Run the application:
 
 ```bash
-go run cmd/mock-server/main.go --mocks-directory "$(pwd)/sample-mocks" 
+go run cmd/mock-server/main.go --mocks-directory "$(pwd)/_sample-mocks" 
 ```
 
 <br />
