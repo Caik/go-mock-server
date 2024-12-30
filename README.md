@@ -2,6 +2,10 @@
 
 Go Mock Server is a versatile tool crafted in Go to simplify the process of mocking HTTP requests, with a primary focus on being **user-friendly**, **powerful**, and **flexible**.
 
+[![Build & Test](https://github.com/Caik/go-mock-server/actions/workflows/build.yml/badge.svg)](https://github.com/Caik/go-mock-server/actions/workflows/build.yml)
+[![Version](https://img.shields.io/github/release/Caik/go-mock-server.svg?style=flat-square)](https://github.com/Caik/go-mock-server/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Caik/go-mock-server)](https://goreportcard.com/report/github.com/Caik/go-mock-server)
+
 <br />
 
 Contents
@@ -122,14 +126,14 @@ Please also note that you change the port mapping from `8080` to any other port 
 
 ### 2. Pre-compiled Binaries
 
-Alternatively, you can download and run the already pre-compiled binaries. There are versions for **[Linux](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_linux)**, **[Mac AMD64](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_mac_amd64)**, **[Mac ARM64](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server_mac_arm64)** and another one for **[Windows](https://github.com/Caik/go-mock-server/blob/main/dist/mock-server.exe)** on the **dist/** directory.
-So you only have to choose the appropriate binary and run on your machine.
+Alternatively, you can download and run the already pre-compiled binaries. There are versions for **Linux**, **Mac**, and **Windows** on the **[Releases](https://github.com/Caik/go-mock-server/releases)** page.
+So you only have to choose the appropriate file, download, extract it and run the binary in your machine.
 
 PS: You may need to give execution permission to the binary after downloading it:
 
  ```shell
 # giving execution permission on linux
-chmod +x ./mock-server_linux
+chmod +x ./mock-server
 ```
 
 ### 3. Compiling Your Own Binary
