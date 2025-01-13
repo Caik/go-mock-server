@@ -11,7 +11,7 @@ type contentTypeMockService struct {
 	next mockService
 }
 
-func (c contentTypeMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
+func (c *contentTypeMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
 	mockResponse := c.nextOrNil(mockRequest)
 
 	if mockResponse == nil {
@@ -37,7 +37,7 @@ func (c *contentTypeMockService) setNext(next mockService) {
 	c.next = next
 }
 
-func (c contentTypeMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
+func (c *contentTypeMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
 	if c.next == nil {
 		return nil
 	}
@@ -45,7 +45,7 @@ func (c contentTypeMockService) nextOrNil(mockRequest MockRequest) *MockResponse
 	return c.next.getMockResponse(mockRequest)
 }
 
-func (c contentTypeMockService) setAppropriateContentType(acceptHeader string) string {
+func (c *contentTypeMockService) setAppropriateContentType(acceptHeader string) string {
 	if len(acceptHeader) == 0 || strings.EqualFold(strings.TrimSpace(acceptHeader), "*/*") {
 		return gin.MIMEPlain
 	}

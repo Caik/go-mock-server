@@ -1,6 +1,6 @@
 package config
 
-type AppConfig struct {
+type AppArguments struct {
 	MocksDirectory  string `arg:"required,--mocks-directory" help:"path to the mocks directory"`
 	MocksConfigFile string `arg:"--mocks-config-file" help:"path to the config file"`
 	ServerPort      int    `default:"8080" arg:"-P,--port" help:"port to be used"`

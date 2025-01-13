@@ -20,12 +20,11 @@ type AddDeleteMockRequest struct {
 	Method string `header:"x-mock-method" binding:"required"`
 }
 
-func initAdminMocksController(r *gin.RouterGroup) {
-	r.POST("", handleMockAddUpdate)
-	r.DELETE("", handleMockDelete)
+type AdminMocksController struct {
+	service *admin.MockAdminService
 }
 
-func handleMockAddUpdate(c *gin.Context) {
+func (a *AdminMocksController) handleMockAddUpdate(c *gin.Context) {
 	addReq := AddDeleteMockRequest{}
 
 	if err := c.ShouldBindHeader(&addReq); err != nil {
@@ -75,7 +74,7 @@ func handleMockAddUpdate(c *gin.Context) {
 		WithField("method", addReq.Method).
 		Info("adding/updating mock")
 
-	err = admin.AddUpdateMock(admin.MockAddDeleteRequest{
+	err = a.service.AddUpdateMock(admin.MockAddDeleteRequest{
 		Host:   addReq.Host,
 		URI:    addReq.Uri,
 		Method: addReq.Method,
@@ -106,7 +105,7 @@ func handleMockAddUpdate(c *gin.Context) {
 	})
 }
 
-func handleMockDelete(c *gin.Context) {
+func (a *AdminMocksController) handleMockDelete(c *gin.Context) {
 	addReq := AddDeleteMockRequest{}
 
 	if err := c.ShouldBindHeader(&addReq); err != nil {
@@ -135,7 +134,7 @@ func handleMockDelete(c *gin.Context) {
 		WithField("method", addReq.Method).
 		Info("deleting mock")
 
-	err := admin.DeleteMock(admin.MockAddDeleteRequest{
+	err := a.service.DeleteMock(admin.MockAddDeleteRequest{
 		Host:   addReq.Host,
 		URI:    addReq.Uri,
 		Method: addReq.Method,
@@ -197,4 +196,10 @@ func (a *AddDeleteMockRequest) validate() error {
 	}
 
 	return nil
+}
+
+func NewAdminMocksController(service *admin.MockAdminService) *AdminMocksController {
+	return &AdminMocksController{
+		service: service,
+	}
 }

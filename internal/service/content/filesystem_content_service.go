@@ -3,17 +3,15 @@ package content
 import (
 	"errors"
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
-
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/util"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 const (
@@ -21,23 +19,13 @@ const (
 	rootToken     = "root"
 )
 
-type filesystemContentService struct {
+type FilesystemContentService struct {
 	mocksDirConfig *config.MocksDirectoryConfig
-	once           sync.Once
 	broadcaster    util.Broadcaster[ContentEvent]
 }
 
-func (f *filesystemContentService) GetContent(host, uri, method, uuid string) (*[]byte, error) {
-	absolutePath, err := f.getFinalFilePath(host, uri, method)
-
-	if err != nil {
-		log.WithField("uuid", uuid).
-			WithField("path", absolutePath).
-			Error("error while generating final file path")
-
-		return nil, err
-	}
-
+func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*[]byte, error) {
+	absolutePath := f.getFinalFilePath(host, uri, method)
 	data, err := os.ReadFile(absolutePath)
 
 	if err != nil {
@@ -51,20 +39,12 @@ func (f *filesystemContentService) GetContent(host, uri, method, uuid string) (*
 	return &data, err
 }
 
-func (f *filesystemContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
-	absolutePath, err := f.getFinalFilePath(host, uri, method)
-
-	if err != nil {
-		log.WithField("uuid", uuid).
-			WithField("path", absolutePath).
-			Error("error while generating final file path")
-
-		return err
-	}
+func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
+	absolutePath := f.getFinalFilePath(host, uri, method)
 
 	// making sure all parent dirs are created
 	parentDir := absolutePath[:strings.LastIndex(absolutePath, pathSeparator)+1]
-	err = os.MkdirAll(parentDir, os.ModePerm)
+	err := os.MkdirAll(parentDir, os.ModePerm)
 
 	if err != nil {
 		msg := fmt.Sprintf("error while creating parent directories: %v", err)
@@ -92,18 +72,10 @@ func (f *filesystemContentService) SetContent(host, uri, method, uuid string, da
 	return nil
 }
 
-func (f *filesystemContentService) DeleteContent(host, uri, method, uuid string) error {
-	absolutePath, err := f.getFinalFilePath(host, uri, method)
+func (f *FilesystemContentService) DeleteContent(host, uri, method, uuid string) error {
+	absolutePath := f.getFinalFilePath(host, uri, method)
 
-	if err != nil {
-		log.WithField("uuid", uuid).
-			WithField("path", absolutePath).
-			Error("error while generating final file path")
-
-		return err
-	}
-
-	if err = os.Remove(absolutePath); err != nil {
+	if err := os.Remove(absolutePath); err != nil {
 		msg := fmt.Sprintf("error while removing file: %v", err)
 
 		log.WithField("uuid", uuid).
@@ -116,11 +88,7 @@ func (f *filesystemContentService) DeleteContent(host, uri, method, uuid string)
 	return nil
 }
 
-func (f *filesystemContentService) ListContents(uuid string) (*[]ContentData, error) {
-	if err := f.ensureInit(); err != nil {
-		return nil, err
-	}
-
+func (f *FilesystemContentService) ListContents(uuid string) (*[]ContentData, error) {
 	contents := make([]ContentData, 0)
 
 	if err := f.retrieveContents(f.mocksDirConfig.Path, func(path string, info fs.FileInfo, err error) error {
@@ -146,7 +114,7 @@ func (f *filesystemContentService) ListContents(uuid string) (*[]ContentData, er
 	return &contents, nil
 }
 
-func (f *filesystemContentService) Subscribe(subscriberId string, eventTypes ...ContentEventType) <-chan ContentEvent {
+func (f *FilesystemContentService) Subscribe(subscriberId string, eventTypes ...ContentEventType) <-chan ContentEvent {
 	return f.broadcaster.Subscribe(subscriberId, func(event ContentEvent) bool {
 		// if there's no filter being passed, allows all event types
 		if len(eventTypes) == 0 {
@@ -163,15 +131,11 @@ func (f *filesystemContentService) Subscribe(subscriberId string, eventTypes ...
 	})
 }
 
-func (f *filesystemContentService) Unsubscribe(subscriberId string) {
+func (f *FilesystemContentService) Unsubscribe(subscriberId string) {
 	f.broadcaster.Unsubscribe(subscriberId)
 }
 
-func (f *filesystemContentService) getFinalFilePath(host, uri, method string) (string, error) {
-	if err := f.ensureInit(); err != nil {
-		return "", err
-	}
-
+func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) string {
 	parts := strings.Split(uri, "?")
 	isRootPath := strings.HasSuffix(parts[0], "/")
 	uriFixed := strings.ReplaceAll(parts[0], "/", pathSeparator)
@@ -191,10 +155,10 @@ func (f *filesystemContentService) getFinalFilePath(host, uri, method string) (s
 
 	finalPath += "." + strings.ToLower(method)
 
-	return finalPath, nil
+	return finalPath
 }
 
-func (f *filesystemContentService) filePathToContentData(path string) (*ContentData, error) {
+func (f *FilesystemContentService) filePathToContentData(path string) (*ContentData, error) {
 	rootPath := strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator) + pathSeparator
 
 	relativePath := strings.TrimPrefix(path, rootPath)
@@ -239,32 +203,7 @@ func (f *filesystemContentService) filePathToContentData(path string) (*ContentD
 	return &data, nil
 }
 
-func (f *filesystemContentService) ensureInit() error {
-	if f.mocksDirConfig != nil {
-		return nil
-	}
-
-	f.once.Do(func() {
-		newDirConfig, err := config.GetMockDirectoryConfig()
-
-		if err != nil {
-			log.Error(fmt.Sprintf("error while getting mocks directory config: %v", err))
-			return
-		}
-
-		f.mocksDirConfig = newDirConfig
-	})
-
-	if f.mocksDirConfig == nil {
-		return errors.New("error while getting mocks directory config")
-	}
-
-	f.startContentWatcher()
-
-	return nil
-}
-
-func (f *filesystemContentService) startContentWatcher() {
+func (f *FilesystemContentService) startContentWatcher() {
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
@@ -305,14 +244,7 @@ func (f *filesystemContentService) startContentWatcher() {
 	}()
 }
 
-func newFilesystemContentService() *filesystemContentService {
-	service := filesystemContentService{}
-	service.ensureInit()
-
-	return &service
-}
-
-func (f *filesystemContentService) retrieveContents(path string, fn func(path string, info fs.FileInfo, err error) error) error {
+func (f *FilesystemContentService) retrieveContents(path string, fn func(path string, info fs.FileInfo, err error) error) error {
 	if err := filepath.Walk(path, fn); err != nil {
 		return fmt.Errorf("error while listing contents: %v", err)
 	}
@@ -320,7 +252,7 @@ func (f *filesystemContentService) retrieveContents(path string, fn func(path st
 	return nil
 }
 
-func (f *filesystemContentService) handleFilesystemEvent(event fsnotify.Event, watcher *fsnotify.Watcher) {
+func (f *FilesystemContentService) handleFilesystemEvent(event fsnotify.Event, watcher *fsnotify.Watcher) {
 	// ignoring CHMOD changes
 	if event.Has(fsnotify.Chmod) {
 		return
@@ -413,4 +345,17 @@ func (f *filesystemContentService) handleFilesystemEvent(event fsnotify.Event, w
 
 	// publishing filesystem event
 	f.broadcaster.Publish(ContentEvent{Type: eventType, Data: *data}, uuid)
+}
+
+func NewFilesystemContentService(mocksDirConfig *config.MocksDirectoryConfig) *FilesystemContentService {
+	var broadcaster util.Broadcaster[ContentEvent]
+
+	service := FilesystemContentService{
+		mocksDirConfig: mocksDirConfig,
+		broadcaster:    broadcaster,
+	}
+
+	service.startContentWatcher()
+
+	return &service
 }

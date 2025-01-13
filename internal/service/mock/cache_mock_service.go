@@ -9,24 +9,16 @@ import (
 )
 
 type cacheMockService struct {
-	next mockService
+	next         mockService
+	cacheService cache.CacheService
 }
 
-func (c cacheMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
-	cacheService := cache.GetCacheService()
-
-	if cacheService == nil {
-		log.WithField("uuid", mockRequest.Uuid).
-			Warn("bad configuration found, cache service is nil!")
-
-		return c.nextOrNil(mockRequest)
-	}
-
+func (c *cacheMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
 	cacheKey := GenerateCacheKey(mockRequest)
-	data, exists := cacheService.Get(cacheKey, mockRequest.Uuid)
+	data, exists := c.cacheService.Get(cacheKey, mockRequest.Uuid)
 
 	if !exists {
-		return c.refreshCache(mockRequest, cacheKey, cacheService)
+		return c.refreshCache(mockRequest, cacheKey)
 	}
 
 	// deserializing the data to mockResponse
@@ -43,7 +35,7 @@ func (c cacheMockService) getMockResponse(mockRequest MockRequest) *MockResponse
 		Info("found mock response on cache")
 
 	// background cache refresh
-	go c.refreshCache(mockRequest, cacheKey, cacheService)
+	go c.refreshCache(mockRequest, cacheKey)
 
 	return &mockResponse
 }
@@ -52,7 +44,7 @@ func (c *cacheMockService) setNext(next mockService) {
 	c.next = next
 }
 
-func (c cacheMockService) deserialize(data *[]byte) (MockResponse, error) {
+func (c *cacheMockService) deserialize(data *[]byte) (MockResponse, error) {
 	var mockResponse MockResponse
 
 	err := json.Unmarshal(*data, &mockResponse)
@@ -60,11 +52,11 @@ func (c cacheMockService) deserialize(data *[]byte) (MockResponse, error) {
 	return mockResponse, err
 }
 
-func (c cacheMockService) serialize(mockResponse *MockResponse) ([]byte, error) {
+func (c *cacheMockService) serialize(mockResponse *MockResponse) ([]byte, error) {
 	return json.Marshal(mockResponse)
 }
 
-func (c cacheMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
+func (c *cacheMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
 	if c.next == nil {
 		return nil
 	}
@@ -72,7 +64,7 @@ func (c cacheMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
 	return c.next.getMockResponse(mockRequest)
 }
 
-func (c cacheMockService) refreshCache(mockRequest MockRequest, cacheKey string, cacheService cache.CacheService) *MockResponse {
+func (c *cacheMockService) refreshCache(mockRequest MockRequest, cacheKey string) *MockResponse {
 	freshResponse := c.nextOrNil(mockRequest)
 
 	if freshResponse == nil {
@@ -93,12 +85,14 @@ func (c cacheMockService) refreshCache(mockRequest MockRequest, cacheKey string,
 		return freshResponse
 	}
 
-	cacheService.Set(cacheKey, &serializedData, mockRequest.Uuid)
+	c.cacheService.Set(cacheKey, &serializedData, mockRequest.Uuid)
 
 	return freshResponse
 }
 
-func newCacheMockService() *cacheMockService {
+func newCacheMockService(cacheService cache.CacheService) *cacheMockService {
 	// TODO listen to content changes to remove stuff from cache
-	return &cacheMockService{}
+	return &cacheMockService{
+		cacheService: cacheService,
+	}
 }

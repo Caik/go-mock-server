@@ -13,9 +13,13 @@ var (
 	badConfigurationResponseData = []byte("bad mock server configuration")
 )
 
-func handleMockRequest(c *gin.Context) {
-	mockRequest := newMockRequest(c)
-	mockResponse := mock.GetMockResponse(mockRequest)
+type MocksController struct {
+	factory *mock.MockServiceFactory
+}
+
+func (m *MocksController) handleMockRequest(c *gin.Context) {
+	mockRequest := m.newMockRequest(c)
+	mockResponse := m.factory.GetMockResponse(mockRequest)
 
 	// bad mock server configuration
 	if mockResponse == nil {
@@ -31,9 +35,9 @@ func handleMockRequest(c *gin.Context) {
 	c.Data(mockResponse.StatusCode, mockResponse.ContentType, *mockResponse.Data)
 }
 
-func newMockRequest(c *gin.Context) mock.MockRequest {
+func (m *MocksController) newMockRequest(c *gin.Context) mock.MockRequest {
 	return mock.MockRequest{
-		Host:   sanitizeHost(c.Request.Host),
+		Host:   m.sanitizeHost(c.Request.Host),
 		URI:    c.Request.RequestURI,
 		Method: c.Request.Method,
 		Accept: c.GetHeader("accept"),
@@ -41,7 +45,7 @@ func newMockRequest(c *gin.Context) mock.MockRequest {
 	}
 }
 
-func sanitizeHost(host string) string {
+func (m *MocksController) sanitizeHost(host string) string {
 	index := strings.Index(host, ":")
 
 	if index == -1 {
@@ -49,4 +53,12 @@ func sanitizeHost(host string) string {
 	}
 
 	return strings.ToLower(host[0:index])
+}
+
+func NewMocksController(factory *mock.MockServiceFactory) *MocksController {
+	controller := MocksController{
+		factory: factory,
+	}
+
+	return &controller
 }

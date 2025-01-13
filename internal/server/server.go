@@ -2,32 +2,42 @@ package server
 
 import (
 	"fmt"
+	"github.com/Caik/go-mock-server/internal/server/controller"
+	log "github.com/sirupsen/logrus"
+	"go.uber.org/dig"
 
 	"github.com/Caik/go-mock-server/internal/config"
-	"github.com/Caik/go-mock-server/internal/server/controller"
 	"github.com/Caik/go-mock-server/internal/server/middleware"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 )
 
-func Init() error {
-	appConfig, err := config.GetAppConfig()
+type StartServerParams struct {
+	dig.In
 
-	if err != nil {
-		return fmt.Errorf("error while getting app config: %v", err)
-	}
+	Engine               *gin.Engine
+	AppArguments         *config.AppArguments
+	AdminMocksController *controller.AdminMocksController
+	AdminHostsController *controller.AdminHostsController
+	MocksController      *controller.MocksController
+}
 
+func NewServer() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
+
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.Uuid)
 	r.Use(middleware.Logger)
 
-	controller.Init(r)
+	return r
+}
 
-	log.Info(fmt.Sprintf("starting server on port %d", appConfig.ServerPort))
+func StartServer(params StartServerParams) error {
+	controller.InitRoutes(params.Engine, params.AdminMocksController, params.AdminHostsController, params.MocksController)
 
-	if err := r.Run(fmt.Sprintf(":%d", appConfig.ServerPort)); err != nil {
+	log.Info(fmt.Sprintf("starting server on port %d", params.AppArguments.ServerPort))
+
+	if err := params.Engine.Run(fmt.Sprintf(":%d", params.AppArguments.ServerPort)); err != nil {
 		return err
 	}
 
