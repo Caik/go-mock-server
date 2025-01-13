@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type latencyMockService struct {
@@ -35,10 +35,11 @@ func (l *latencyMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 	drawnLatency := l.drawLatency(latencyConfig)
 
 	// simulating the latency
-	log.WithField("uuid", mockRequest.Uuid).
-		WithField("target_latency", time.Duration(drawnLatency*int(time.Millisecond))).
-		WithField("processing_latency", time.Since(startTime)).
-		Info("simulating latency")
+	log.Info().
+		Str("uuid", mockRequest.Uuid).
+		Dur("target_latency", time.Duration(drawnLatency*int(time.Millisecond))).
+		Dur("processing_latency", time.Since(startTime)).
+		Msg("simulating latency")
 
 	targetLatencyTime := startTime.Add(time.Duration(drawnLatency * int(time.Millisecond)))
 	<-time.NewTimer(time.Until(targetLatencyTime)).C

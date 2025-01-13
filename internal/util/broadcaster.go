@@ -3,7 +3,7 @@ package util
 import (
 	"sync"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type Broadcaster[T any] struct {
@@ -40,8 +40,9 @@ func (b *Broadcaster[T]) Unsubscribe(subscriberId string) {
 }
 
 func (b *Broadcaster[T]) Publish(event T, uuid string) {
-	log.WithField("uuid", uuid).
-		Info("starting to broadcast event")
+	log.Info().
+		Str("uuid", uuid).
+		Msg("starting to broadcast event")
 
 	var wg sync.WaitGroup
 	wg.Add(len(b.subscribers))
@@ -52,9 +53,10 @@ func (b *Broadcaster[T]) Publish(event T, uuid string) {
 		acceptFn, exists := b.subscribersAcceptFn[subscriberId]
 
 		if !exists {
-			log.WithField("uuid", uuid).
-				WithField("subscriber_id", subscriberId).
-				Warn("bad configuration found, accept function should not be null for a subscriber")
+			log.Warn().
+				Str("uuid", uuid).
+				Str("subscriber_id", subscriberId).
+				Msg("bad configuration found, accept function should not be null for a subscriber")
 		}
 
 		if exists && !acceptFn(event) {
@@ -71,8 +73,9 @@ func (b *Broadcaster[T]) Publish(event T, uuid string) {
 	// waiting for all subscribers to receive the event
 	wg.Wait()
 
-	log.WithField("uuid", uuid).
-		Info("finished broadcasting")
+	log.Info().
+		Str("uuid", uuid).
+		Msg("finished broadcasting")
 }
 
 func (b *Broadcaster[T]) PublishAsync(event T, uuid string) *sync.WaitGroup {

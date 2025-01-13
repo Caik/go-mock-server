@@ -7,7 +7,7 @@ import (
 	"github.com/Caik/go-mock-server/internal/util"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -29,9 +29,10 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*
 	data, err := os.ReadFile(absolutePath)
 
 	if err != nil {
-		log.WithField("uuid", uuid).
-			WithField("path", absolutePath).
-			Info("mock not found")
+		log.Info().
+			Str("uuid", uuid).
+			Str("path", absolutePath).
+			Msg("mock not found")
 
 		return nil, errors.New("mock not found")
 	}
@@ -49,9 +50,11 @@ func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, da
 	if err != nil {
 		msg := fmt.Sprintf("error while creating parent directories: %v", err)
 
-		log.WithField("uuid", uuid).
-			WithField("path", absolutePath).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", uuid).
+			Str("path", absolutePath).
+			Msg("error while creating parent directories")
 
 		return errors.New(msg)
 	}
@@ -62,9 +65,11 @@ func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, da
 	if err != nil {
 		msg := fmt.Sprintf("error while writing file: %v", err)
 
-		log.WithField("uuid", uuid).
-			WithField("path", absolutePath).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", uuid).
+			Str("path", absolutePath).
+			Msg("error while writing file")
 
 		return errors.New(msg)
 	}
@@ -78,9 +83,11 @@ func (f *FilesystemContentService) DeleteContent(host, uri, method, uuid string)
 	if err := os.Remove(absolutePath); err != nil {
 		msg := fmt.Sprintf("error while removing file: %v", err)
 
-		log.WithField("uuid", uuid).
-			WithField("path", absolutePath).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", uuid).
+			Str("path", absolutePath).
+			Msg("error while removing file")
 
 		return errors.New(msg)
 	}
@@ -207,7 +214,10 @@ func (f *FilesystemContentService) startContentWatcher() {
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
-		log.Errorf("error while starting new watcher: %v", err)
+		log.Err(err).
+			Stack().
+			Msg("error while starting new watcher")
+
 		return
 	}
 
@@ -218,7 +228,10 @@ func (f *FilesystemContentService) startContentWatcher() {
 
 		return watcher.Add(path)
 	}); err != nil {
-		log.Errorf("error while watching host directories: %v", err)
+		log.Err(err).
+			Stack().
+			Msg("error while watching host directories")
+
 		return
 	}
 
@@ -238,7 +251,9 @@ func (f *FilesystemContentService) startContentWatcher() {
 					continue
 				}
 
-				log.Errorf("error received while watching filesystem: %v", err)
+				log.Err(err).
+					Stack().
+					Msg("error received while watching filesystem")
 			}
 		}
 	}()
@@ -260,10 +275,11 @@ func (f *FilesystemContentService) handleFilesystemEvent(event fsnotify.Event, w
 
 	uuid := uuid.NewString()
 
-	log.WithField("uuid", uuid).
-		WithField("operation", event.Op).
-		WithField("filepath", event.Name).
-		Info("received change from filesystem")
+	log.Info().
+		Str("uuid", uuid).
+		Str("operation", event.Op.String()).
+		Str("filepath", event.Name).
+		Msg("received change from filesystem")
 
 	var eventType ContentEventType
 
@@ -281,10 +297,11 @@ func (f *FilesystemContentService) handleFilesystemEvent(event fsnotify.Event, w
 		info, err := os.Stat(event.Name)
 
 		if err != nil {
-			log.WithField("uuid", uuid).
-				WithField("operation", event.Op).
-				WithField("filepath", event.Name).
-				Warn(fmt.Sprintf("error while reading file info: %v", err))
+			log.Warn().
+				Str("uuid", uuid).
+				Str("operation", event.Op.String()).
+				Str("filepath", event.Name).
+				Msgf("error while reading file info: %v", err)
 
 			return
 		}
@@ -299,9 +316,10 @@ func (f *FilesystemContentService) handleFilesystemEvent(event fsnotify.Event, w
 				}
 
 				if fileInfo.IsDir() {
-					log.WithField("uuid", uuid).
-						WithField("filepath", path).
-						Info("new directory found, starting to watch it for changes")
+					log.Info().
+						Str("uuid", uuid).
+						Str("filepath", path).
+						Msg("new directory found, starting to watch it for changes")
 
 					watcher.Add(path)
 
@@ -314,10 +332,11 @@ func (f *FilesystemContentService) handleFilesystemEvent(event fsnotify.Event, w
 
 				return nil
 			}); err != nil {
-				log.WithField("uuid", uuid).
-					WithField("operation", event.Op).
-					WithField("filepath", event.Name).
-					Warn(fmt.Sprintf("error while retrieving contents of new directory: %v", err))
+				log.Warn().
+					Str("uuid", uuid).
+					Str("operation", event.Op.String()).
+					Str("filepath", event.Name).
+					Msgf("error while retrieving contents of new directory: %v", err)
 			}
 
 			// given we know at this point that the event was a dir that was created/updated,
@@ -334,10 +353,11 @@ func (f *FilesystemContentService) handleFilesystemEvent(event fsnotify.Event, w
 		// for remove events it might happen that the object deleted was a dir, and in that case an error would be thrown
 		// It is not possible to know if the deleted object is a dir or a file in advance
 		if eventType != Removed {
-			log.WithField("uuid", uuid).
-				WithField("operation", event.Op).
-				WithField("filepath", event.Name).
-				Warn(fmt.Sprintf("error while converting filepath to content data: %v", err))
+			log.Warn().
+				Str("uuid", uuid).
+				Str("operation", event.Op.String()).
+				Str("filepath", event.Name).
+				Msgf("error while converting filepath to content data: %v", err)
 		}
 
 		return

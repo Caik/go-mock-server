@@ -11,7 +11,7 @@ import (
 	"github.com/Caik/go-mock-server/internal/service/admin"
 	"github.com/Caik/go-mock-server/internal/util"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type AddDeleteMockRequest struct {
@@ -68,11 +68,12 @@ func (a *AdminMocksController) handleMockAddUpdate(c *gin.Context) {
 
 	uuid := c.GetString(util.UuidKey)
 
-	log.WithField("uuid", uuid).
-		WithField("host", addReq.Host).
-		WithField("uri", addReq.Uri).
-		WithField("method", addReq.Method).
-		Info("adding/updating mock")
+	log.Info().
+		Str("uuid", uuid).
+		Str("host", addReq.Host).
+		Str("uri", addReq.Uri).
+		Str("method", addReq.Method).
+		Msg("adding/updating mock")
 
 	err = a.service.AddUpdateMock(admin.MockAddDeleteRequest{
 		Host:   addReq.Host,
@@ -89,11 +90,13 @@ func (a *AdminMocksController) handleMockAddUpdate(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", uuid).
-			WithField("host", addReq.Host).
-			WithField("uri", addReq.Uri).
-			WithField("method", addReq.Method).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", uuid).
+			Str("host", addReq.Host).
+			Str("uri", addReq.Uri).
+			Str("method", addReq.Method).
+			Msg("")
 
 		return
 	}
@@ -128,11 +131,12 @@ func (a *AdminMocksController) handleMockDelete(c *gin.Context) {
 
 	uuid := c.GetString(util.UuidKey)
 
-	log.WithField("uuid", uuid).
-		WithField("host", addReq.Host).
-		WithField("uri", addReq.Uri).
-		WithField("method", addReq.Method).
-		Info("deleting mock")
+	log.Info().
+		Str("uuid", uuid).
+		Str("host", addReq.Host).
+		Str("uri", addReq.Uri).
+		Str("method", addReq.Method).
+		Msg("deleting mock")
 
 	err := a.service.DeleteMock(admin.MockAddDeleteRequest{
 		Host:   addReq.Host,
@@ -148,11 +152,13 @@ func (a *AdminMocksController) handleMockDelete(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", uuid).
-			WithField("host", addReq.Host).
-			WithField("uri", addReq.Uri).
-			WithField("method", addReq.Method).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", uuid).
+			Str("host", addReq.Host).
+			Str("uri", addReq.Uri).
+			Str("method", addReq.Method).
+			Msg("")
 
 		return
 	}

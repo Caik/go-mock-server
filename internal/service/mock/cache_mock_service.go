@@ -2,10 +2,8 @@ package mock
 
 import (
 	"encoding/json"
-	"fmt"
-
 	"github.com/Caik/go-mock-server/internal/service/cache"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type cacheMockService struct {
@@ -25,14 +23,17 @@ func (c *cacheMockService) getMockResponse(mockRequest MockRequest) *MockRespons
 	mockResponse, err := c.deserialize(data)
 
 	if err != nil {
-		log.WithField("uuid", mockRequest.Uuid).
-			Error(fmt.Sprintf("error while deserializing data from cache: %v", err))
+		log.Err(err).
+			Stack().
+			Str("uuid", mockRequest.Uuid).
+			Msg("error while deserializing data from cache")
 
 		return c.nextOrNil(mockRequest)
 	}
 
-	log.WithField("uuid", mockRequest.Uuid).
-		Info("found mock response on cache")
+	log.Info().
+		Str("uuid", mockRequest.Uuid).
+		Msg("found mock response on cache")
 
 	// background cache refresh
 	go c.refreshCache(mockRequest, cacheKey)
@@ -71,16 +72,19 @@ func (c *cacheMockService) refreshCache(mockRequest MockRequest, cacheKey string
 		return nil
 	}
 
-	log.WithField("host", mockRequest.Host).
-		WithField("uri", mockRequest.URI).
-		WithField("method", mockRequest.Method).
-		Info("refreshing cache data")
+	log.Info().
+		Str("host", mockRequest.Host).
+		Str("uri", mockRequest.URI).
+		Str("method", mockRequest.Method).
+		Msg("refreshing cache data")
 
 	serializedData, err := c.serialize(freshResponse)
 
 	if err != nil {
-		log.WithField("uuid", mockRequest.Uuid).
-			Error(fmt.Sprintf("error while serializing data to cache: %v", err))
+		log.Err(err).
+			Stack().
+			Str("uuid", mockRequest.Uuid).
+			Msg("error while serializing data to cache")
 
 		return freshResponse
 	}
