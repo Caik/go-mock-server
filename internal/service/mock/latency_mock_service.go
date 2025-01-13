@@ -1,27 +1,20 @@
 package mock
 
 import (
-	"errors"
+	"github.com/Caik/go-mock-server/internal/config"
 	"math/rand"
-	"sync"
 	"time"
 
-	"github.com/Caik/go-mock-server/internal/config"
 	log "github.com/sirupsen/logrus"
 )
 
 type latencyMockService struct {
 	next        mockService
-	once        sync.Once
 	hostsConfig *config.HostsConfig
 }
 
 func (l *latencyMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
 	startTime := time.Now()
-
-	if err := l.ensureInit(); err != nil {
-		return l.nextOrNil(mockRequest)
-	}
 
 	// calling next in the chain
 	mockResponse := l.nextOrNil(mockRequest)
@@ -55,28 +48,6 @@ func (l *latencyMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 
 func (l *latencyMockService) setNext(next mockService) {
 	l.next = next
-}
-
-func (l *latencyMockService) ensureInit() error {
-	if l.hostsConfig != nil {
-		return nil
-	}
-
-	l.once.Do(func() {
-		newHostsConfig, err := config.GetHostsConfig()
-
-		if err != nil {
-			return
-		}
-
-		l.hostsConfig = newHostsConfig
-	})
-
-	if l.hostsConfig == nil {
-		return errors.New("error while getting hosts config")
-	}
-
-	return nil
 }
 
 func (l *latencyMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
@@ -117,9 +88,8 @@ func (l *latencyMockService) drawLatency(latencyConfig *config.LatencyConfig) in
 	return drawLatencyWithUpperAndLowerBounds(latencyConfig.Min, latencyConfig.P99)
 }
 
-func newLatencyMockService() *latencyMockService {
-	service := latencyMockService{}
-	service.ensureInit()
-
-	return &service
+func newLatencyMockService(hostsConfig *config.HostsConfig) *latencyMockService {
+	return &latencyMockService{
+		hostsConfig: hostsConfig,
+	}
 }

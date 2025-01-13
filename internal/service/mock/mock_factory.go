@@ -2,35 +2,28 @@ package mock
 
 import (
 	"fmt"
+	"github.com/Caik/go-mock-server/internal/config"
+	"github.com/Caik/go-mock-server/internal/service/cache"
+	"github.com/Caik/go-mock-server/internal/service/content"
 	"log"
 	"sync"
-
-	"github.com/Caik/go-mock-server/internal/config"
 )
 
-var (
+type MockServiceFactory struct {
 	once             sync.Once
 	mockServiceChain mockService
-)
-
-func GetMockResponse(mockRequest MockRequest) *MockResponse {
-	ensureInit()
-
-	return mockServiceChain.getMockResponse(mockRequest)
 }
 
-func ensureInit() {
-	if mockServiceChain != nil {
+func (m *MockServiceFactory) GetMockResponse(mockRequest MockRequest) *MockResponse {
+	return m.mockServiceChain.getMockResponse(mockRequest)
+}
+
+func (m *MockServiceFactory) initServiceChain(contentService content.ContentService, cacheService cache.CacheService, disableLatency, disableErrors, disableCache bool, hostsConfig *config.HostsConfig) {
+	if m.mockServiceChain != nil {
 		return
 	}
 
-	once.Do(func() {
-		appConfig, err := config.GetAppConfig()
-
-		if err != nil {
-			log.Fatalf(fmt.Sprintf("error while getting app config: %v", err))
-		}
-
+	m.once.Do(func() {
 		var first mockService
 		var last mockService
 
@@ -46,33 +39,46 @@ func ensureInit() {
 			last = next
 		}
 
-		// TODO: add CORS MockService
-
 		// host resolution
-		addNextFn(newHostResolutionMockService())
+		hostResolutionMockService, err := newHostResolutionMockService(contentService)
 
-		// latency
-		if !appConfig.DisableLatency {
-			addNextFn(newLatencyMockService())
+		if err != nil {
+			log.Fatalf(fmt.Sprintf("error while starting HostResolutionMockService: %v", err))
 		}
 
-		// error
-		if !appConfig.DisableError {
-			addNextFn(newErrorMockService())
+		addNextFn(hostResolutionMockService)
+
+		// TODO: add CORS MockService
+
+		// latency
+		if !disableCache {
+			addNextFn(newLatencyMockService(hostsConfig))
+		}
+
+		// errors
+		if !disableErrors {
+			addNextFn(newErrorMockService(hostsConfig))
 		}
 
 		// content type
 		addNextFn(newContentTypeMockService())
 
 		// cache
-		if !appConfig.DisableCache {
-			addNextFn(newCacheMockService())
+		if !disableLatency {
+			addNextFn(newCacheMockService(cacheService))
 		}
 
 		// content
-		addNextFn(newContentMockService())
+		addNextFn(newContentMockService(contentService))
 
 		// setting the chain
-		mockServiceChain = first
+		m.mockServiceChain = first
 	})
+}
+
+func NewMockServiceFactory(contentService content.ContentService, cacheService cache.CacheService, arguments *config.AppArguments, hostsConfig *config.HostsConfig) *MockServiceFactory {
+	factory := MockServiceFactory{}
+	factory.initServiceChain(contentService, cacheService, arguments.DisableLatency, arguments.DisableError, arguments.DisableCache, hostsConfig)
+
+	return &factory
 }

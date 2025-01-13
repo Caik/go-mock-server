@@ -9,7 +9,6 @@ import (
 	"github.com/Caik/go-mock-server/internal/rest"
 	"github.com/Caik/go-mock-server/internal/service/content"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -17,17 +16,18 @@ var (
 )
 
 type contentMockService struct {
+	contentService content.ContentService
 }
 
-func (f contentMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
-	data, err := f.readMockFile(mockRequest)
+func (c *contentMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
+	data, err := c.readMockFile(mockRequest)
 
 	if err != nil {
 		if errors.Is(err, errContentServiceNotFound) {
-			return f.new500Response(err)
+			return c.new500Response(err)
 		}
 
-		return f.new404Response(err)
+		return c.new404Response(err)
 	}
 
 	return &MockResponse{
@@ -36,22 +36,13 @@ func (f contentMockService) getMockResponse(mockRequest MockRequest) *MockRespon
 	}
 }
 
-func (f contentMockService) setNext(next mockService) {}
+func (c *contentMockService) setNext(next mockService) {}
 
-func (f contentMockService) readMockFile(mockRequest MockRequest) (*[]byte, error) {
-	contentService := content.GetContentService()
-
-	if contentService == nil {
-		log.WithField("uuid", mockRequest.Uuid).
-			Warn("bad configuration found, content service is nil!")
-
-		return nil, errContentServiceNotFound
-	}
-
-	return contentService.GetContent(mockRequest.Host, mockRequest.URI, mockRequest.Method, mockRequest.Uuid)
+func (c *contentMockService) readMockFile(mockRequest MockRequest) (*[]byte, error) {
+	return c.contentService.GetContent(mockRequest.Host, mockRequest.URI, mockRequest.Method, mockRequest.Uuid)
 }
 
-func (f contentMockService) new404Response(err error) *MockResponse {
+func (c *contentMockService) new404Response(err error) *MockResponse {
 	msg := err.Error()
 
 	res := rest.Response{
@@ -72,7 +63,7 @@ func (f contentMockService) new404Response(err error) *MockResponse {
 	}
 }
 
-func (f contentMockService) new500Response(err error) *MockResponse {
+func (c *contentMockService) new500Response(err error) *MockResponse {
 	msg := err.Error()
 
 	res := rest.Response{
@@ -93,6 +84,8 @@ func (f contentMockService) new500Response(err error) *MockResponse {
 	}
 }
 
-func newContentMockService() *contentMockService {
-	return &contentMockService{}
+func newContentMockService(contentService content.ContentService) *contentMockService {
+	return &contentMockService{
+		contentService: contentService,
+	}
 }

@@ -4,11 +4,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type localCacheService struct {
+type InMemoryCacheService struct {
 	cache map[string]*[]byte
 }
 
-func (l localCacheService) Get(cacheKey, uuid string) (*[]byte, bool) {
+func (l *InMemoryCacheService) Get(cacheKey, uuid string) (*[]byte, bool) {
 	data, exists := l.cache[cacheKey]
 
 	if exists {
@@ -20,7 +20,7 @@ func (l localCacheService) Get(cacheKey, uuid string) (*[]byte, bool) {
 	return data, exists
 }
 
-func (l *localCacheService) Set(cacheKey string, data *[]byte, uuid string) {
+func (l *InMemoryCacheService) Set(cacheKey string, data *[]byte, uuid string) {
 	if l.cache == nil {
 		l.cache = make(map[string]*[]byte)
 	}
@@ -32,8 +32,8 @@ func (l *localCacheService) Set(cacheKey string, data *[]byte, uuid string) {
 		Info("data stored in cache")
 }
 
-func newLocalCacheService() *localCacheService {
-	return &localCacheService{
+func NewInMemoryCacheService() *InMemoryCacheService {
+	return &InMemoryCacheService{
 		cache: map[string]*[]byte{},
 	}
 }

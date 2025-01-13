@@ -1,19 +1,14 @@
 package mock
 
 import (
-	"errors"
-	"fmt"
-	"math/rand"
-	"strconv"
-	"sync"
-
 	"github.com/Caik/go-mock-server/internal/config"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
+	"strconv"
 )
 
 type errorMockService struct {
 	next        mockService
-	once        sync.Once
 	hostsConfig *config.HostsConfig
 }
 
@@ -24,10 +19,6 @@ type errorPercentageWrapper struct {
 }
 
 func (e *errorMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
-	if err := e.ensureInit(); err != nil {
-		return e.nextOrNil(mockRequest)
-	}
-
 	errorsConfig := e.hostsConfig.GetAppropriateErrorsConfig(mockRequest.Host, mockRequest.URI)
 
 	if errorsConfig == nil {
@@ -56,29 +47,6 @@ func (e *errorMockService) getMockResponse(mockRequest MockRequest) *MockRespons
 
 func (e *errorMockService) setNext(next mockService) {
 	e.next = next
-}
-
-func (e *errorMockService) ensureInit() error {
-	if e.hostsConfig != nil {
-		return nil
-	}
-
-	e.once.Do(func() {
-		newHostsConfig, err := config.GetHostsConfig()
-
-		if err != nil {
-			log.Error(fmt.Sprintf("error while getting hosts config: %v", err))
-			return
-		}
-
-		e.hostsConfig = newHostsConfig
-	})
-
-	if e.hostsConfig == nil {
-		return errors.New("error while getting hosts config")
-	}
-
-	return nil
 }
 
 func (e *errorMockService) nextOrNil(mockRequest MockRequest) *MockResponse {
@@ -119,9 +87,8 @@ func (e *errorMockService) drawError(errorsConfig *map[string]config.ErrorConfig
 	return nil
 }
 
-func newErrorMockService() *errorMockService {
-	service := errorMockService{}
-	service.ensureInit()
-
-	return &service
+func newErrorMockService(hostsConfig *config.HostsConfig) *errorMockService {
+	return &errorMockService{
+		hostsConfig: hostsConfig,
+	}
 }

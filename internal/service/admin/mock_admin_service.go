@@ -1,8 +1,6 @@
 package admin
 
 import (
-	"errors"
-
 	"github.com/Caik/go-mock-server/internal/service/content"
 )
 
@@ -13,28 +11,20 @@ type MockAddDeleteRequest struct {
 	Data   *[]byte
 }
 
-func AddUpdateMock(addRequest MockAddDeleteRequest, uuid string) error {
-	contentService := content.GetContentService()
-
-	if contentService == nil {
-		return errors.New("bad configuration found, content service is nil")
-	}
-
-	err := contentService.SetContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid, addRequest.Data)
-
-	if err != nil {
-		return err
-	}
-
-	return err
+type MockAdminService struct {
+	contentService content.ContentService
 }
 
-func DeleteMock(addRequest MockAddDeleteRequest, uuid string) error {
-	contentService := content.GetContentService()
+func (m *MockAdminService) AddUpdateMock(addRequest MockAddDeleteRequest, uuid string) error {
+	return m.contentService.SetContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid, addRequest.Data)
+}
 
-	if contentService == nil {
-		return errors.New("bad configuration found, content service is nil")
+func (m *MockAdminService) DeleteMock(addRequest MockAddDeleteRequest, uuid string) error {
+	return m.contentService.DeleteContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid)
+}
+
+func NewMockAdminService(contentService content.ContentService) *MockAdminService {
+	return &MockAdminService{
+		contentService: contentService,
 	}
-
-	return contentService.DeleteContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid)
 }

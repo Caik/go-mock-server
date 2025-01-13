@@ -3,10 +3,10 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"github.com/Caik/go-mock-server/internal/config"
 	"net/http"
 	"strings"
 
-	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/rest"
 	"github.com/Caik/go-mock-server/internal/service/admin"
 	"github.com/Caik/go-mock-server/internal/util"
@@ -22,51 +22,23 @@ type AddDeleteGetHostRequest struct {
 	errorCode     string
 }
 
-func initAdminHostsController(r *gin.RouterGroup) {
-	r.GET("", handleHostsConfigList)
-	r.POST("", handleHostConfigAddUpdate)
-
-	r.GET("/:host", handleHostConfigRetrieve)
-	r.DELETE("/:host", handleHostConfigDelete)
-
-	r.POST("/:host/latencies", handleLatencyAddUpdate)
-	r.DELETE("/:host/latencies", handleLatencyDelete)
-
-	r.POST("/:host/errors", handleErrorsAddUpdate)
-	r.DELETE("/:host/errors/:error", handleErrorDelete)
-
-	r.POST("/:host/uris", handleUrisAddUpdate)
+type AdminHostsController struct {
+	hostsConfig *config.HostsConfig
+	service     *admin.HostsConfigAdminService
 }
 
-func handleHostsConfigList(c *gin.Context) {
+func (a *AdminHostsController) handleHostsConfigList(c *gin.Context) {
 	log.WithField("uuid", c.GetString(util.UuidKey)).
 		Info("getting hosts config")
 
-	config, err := admin.GetHostsConfig()
-
-	if err != nil {
-		msg := fmt.Sprintf("error while getting hosts config: %v", err)
-
-		c.JSON(http.StatusInternalServerError, rest.Response{
-			Status:  rest.Error,
-			Message: msg,
-		})
-
-		log.WithField("uuid", c.GetString(util.UuidKey)).
-			Error(msg)
-
-		return
-	}
-
-	// if success, return back 200
 	c.JSON(http.StatusOK, rest.Response{
 		Status:  rest.Success,
 		Message: "hosts config retrieved with success",
-		Data:    config,
+		Data:    a.hostsConfig,
 	})
 }
 
-func handleHostConfigAddUpdate(c *gin.Context) {
+func (a *AdminHostsController) handleHostConfigAddUpdate(c *gin.Context) {
 	addReq := AddDeleteGetHostRequest{}
 
 	if err := c.ShouldBind(&addReq); err != nil {
@@ -91,7 +63,7 @@ func handleHostConfigAddUpdate(c *gin.Context) {
 		WithField("host", addReq.Host).
 		Info("adding/updating host config")
 
-	hostConfig, err := admin.AddUpdateHost(admin.HostAddDeleteRequest{
+	hostConfig, err := a.service.AddUpdateHost(admin.HostAddDeleteRequest{
 		Host:          addReq.Host,
 		LatencyConfig: addReq.LatencyConfig,
 		ErrorConfig:   addReq.ErrorConfig,
@@ -121,7 +93,7 @@ func handleHostConfigAddUpdate(c *gin.Context) {
 	})
 }
 
-func handleHostConfigRetrieve(c *gin.Context) {
+func (a *AdminHostsController) handleHostConfigRetrieve(c *gin.Context) {
 	getReq := AddDeleteGetHostRequest{Host: c.Param("host")}
 
 	if err := getReq.validate(false, false, false); err != nil {
@@ -137,21 +109,7 @@ func handleHostConfigRetrieve(c *gin.Context) {
 		WithField("host", getReq.Host).
 		Info("getting host config")
 
-	hostConfig, err := admin.GetHostConfig(getReq.Host)
-
-	if err != nil {
-		msg := fmt.Sprintf("error while getting host config: %v", err)
-
-		c.JSON(http.StatusInternalServerError, rest.Response{
-			Status:  rest.Error,
-			Message: msg,
-		})
-
-		log.WithField("uuid", c.GetString(util.UuidKey)).
-			Error(msg)
-
-		return
-	}
+	hostConfig := a.service.GetHostConfig(getReq.Host)
 
 	// if config is null it means it doesn't exist
 	if hostConfig == nil {
@@ -171,7 +129,7 @@ func handleHostConfigRetrieve(c *gin.Context) {
 	})
 }
 
-func handleHostConfigDelete(c *gin.Context) {
+func (a *AdminHostsController) handleHostConfigDelete(c *gin.Context) {
 	deleteReq := AddDeleteGetHostRequest{Host: c.Param("host")}
 
 	if err := deleteReq.validate(false, false, false); err != nil {
@@ -187,31 +145,15 @@ func handleHostConfigDelete(c *gin.Context) {
 		WithField("host", deleteReq.Host).
 		Info("deleting host config")
 
-	err := admin.DeleteHost(deleteReq.Host)
+	a.service.DeleteHost(deleteReq.Host)
 
-	if err != nil {
-		msg := fmt.Sprintf("error while deleting host config: %v", err)
-
-		c.JSON(http.StatusInternalServerError, rest.Response{
-			Status:  rest.Error,
-			Message: msg,
-		})
-
-		log.WithField("uuid", c.GetString(util.UuidKey)).
-			WithField("host", deleteReq.Host).
-			Error(msg)
-
-		return
-	}
-
-	// if success, return back 200
 	c.JSON(http.StatusOK, rest.Response{
 		Status:  rest.Success,
 		Message: "host config deleted with success",
 	})
 }
 
-func handleLatencyAddUpdate(c *gin.Context) {
+func (a *AdminHostsController) handleLatencyAddUpdate(c *gin.Context) {
 	addLatencyReq := AddDeleteGetHostRequest{Host: c.Param("host")}
 
 	if err := c.ShouldBind(&addLatencyReq); err != nil {
@@ -236,7 +178,7 @@ func handleLatencyAddUpdate(c *gin.Context) {
 		WithField("host", addLatencyReq.Host).
 		Info("adding/updating host latency config")
 
-	hostConfig, err := admin.AddUpdateHostLatency(admin.HostAddDeleteRequest{
+	hostConfig, err := a.service.AddUpdateHostLatency(admin.HostAddDeleteRequest{
 		Host:          addLatencyReq.Host,
 		LatencyConfig: addLatencyReq.LatencyConfig,
 	})
@@ -273,7 +215,7 @@ func handleLatencyAddUpdate(c *gin.Context) {
 	})
 }
 
-func handleLatencyDelete(c *gin.Context) {
+func (a *AdminHostsController) handleLatencyDelete(c *gin.Context) {
 	latencyDeleteReq := AddDeleteGetHostRequest{Host: c.Param("host")}
 
 	if err := latencyDeleteReq.validate(false, false, false); err != nil {
@@ -285,7 +227,7 @@ func handleLatencyDelete(c *gin.Context) {
 		return
 	}
 
-	hostConfig, err := admin.DeleteHostLatency(latencyDeleteReq.Host)
+	hostConfig, err := a.service.DeleteHostLatency(latencyDeleteReq.Host)
 
 	if err != nil {
 		msg := fmt.Sprintf("error while deleting host latency config: %v", err)
@@ -319,7 +261,7 @@ func handleLatencyDelete(c *gin.Context) {
 	})
 }
 
-func handleErrorsAddUpdate(c *gin.Context) {
+func (a *AdminHostsController) handleErrorsAddUpdate(c *gin.Context) {
 	addErrorsReq := AddDeleteGetHostRequest{Host: c.Param("host")}
 
 	if err := c.ShouldBind(&addErrorsReq); err != nil {
@@ -344,7 +286,7 @@ func handleErrorsAddUpdate(c *gin.Context) {
 		WithField("host", addErrorsReq.Host).
 		Info("adding/updating host errors config")
 
-	hostConfig, err := admin.AddUpdateHostErrors(admin.HostAddDeleteRequest{
+	hostConfig, err := a.service.AddUpdateHostErrors(admin.HostAddDeleteRequest{
 		Host:        addErrorsReq.Host,
 		ErrorConfig: addErrorsReq.ErrorConfig,
 	})
@@ -381,7 +323,7 @@ func handleErrorsAddUpdate(c *gin.Context) {
 	})
 }
 
-func handleErrorDelete(c *gin.Context) {
+func (a *AdminHostsController) handleErrorDelete(c *gin.Context) {
 	errorDeleteReq := AddDeleteGetHostRequest{Host: c.Param("host"), errorCode: c.Param("error")}
 
 	if err := errorDeleteReq.validate(false, false, true); err != nil {
@@ -393,7 +335,7 @@ func handleErrorDelete(c *gin.Context) {
 		return
 	}
 
-	hostConfig, err := admin.DeleteHostError(errorDeleteReq.Host, errorDeleteReq.errorCode)
+	hostConfig, err := a.service.DeleteHostError(errorDeleteReq.Host, errorDeleteReq.errorCode)
 
 	if err != nil {
 		msg := fmt.Sprintf("error while deleting host latency config: %v", err)
@@ -427,7 +369,7 @@ func handleErrorDelete(c *gin.Context) {
 	})
 }
 
-func handleUrisAddUpdate(c *gin.Context) {
+func (a *AdminHostsController) handleUrisAddUpdate(c *gin.Context) {
 	addErrorsReq := AddDeleteGetHostRequest{Host: c.Param("host")}
 
 	if err := c.ShouldBind(&addErrorsReq); err != nil {
@@ -452,7 +394,7 @@ func handleUrisAddUpdate(c *gin.Context) {
 		WithField("host", addErrorsReq.Host).
 		Info("adding/updating host uris config")
 
-	hostConfig, err := admin.AddUpdateHostUris(admin.HostAddDeleteRequest{
+	hostConfig, err := a.service.AddUpdateHostUris(admin.HostAddDeleteRequest{
 		Host:      addErrorsReq.Host,
 		UriConfig: addErrorsReq.UriConfig,
 	})
@@ -513,4 +455,11 @@ func (a *AddDeleteGetHostRequest) validate(needsLatency, needsErrors, needsError
 	}
 
 	return nil
+}
+
+func NewAdminHostsController(hostsConfig *config.HostsConfig, service *admin.HostsConfigAdminService) *AdminHostsController {
+	return &AdminHostsController{
+		hostsConfig: hostsConfig,
+		service:     service,
+	}
 }

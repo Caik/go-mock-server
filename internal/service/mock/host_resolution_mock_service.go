@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"errors"
 	"strings"
 	"sync"
 
@@ -11,16 +12,13 @@ import (
 )
 
 type hostResolutionMockService struct {
-	next      mockService
-	once      sync.Once
-	pathHosts map[string]string
+	next           mockService
+	once           sync.Once
+	contentService content.ContentService
+	pathHosts      map[string]string
 }
 
 func (h *hostResolutionMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
-	if err := h.ensureInit(); err != nil {
-		return h.nextOrNil(mockRequest)
-	}
-
 	mockRequest = h.evaluate(mockRequest)
 
 	// calling next in the chain
@@ -57,25 +55,14 @@ func (h *hostResolutionMockService) setNext(next mockService) {
 	h.next = next
 }
 
-func (h *hostResolutionMockService) ensureInit() error {
+func (h *hostResolutionMockService) ensureInit(uuid string) error {
 	if h.pathHosts != nil {
 		return nil
 	}
 
 	h.once.Do(func() {
 		h.pathHosts = make(map[string]string)
-
-		uuid := uuid.NewString()
-		service := content.GetContentService()
-
-		if service == nil {
-			log.WithField("uuid", uuid).
-				Warn("bad configuration found, content service is nil!")
-
-			return
-		}
-
-		data, err := service.ListContents(uuid)
+		data, err := h.contentService.ListContents(uuid)
 
 		if err != nil {
 			log.WithField("uuid", uuid).
@@ -88,7 +75,7 @@ func (h *hostResolutionMockService) ensureInit() error {
 			h.pathHosts[h.generateKey(item.Method, item.Uri)] = item.Host
 		}
 
-		channel := service.Subscribe("host_resolution_mock_service")
+		channel := h.contentService.Subscribe("host_resolution_mock_service")
 
 		go func() {
 			log.WithField("uuid", uuid).
@@ -125,9 +112,21 @@ func (h *hostResolutionMockService) nextOrNil(mockRequest MockRequest) *MockResp
 	return h.next.getMockResponse(mockRequest)
 }
 
-func newHostResolutionMockService() *hostResolutionMockService {
-	service := hostResolutionMockService{}
-	service.ensureInit()
+func newHostResolutionMockService(contentService content.ContentService) (*hostResolutionMockService, error) {
+	uuid := uuid.NewString()
 
-	return &service
+	if contentService == nil {
+		log.WithField("uuid", uuid).
+			Warn("bad configuration found, content service is nil!")
+
+		return nil, errors.New("content service is nil")
+	}
+
+	service := hostResolutionMockService{
+		contentService: contentService,
+	}
+
+	err := service.ensureInit(uuid)
+
+	return &service, err
 }
