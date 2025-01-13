@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type contentTypeMockService struct {
@@ -24,9 +24,10 @@ func (c *contentTypeMockService) getMockResponse(mockRequest MockRequest) *MockR
 
 	contentType := c.setAppropriateContentType(mockRequest.Accept)
 
-	log.WithField("uuid", mockRequest.Uuid).
-		WithField("content_type", contentType).
-		Info("setting content type")
+	log.Info().
+		Str("uuid", mockRequest.Uuid).
+		Str("content_type", contentType).
+		Msg("setting content type")
 
 	mockResponse.ContentType = contentType
 

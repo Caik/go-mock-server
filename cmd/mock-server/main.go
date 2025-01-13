@@ -9,27 +9,32 @@ import (
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	"github.com/Caik/go-mock-server/internal/service/content"
 	"github.com/Caik/go-mock-server/internal/service/mock"
+	"github.com/rs/zerolog/log"
 	"go.uber.org/dig"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func main() {
 	config.InitLogger()
 
-	log.WithField("version", config.GetVersion()).
-		Info("starting mock server")
+	log.Info().
+		Str("version", config.GetVersion()).
+		Msg("starting mock server")
 
 	if errs := setupCI(); len(errs) > 0 {
-		log.Fatalf("error while setting up CI config: %v", errs)
+		log.Fatal().
+			Msgf("error while setting up CI config: %v", errs)
 	}
 
-	// start server
+	// starting server
 	if err := startServer(); err != nil {
-		log.Fatalf("error while starting the server: %v", err)
+		log.Fatal().
+			Err(err).
+			Stack().
+			Msg("error while starting the server")
 	}
 
-	log.Info("shutting down the app")
+	log.Info().
+		Msg("shutting down the app")
 }
 
 func setupCI() []error {

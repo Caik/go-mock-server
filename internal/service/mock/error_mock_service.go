@@ -2,7 +2,7 @@ package mock
 
 import (
 	"github.com/Caik/go-mock-server/internal/config"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"math/rand"
 	"strconv"
 )
@@ -32,9 +32,10 @@ func (e *errorMockService) getMockResponse(mockRequest MockRequest) *MockRespons
 		return e.nextOrNil(mockRequest)
 	}
 
-	log.WithField("uuid", mockRequest.Uuid).
-		WithField("status_code", drawnErrorWrapper.statusCode).
-		Info("simulating error")
+	log.Info().
+		Str("uuid", mockRequest.Uuid).
+		Int("status_code", drawnErrorWrapper.statusCode).
+		Msg("simulating error")
 
 	emptyResponse := []byte("")
 

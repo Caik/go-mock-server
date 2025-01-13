@@ -3,12 +3,12 @@ package server
 import (
 	"fmt"
 	"github.com/Caik/go-mock-server/internal/server/controller"
-	log "github.com/sirupsen/logrus"
 	"go.uber.org/dig"
 
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/server/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 )
 
 type StartServerParams struct {
@@ -35,7 +35,8 @@ func NewServer() *gin.Engine {
 func StartServer(params StartServerParams) error {
 	controller.InitRoutes(params.Engine, params.AdminMocksController, params.AdminHostsController, params.MocksController)
 
-	log.Info(fmt.Sprintf("starting server on port %d", params.AppArguments.ServerPort))
+	log.Info().
+		Msgf("starting server on port %d", params.AppArguments.ServerPort)
 
 	if err := params.Engine.Run(fmt.Sprintf(":%d", params.AppArguments.ServerPort)); err != nil {
 		return err

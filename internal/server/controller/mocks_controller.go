@@ -6,7 +6,7 @@ import (
 	"github.com/Caik/go-mock-server/internal/service/mock"
 	"github.com/Caik/go-mock-server/internal/util"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -23,8 +23,9 @@ func (m *MocksController) handleMockRequest(c *gin.Context) {
 
 	// bad mock server configuration
 	if mockResponse == nil {
-		log.WithField("uuid", mockRequest.Uuid).
-			Warn("bad configuration found, mock response is nil!")
+		log.Warn().
+			Str("uuid", mockRequest.Uuid).
+			Msg("Mock response is nil")
 
 		mockResponse = &mock.MockResponse{
 			StatusCode: 500,

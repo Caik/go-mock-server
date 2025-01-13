@@ -1,7 +1,7 @@
 package cache
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type InMemoryCacheService struct {
@@ -12,9 +12,10 @@ func (l *InMemoryCacheService) Get(cacheKey, uuid string) (*[]byte, bool) {
 	data, exists := l.cache[cacheKey]
 
 	if exists {
-		log.WithField("uuid", uuid).
-			WithField("cache_key", cacheKey).
-			Info("data retrieved from cache")
+		log.Info().
+			Str("uuid", uuid).
+			Str("cache_key", cacheKey).
+			Msg("data retrieved from cache")
 	}
 
 	return data, exists
@@ -27,9 +28,10 @@ func (l *InMemoryCacheService) Set(cacheKey string, data *[]byte, uuid string) {
 
 	l.cache[cacheKey] = data
 
-	log.WithField("uuid", uuid).
-		WithField("cache_key", cacheKey).
-		Info("data stored in cache")
+	log.Info().
+		Str("uuid", uuid).
+		Str("cache_key", cacheKey).
+		Msg("data stored in cache")
 }
 
 func NewInMemoryCacheService() *InMemoryCacheService {

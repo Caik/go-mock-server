@@ -8,7 +8,7 @@ import (
 	"github.com/Caik/go-mock-server/internal/service/content"
 	"github.com/Caik/go-mock-server/internal/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type hostResolutionMockService struct {
@@ -36,12 +36,13 @@ func (h *hostResolutionMockService) evaluate(request MockRequest) MockRequest {
 		return request
 	}
 
-	log.WithField("uuid", request.Uuid).
-		WithField("host", request.Host).
-		WithField("method", request.Method).
-		WithField("uri", request.URI).
-		WithField("new_host", host).
-		Info("host resolved for request")
+	log.Info().
+		Str("uuid", request.Uuid).
+		Str("host", request.Host).
+		Str("method", request.Method).
+		Str("uri", request.URI).
+		Str("new_host", host).
+		Msg("host resolved for request")
 
 	return MockRequest{
 		Host:   host,
@@ -65,8 +66,10 @@ func (h *hostResolutionMockService) ensureInit(uuid string) error {
 		data, err := h.contentService.ListContents(uuid)
 
 		if err != nil {
-			log.WithField("uuid", uuid).
-				Errorf("error while trying to list contents: %v", err)
+			log.Err(err).
+				Stack().
+				Str("uuid", uuid).
+				Msg("error while trying to list contents")
 
 			return
 		}
@@ -78,8 +81,9 @@ func (h *hostResolutionMockService) ensureInit(uuid string) error {
 		channel := h.contentService.Subscribe("host_resolution_mock_service")
 
 		go func() {
-			log.WithField("uuid", uuid).
-				Info("starting to listen for content changes")
+			log.Info().
+				Str("uuid", uuid).
+				Msg("starting to listen for content changes")
 
 			// listening to content change events
 			for event := range channel {
@@ -92,8 +96,9 @@ func (h *hostResolutionMockService) ensureInit(uuid string) error {
 				}
 			}
 
-			log.WithField("uuid", uuid).
-				Info("stopping to listen for content changes")
+			log.Info().
+				Str("uuid", uuid).
+				Msg("stopping to listen for content changes")
 		}()
 	})
 
@@ -116,8 +121,9 @@ func newHostResolutionMockService(contentService content.ContentService) (*hostR
 	uuid := uuid.NewString()
 
 	if contentService == nil {
-		log.WithField("uuid", uuid).
-			Warn("bad configuration found, content service is nil!")
+		log.Warn().
+			Str("uuid", uuid).
+			Msg("bad configuration found, content service is nil!")
 
 		return nil, errors.New("content service is nil")
 	}

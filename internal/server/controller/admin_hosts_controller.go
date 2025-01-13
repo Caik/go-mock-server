@@ -11,7 +11,7 @@ import (
 	"github.com/Caik/go-mock-server/internal/service/admin"
 	"github.com/Caik/go-mock-server/internal/util"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type AddDeleteGetHostRequest struct {
@@ -28,8 +28,9 @@ type AdminHostsController struct {
 }
 
 func (a *AdminHostsController) handleHostsConfigList(c *gin.Context) {
-	log.WithField("uuid", c.GetString(util.UuidKey)).
-		Info("getting hosts config")
+	log.Info().
+		Str("uuid", c.GetString(util.UuidKey)).
+		Msg("getting hosts config")
 
 	c.JSON(http.StatusOK, rest.Response{
 		Status:  rest.Success,
@@ -59,9 +60,10 @@ func (a *AdminHostsController) handleHostConfigAddUpdate(c *gin.Context) {
 		return
 	}
 
-	log.WithField("uuid", c.GetString(util.UuidKey)).
-		WithField("host", addReq.Host).
-		Info("adding/updating host config")
+	log.Info().
+		Str("uuid", c.GetString(util.UuidKey)).
+		Str("host", addReq.Host).
+		Msg("adding/updating host config")
 
 	hostConfig, err := a.service.AddUpdateHost(admin.HostAddDeleteRequest{
 		Host:          addReq.Host,
@@ -78,9 +80,11 @@ func (a *AdminHostsController) handleHostConfigAddUpdate(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", c.GetString(util.UuidKey)).
-			WithField("host", addReq.Host).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", c.GetString(util.UuidKey)).
+			Str("host", addReq.Host).
+			Msg("")
 
 		return
 	}
@@ -105,9 +109,10 @@ func (a *AdminHostsController) handleHostConfigRetrieve(c *gin.Context) {
 		return
 	}
 
-	log.WithField("uuid", c.GetString(util.UuidKey)).
-		WithField("host", getReq.Host).
-		Info("getting host config")
+	log.Info().
+		Str("uuid", c.GetString(util.UuidKey)).
+		Str("host", getReq.Host).
+		Msg("getting host config")
 
 	hostConfig := a.service.GetHostConfig(getReq.Host)
 
@@ -141,9 +146,10 @@ func (a *AdminHostsController) handleHostConfigDelete(c *gin.Context) {
 		return
 	}
 
-	log.WithField("uuid", c.GetString(util.UuidKey)).
-		WithField("host", deleteReq.Host).
-		Info("deleting host config")
+	log.Info().
+		Str("uuid", c.GetString(util.UuidKey)).
+		Str("host", deleteReq.Host).
+		Msg("deleting host config")
 
 	a.service.DeleteHost(deleteReq.Host)
 
@@ -174,9 +180,10 @@ func (a *AdminHostsController) handleLatencyAddUpdate(c *gin.Context) {
 		return
 	}
 
-	log.WithField("uuid", c.GetString(util.UuidKey)).
-		WithField("host", addLatencyReq.Host).
-		Info("adding/updating host latency config")
+	log.Info().
+		Str("uuid", c.GetString(util.UuidKey)).
+		Str("host", addLatencyReq.Host).
+		Msg("adding/updating host latency config")
 
 	hostConfig, err := a.service.AddUpdateHostLatency(admin.HostAddDeleteRequest{
 		Host:          addLatencyReq.Host,
@@ -191,9 +198,11 @@ func (a *AdminHostsController) handleLatencyAddUpdate(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", c.GetString(util.UuidKey)).
-			WithField("host", addLatencyReq.Host).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", c.GetString(util.UuidKey)).
+			Str("host", addLatencyReq.Host).
+			Msg("")
 
 		return
 	}
@@ -237,9 +246,11 @@ func (a *AdminHostsController) handleLatencyDelete(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", c.GetString(util.UuidKey)).
-			WithField("host", latencyDeleteReq.Host).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", c.GetString(util.UuidKey)).
+			Str("host", latencyDeleteReq.Host).
+			Msg("")
 
 		return
 	}
@@ -282,9 +293,10 @@ func (a *AdminHostsController) handleErrorsAddUpdate(c *gin.Context) {
 		return
 	}
 
-	log.WithField("uuid", c.GetString(util.UuidKey)).
-		WithField("host", addErrorsReq.Host).
-		Info("adding/updating host errors config")
+	log.Info().
+		Str("uuid", c.GetString(util.UuidKey)).
+		Str("host", addErrorsReq.Host).
+		Msg("adding/updating host errors config")
 
 	hostConfig, err := a.service.AddUpdateHostErrors(admin.HostAddDeleteRequest{
 		Host:        addErrorsReq.Host,
@@ -299,9 +311,11 @@ func (a *AdminHostsController) handleErrorsAddUpdate(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", c.GetString(util.UuidKey)).
-			WithField("host", addErrorsReq.Host).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", c.GetString(util.UuidKey)).
+			Str("host", addErrorsReq.Host).
+			Msg("")
 
 		return
 	}
@@ -345,9 +359,11 @@ func (a *AdminHostsController) handleErrorDelete(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", c.GetString(util.UuidKey)).
-			WithField("host", errorDeleteReq.Host).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", c.GetString(util.UuidKey)).
+			Str("host", errorDeleteReq.Host).
+			Msg("")
 
 		return
 	}
@@ -390,9 +406,10 @@ func (a *AdminHostsController) handleUrisAddUpdate(c *gin.Context) {
 		return
 	}
 
-	log.WithField("uuid", c.GetString(util.UuidKey)).
-		WithField("host", addErrorsReq.Host).
-		Info("adding/updating host uris config")
+	log.Info().
+		Str("uuid", c.GetString(util.UuidKey)).
+		Str("host", addErrorsReq.Host).
+		Msg("adding/updating host uris config")
 
 	hostConfig, err := a.service.AddUpdateHostUris(admin.HostAddDeleteRequest{
 		Host:      addErrorsReq.Host,
@@ -407,9 +424,11 @@ func (a *AdminHostsController) handleUrisAddUpdate(c *gin.Context) {
 			Message: msg,
 		})
 
-		log.WithField("uuid", c.GetString(util.UuidKey)).
-			WithField("host", addErrorsReq.Host).
-			Error(msg)
+		log.Err(err).
+			Stack().
+			Str("uuid", c.GetString(util.UuidKey)).
+			Str("host", addErrorsReq.Host).
+			Msg("")
 
 		return
 	}

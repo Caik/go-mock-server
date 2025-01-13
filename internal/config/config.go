@@ -2,17 +2,17 @@ package config
 
 import (
 	"encoding/json"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"os"
 	"path/filepath"
 
 	"github.com/alexflint/go-arg"
-	log "github.com/sirupsen/logrus"
 )
 
 func InitLogger() {
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 }
 
 func ParseAppArguments() *AppArguments {
