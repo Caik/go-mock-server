@@ -7,8 +7,8 @@ Go Mock Server is a versatile tool crafted in Go to simplify the process of mock
 [![Go Report Card](https://goreportcard.com/badge/github.com/Caik/go-mock-server)](https://goreportcard.com/report/github.com/Caik/go-mock-server)
 [![codecov](https://codecov.io/github/Caik/go-mock-server/graph/badge.svg)](https://codecov.io/github/Caik/go-mock-server)
 
-Contents
-========
+# Contents
+
 - [Why Use Go Mock Server?](#-why-use-go-mock-server)
 - [Key Features](#-key-features)
 - [Installation](#-installation)
@@ -52,7 +52,6 @@ Whether you're simulating errors or latencies, Go Mock Server's Dynamic Configur
 
 If you've ever faced these challenges, or if you're just looking for a versatile and powerful HTTP mocking tool, you've come to the right place. Dive into the [usage](#-usage) section to discover how Go Mock Server can make your development and testing workflows smoother than ever.
 
-
 <br />
 
 ## 📝 Key Features
@@ -77,11 +76,13 @@ The application automatically identifies mocks based on URI and HTTP method, str
 
 ### 5. Caching
 
-Optimize performance and enhance Go Mock Server's reliability, making it more suitable for handling a high volume of requests, particularly beneficial in performance testing scenarios. 
+Optimize performance and enhance Go Mock Server's reliability, making it more suitable for handling a high volume of requests, particularly beneficial in performance testing scenarios.
 
 ### 6. Content-Type Awareness
 
 Ensure accurate content-type handling by Go Mock Server. The application automatically returns the client's request content-type. In cases where no content-type is passed in the request, the application defaults to `text/plain`, ensuring seamless handling and compatibility with diverse APIs.
+
+To override the Content-Type header regardless of the client's Accept header, you can use the --content-type CONTENT_TYPE flag. When specified, the mock server will include Content-Type: CONTENT_TYPE in all responses, allowing for consistent response headers across all requests.
 
 ### 7. Dynamic Mock Creation
 
@@ -101,7 +102,7 @@ Go Mock Server provides precompiled binaries for Linux, Mac (AMD64 and ARM64), a
 
 Explore these features and more to streamline your API mocking workflow and accelerate your development process.
 
-### 
+###
 
 <br />
 
@@ -109,7 +110,7 @@ Explore these features and more to streamline your API mocking workflow and acce
 
 ### 1. Docker
 
-The easiest and recommended way to run **Go Mock Server** is via **Docker**: 
+The easiest and recommended way to run **Go Mock Server** is via **Docker**:
 
 ```bash
 docker run --name mock-server --rm -p 8080:8080 -v $(pwd)/sample-mocks:/mocks caik/go-mock-server:latest --mocks-directory /mocks
@@ -121,7 +122,7 @@ Where `$(pwd)/sample-mocks` is the path in your host machine where you have stor
 docker run --name mock-server --rm -p 8080:8080 caik/go-mock-server:latest --mocks-directory /mocks
 ```
 
-Please also note that you change the port mapping from `8080` to any other port of your preference. 
+Please also note that you change the port mapping from `8080` to any other port of your preference.
 
 ### 2. Pre-compiled Binaries
 
@@ -130,7 +131,7 @@ So you only have to choose the appropriate file, download, extract it and run th
 
 PS: You may need to give execution permission to the binary after downloading it:
 
- ```shell
+```shell
 # giving execution permission on linux
 chmod +x ./mock-server
 ```
@@ -150,9 +151,9 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -ldflags '-extldflags "-stati
 
 ### 1. Running the App
 
-Please check [Installation](#-installation) for how to get/build the application binary. 
+Please check [Installation](#-installation) for how to get/build the application binary.
 
-After you have the binary, you can run the server: 
+After you have the binary, you can run the server:
 
 ```bash
 # Example for Mac
@@ -222,6 +223,7 @@ For more details and additional API endpoints, please refer to the [Swagger docu
 To enhance your testing experience, Go Mock Server provides powerful API endpoints for dynamically simulating errors and adjusting latencies. These features are particularly useful for testing your application's resilience under different conditions.
 
 #### Simulate Errors
+
 To simulate errors for a specific host, you can use the following example:
 
 ```bash
@@ -293,19 +295,18 @@ GET http://localhost:8080/data
 
 Go Mock Server will handle the request and respond according to the configured mocks.
 
-
 ### 5. Explore the Command-Line Options
 
 To customize Go Mock Server's behavior, you can use the following command-line options:
 
-| Option                  | Description                                                |
-|-------------------------|------------------------------------------------------------|
-| --mocks-directory       | Specify the directory for mock files.                      |
-| --port                  | Set the port for the mock server. Default is 8080.         |
-| --mocks-config-file     | Specify the path to a config file for additional settings. |
-| --disable-cache         | Disable caching of responses.                              |
-| --disable-latency       | Disable simulation of latency in responses.                |
-| --disable-error         | Disable simulation of error responses.                     |
+| Option              | Description                                                |
+| ------------------- | ---------------------------------------------------------- |
+| --mocks-directory   | Specify the directory for mock files.                      |
+| --port              | Set the port for the mock server. Default is 8080.         |
+| --mocks-config-file | Specify the path to a config file for additional settings. |
+| --disable-cache     | Disable caching of responses.                              |
+| --disable-latency   | Disable simulation of latency in responses.                |
+| --disable-error     | Disable simulation of error responses.                     |
 
 **Example:**
 

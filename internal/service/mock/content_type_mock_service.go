@@ -7,8 +7,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type MockServiceParams struct {
+	contentTypeOverride string
+}
+
 type contentTypeMockService struct {
-	next mockService
+	next   mockService
+	params MockServiceParams
 }
 
 func (c *contentTypeMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
@@ -29,7 +34,11 @@ func (c *contentTypeMockService) getMockResponse(mockRequest MockRequest) *MockR
 		Str("content_type", contentType).
 		Msg("setting content type")
 
-	mockResponse.ContentType = contentType
+	if c.params.contentTypeOverride != "" {
+		mockResponse.ContentType = c.params.contentTypeOverride
+	} else {
+		mockResponse.ContentType = contentType
+	}
 
 	return mockResponse
 }
@@ -62,6 +71,6 @@ func (c *contentTypeMockService) setAppropriateContentType(acceptHeader string) 
 	return gin.MIMEPlain
 }
 
-func newContentTypeMockService() *contentTypeMockService {
-	return &contentTypeMockService{}
+func newContentTypeMockService(params MockServiceParams) *contentTypeMockService {
+	return &contentTypeMockService{params: params}
 }
