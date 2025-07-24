@@ -16,61 +16,61 @@ type TestEvent struct {
 func TestBroadcaster_Subscribe(t *testing.T) {
 	t.Run("first subscription initializes maps", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
-		
+
 		acceptFn := func(event TestEvent) bool { return true }
 		channel := broadcaster.Subscribe("subscriber1", acceptFn)
-		
+
 		if channel == nil {
 			t.Error("Subscribe should return a non-nil channel")
 		}
-		
+
 		if broadcaster.subscribers == nil {
 			t.Error("subscribers map should be initialized")
 		}
-		
+
 		if broadcaster.subscribersAcceptFn == nil {
 			t.Error("subscribersAcceptFn map should be initialized")
 		}
-		
+
 		if len(broadcaster.subscribers) != 1 {
 			t.Errorf("expected 1 subscriber, got %d", len(broadcaster.subscribers))
 		}
 	})
-	
+
 	t.Run("multiple subscriptions", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
-		
+
 		acceptFn1 := func(event TestEvent) bool { return event.ID > 0 }
 		acceptFn2 := func(event TestEvent) bool { return event.ID > 10 }
-		
+
 		channel1 := broadcaster.Subscribe("subscriber1", acceptFn1)
 		channel2 := broadcaster.Subscribe("subscriber2", acceptFn2)
-		
+
 		if channel1 == nil || channel2 == nil {
 			t.Error("Subscribe should return non-nil channels")
 		}
-		
+
 		if channel1 == channel2 {
 			t.Error("Different subscribers should get different channels")
 		}
-		
+
 		if len(broadcaster.subscribers) != 2 {
 			t.Errorf("expected 2 subscribers, got %d", len(broadcaster.subscribers))
 		}
 	})
-	
+
 	t.Run("duplicate subscription returns same channel", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
-		
+
 		acceptFn := func(event TestEvent) bool { return true }
-		
+
 		channel1 := broadcaster.Subscribe("subscriber1", acceptFn)
 		channel2 := broadcaster.Subscribe("subscriber1", acceptFn) // Same ID
-		
+
 		if channel1 != channel2 {
 			t.Error("Duplicate subscription should return the same channel")
 		}
-		
+
 		if len(broadcaster.subscribers) != 1 {
 			t.Errorf("expected 1 subscriber after duplicate subscription, got %d", len(broadcaster.subscribers))
 		}
@@ -81,27 +81,27 @@ func TestBroadcaster_Subscribe(t *testing.T) {
 func TestBroadcaster_Unsubscribe(t *testing.T) {
 	t.Run("unsubscribe existing subscriber", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
-		
+
 		acceptFn := func(event TestEvent) bool { return true }
 		channel := broadcaster.Subscribe("subscriber1", acceptFn)
-		
+
 		// Verify subscription exists
 		if len(broadcaster.subscribers) != 1 {
 			t.Fatalf("expected 1 subscriber before unsubscribe, got %d", len(broadcaster.subscribers))
 		}
-		
+
 		// Unsubscribe
 		broadcaster.Unsubscribe("subscriber1")
-		
+
 		// Verify subscription is removed
 		if len(broadcaster.subscribers) != 0 {
 			t.Errorf("expected 0 subscribers after unsubscribe, got %d", len(broadcaster.subscribers))
 		}
-		
+
 		if len(broadcaster.subscribersAcceptFn) != 0 {
 			t.Errorf("expected 0 accept functions after unsubscribe, got %d", len(broadcaster.subscribersAcceptFn))
 		}
-		
+
 		// Verify channel is closed
 		select {
 		case _, ok := <-channel:
@@ -112,51 +112,51 @@ func TestBroadcaster_Unsubscribe(t *testing.T) {
 			t.Error("channel should be closed immediately after unsubscribe")
 		}
 	})
-	
+
 	t.Run("unsubscribe non-existent subscriber", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
-		
+
 		// This should not panic or cause issues
 		broadcaster.Unsubscribe("non-existent")
-		
+
 		// Should still be able to subscribe after attempting to unsubscribe non-existent
 		acceptFn := func(event TestEvent) bool { return true }
 		channel := broadcaster.Subscribe("subscriber1", acceptFn)
-		
+
 		if channel == nil {
 			t.Error("Should be able to subscribe after unsubscribing non-existent subscriber")
 		}
 	})
-	
+
 	t.Run("unsubscribe one of multiple subscribers", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
-		
+
 		acceptFn := func(event TestEvent) bool { return true }
-		
+
 		broadcaster.Subscribe("subscriber1", acceptFn)
 		broadcaster.Subscribe("subscriber2", acceptFn)
 		broadcaster.Subscribe("subscriber3", acceptFn)
-		
+
 		if len(broadcaster.subscribers) != 3 {
 			t.Fatalf("expected 3 subscribers, got %d", len(broadcaster.subscribers))
 		}
-		
+
 		// Unsubscribe middle subscriber
 		broadcaster.Unsubscribe("subscriber2")
-		
+
 		if len(broadcaster.subscribers) != 2 {
 			t.Errorf("expected 2 subscribers after unsubscribe, got %d", len(broadcaster.subscribers))
 		}
-		
+
 		// Verify correct subscribers remain
 		if _, exists := broadcaster.subscribers["subscriber1"]; !exists {
 			t.Error("subscriber1 should still exist")
 		}
-		
+
 		if _, exists := broadcaster.subscribers["subscriber3"]; !exists {
 			t.Error("subscriber3 should still exist")
 		}
-		
+
 		if _, exists := broadcaster.subscribers["subscriber2"]; exists {
 			t.Error("subscriber2 should be removed")
 		}
@@ -167,15 +167,15 @@ func TestBroadcaster_Unsubscribe(t *testing.T) {
 func TestBroadcaster_Publish(t *testing.T) {
 	t.Run("publish to single subscriber", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
-		
+
 		acceptFn := func(event TestEvent) bool { return true }
 		channel := broadcaster.Subscribe("subscriber1", acceptFn)
-		
+
 		event := TestEvent{ID: 1, Message: "test message"}
-		
+
 		// Publish in a goroutine to avoid blocking
 		go broadcaster.Publish(event, "test-uuid")
-		
+
 		// Receive the event
 		select {
 		case receivedEvent := <-channel:
@@ -186,26 +186,26 @@ func TestBroadcaster_Publish(t *testing.T) {
 			t.Error("timeout waiting for event")
 		}
 	})
-	
+
 	t.Run("publish to multiple subscribers", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
-		
+
 		acceptFn := func(event TestEvent) bool { return true }
-		
+
 		channel1 := broadcaster.Subscribe("subscriber1", acceptFn)
 		channel2 := broadcaster.Subscribe("subscriber2", acceptFn)
 		channel3 := broadcaster.Subscribe("subscriber3", acceptFn)
-		
+
 		event := TestEvent{ID: 2, Message: "broadcast message"}
-		
+
 		// Publish in a goroutine
 		go broadcaster.Publish(event, "test-uuid")
-		
+
 		// Collect events from all channels
 		var receivedEvents []TestEvent
 		var wg sync.WaitGroup
 		wg.Add(3)
-		
+
 		receiveEvent := func(ch <-chan TestEvent) {
 			defer wg.Done()
 			select {
@@ -215,17 +215,17 @@ func TestBroadcaster_Publish(t *testing.T) {
 				t.Error("timeout waiting for event")
 			}
 		}
-		
+
 		go receiveEvent(channel1)
 		go receiveEvent(channel2)
 		go receiveEvent(channel3)
-		
+
 		wg.Wait()
-		
+
 		if len(receivedEvents) != 3 {
 			t.Errorf("expected 3 events, got %d", len(receivedEvents))
 		}
-		
+
 		// Verify all events are correct
 		for i, receivedEvent := range receivedEvents {
 			if receivedEvent.ID != event.ID || receivedEvent.Message != event.Message {
@@ -233,23 +233,23 @@ func TestBroadcaster_Publish(t *testing.T) {
 			}
 		}
 	})
-	
+
 	t.Run("publish with accept function filtering", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
-		
+
 		// Subscriber 1 accepts all events
 		acceptAll := func(event TestEvent) bool { return true }
 		channel1 := broadcaster.Subscribe("subscriber1", acceptAll)
-		
+
 		// Subscriber 2 only accepts events with ID > 5
 		acceptFiltered := func(event TestEvent) bool { return event.ID > 5 }
 		channel2 := broadcaster.Subscribe("subscriber2", acceptFiltered)
-		
+
 		// Event that should be filtered out for subscriber2
 		event1 := TestEvent{ID: 3, Message: "filtered message"}
-		
+
 		go broadcaster.Publish(event1, "test-uuid")
-		
+
 		// Subscriber 1 should receive the event
 		select {
 		case receivedEvent := <-channel1:
@@ -259,7 +259,7 @@ func TestBroadcaster_Publish(t *testing.T) {
 		case <-time.After(1 * time.Second):
 			t.Error("subscriber1 should receive the event")
 		}
-		
+
 		// Subscriber 2 should not receive the event (non-blocking check)
 		select {
 		case <-channel2:
@@ -267,16 +267,16 @@ func TestBroadcaster_Publish(t *testing.T) {
 		case <-time.After(100 * time.Millisecond):
 			// Expected - no event received
 		}
-		
+
 		// Event that should pass the filter
 		event2 := TestEvent{ID: 10, Message: "unfiltered message"}
-		
+
 		go broadcaster.Publish(event2, "test-uuid")
-		
+
 		// Both subscribers should receive this event
 		var wg sync.WaitGroup
 		wg.Add(2)
-		
+
 		go func() {
 			defer wg.Done()
 			select {
@@ -286,7 +286,7 @@ func TestBroadcaster_Publish(t *testing.T) {
 				t.Error("subscriber1 should receive unfiltered event")
 			}
 		}()
-		
+
 		go func() {
 			defer wg.Done()
 			select {
@@ -296,7 +296,7 @@ func TestBroadcaster_Publish(t *testing.T) {
 				t.Error("subscriber2 should receive unfiltered event")
 			}
 		}()
-		
+
 		wg.Wait()
 	})
 
@@ -490,8 +490,3 @@ func TestBroadcaster_DifferentTypes(t *testing.T) {
 		}
 	})
 }
-
-// Note: Concurrent access tests are omitted as the broadcaster implementation
-// is not thread-safe and would require additional synchronization mechanisms.
-
-
