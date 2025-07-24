@@ -205,3 +205,6 @@ $RECYCLE.BIN/
 ## Custom
 roadmap.md
 dist/
+
+.qodo
+coverage.txt
