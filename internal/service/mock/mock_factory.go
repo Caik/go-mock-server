@@ -51,7 +51,7 @@ func (m *MockServiceFactory) initServiceChain(contentService content.ContentServ
 		// TODO: add CORS MockService
 
 		// latency
-		if !disableCache {
+		if !disableLatency {
 			addNextFn(newLatencyMockService(hostsConfig))
 		}
 
@@ -64,7 +64,7 @@ func (m *MockServiceFactory) initServiceChain(contentService content.ContentServ
 		addNextFn(newContentTypeMockService())
 
 		// cache
-		if !disableLatency {
+		if !disableCache {
 			addNextFn(newCacheMockService(cacheService))
 		}
 

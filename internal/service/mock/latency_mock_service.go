@@ -74,7 +74,11 @@ func (l *latencyMockService) drawLatency(latencyConfig *config.LatencyConfig) in
 	}
 
 	if drawn <= 5 && hasP95 {
-		return drawLatencyWithUpperAndLowerBounds(latencyConfig.P95, latencyConfig.P99)
+		upperBound := latencyConfig.Max
+		if hasP99 {
+			upperBound = latencyConfig.P99
+		}
+		return drawLatencyWithUpperAndLowerBounds(latencyConfig.P95, upperBound)
 	}
 
 	if !hasP99 && !hasP95 {

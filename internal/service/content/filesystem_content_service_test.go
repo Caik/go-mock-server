@@ -55,11 +55,16 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 		t.Logf("BUG DETECTED: strings.Split(uri, \"?\") will incorrectly split on all '?' characters")
 		t.Logf("This means query parameters with '?' in values will be broken")
 
-		// The bug: strings.Split will split on ALL question marks, not just the first one
-		parts := strings.Split(uri, "?")
-		if len(parts) > 2 {
-			t.Errorf("BUG CONFIRMED: strings.Split created %d parts instead of 2", len(parts))
+		// Test the fix: strings.SplitN should split only on first question mark
+		parts := strings.SplitN(uri, "?", 2)
+		if len(parts) != 2 {
+			t.Errorf("EXPECTED: strings.SplitN should create exactly 2 parts, got %d", len(parts))
 			t.Logf("Parts: %v", parts)
+		} else {
+			t.Logf("✅ BUG FIXED: strings.SplitN correctly created 2 parts: %v", parts)
+			if parts[1] != "query=what?is?this" {
+				t.Errorf("Expected query part 'query=what?is?this', got '%s'", parts[1])
+			}
 		}
 	})
 
