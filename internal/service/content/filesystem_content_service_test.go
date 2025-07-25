@@ -43,28 +43,35 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 		}
 	})
 
-	// 🚨 TEST TO EXPOSE BUG #8: Query parameter handling issue
-	t.Run("BUG TEST: query parameters with multiple question marks", func(t *testing.T) {
+	t.Run("handles query parameters with multiple question marks", func(t *testing.T) {
 		// URI with query parameter that contains a question mark
 		uri := "/api/search?query=what?is?this"
 
 		path := service.getFinalFilePath("example.com", uri, "GET")
 
-		t.Logf("BUG TEST: URI with multiple '?' characters: %s", uri)
+		t.Logf("Testing URI with multiple '?' characters: %s", uri)
 		t.Logf("Generated path: %s", path)
-		t.Logf("BUG DETECTED: strings.Split(uri, \"?\") will incorrectly split on all '?' characters")
-		t.Logf("This means query parameters with '?' in values will be broken")
 
-		// Test the fix: strings.SplitN should split only on first question mark
+		// Verify that strings.SplitN splits only on first question mark
 		parts := strings.SplitN(uri, "?", 2)
 		if len(parts) != 2 {
-			t.Errorf("EXPECTED: strings.SplitN should create exactly 2 parts, got %d", len(parts))
+			t.Errorf("expected strings.SplitN to create exactly 2 parts, got %d", len(parts))
 			t.Logf("Parts: %v", parts)
 		} else {
-			t.Logf("✅ BUG FIXED: strings.SplitN correctly created 2 parts: %v", parts)
+			t.Logf("strings.SplitN correctly created 2 parts: %v", parts)
 			if parts[1] != "query=what?is?this" {
-				t.Errorf("Expected query part 'query=what?is?this', got '%s'", parts[1])
+				t.Errorf("expected query part 'query=what?is?this', got '%s'", parts[1])
+			} else {
+				t.Log("query parameter with '?' preserved correctly")
 			}
+		}
+
+		// Verify the generated path contains the complete query string
+		expectedSuffix := "search?query=what?is?this.get"
+		if !strings.HasSuffix(path, expectedSuffix) {
+			t.Errorf("expected path to end with '%s', got '%s'", expectedSuffix, path)
+		} else {
+			t.Log("file path correctly preserves complete query string")
 		}
 	})
 
@@ -139,36 +146,34 @@ func TestFilesystemContentService_filePathToContentData(t *testing.T) {
 		}
 	})
 
-	// 🚨 TEST TO EXPOSE BUG #9: Incorrect validation logic
-	t.Run("BUG TEST: validation logic is incorrect", func(t *testing.T) {
+	t.Run("validates file path parsing logic", func(t *testing.T) {
 		// Create a valid file path
 		filePath := filepath.Join(tempDir, "example.com", "api.get")
 
 		_, err := service.filePathToContentData(filePath)
 
-		t.Logf("BUG TEST: File path: %s", filePath)
-		
-		// Calculate the indices that the buggy code would use
+		t.Logf("testing file path: %s", filePath)
+
+		// Calculate the indices that the validation logic uses
 		rootPath := strings.TrimSuffix(tempDir, string(os.PathSeparator)) + string(os.PathSeparator)
 		relativePath := strings.TrimPrefix(filePath, rootPath)
 		firstSlashIndex := strings.Index(relativePath, string(os.PathSeparator))
 		lastDotIndex := strings.LastIndex(relativePath, ".")
 
-		t.Logf("Relative path: %s", relativePath)
-		t.Logf("First slash index: %d", firstSlashIndex)
-		t.Logf("Last dot index: %d", lastDotIndex)
+		t.Logf("relative path: %s", relativePath)
+		t.Logf("first slash index: %d", firstSlashIndex)
+		t.Logf("last dot index: %d", lastDotIndex)
 
-		// 🚨 BUG: The condition firstSlashIndex >= lastDotIndex is wrong
+		// Test the validation logic
 		// For "example.com/api.get": firstSlashIndex=11, lastDotIndex=15
 		// The condition should allow firstSlashIndex < lastDotIndex for valid paths
 		if firstSlashIndex >= lastDotIndex && err != nil {
-			t.Logf("BUG DETECTED: Validation logic rejects valid path")
-			t.Logf("Condition 'firstSlashIndex >= lastDotIndex' is incorrect")
-			t.Logf("Should be 'firstSlashIndex >= lastDotIndex' only for truly invalid cases")
+			t.Logf("validation logic rejects this path")
+			t.Logf("condition 'firstSlashIndex >= lastDotIndex' triggered")
 		}
 
 		if err != nil {
-			t.Logf("Error returned: %v", err)
+			t.Logf("error returned: %v", err)
 		}
 	})
 

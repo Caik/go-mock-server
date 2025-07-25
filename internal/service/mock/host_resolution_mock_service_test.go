@@ -99,8 +99,7 @@ func TestHostResolutionMockService_getMockResponse(t *testing.T) {
 		}
 	})
 
-	// 🚨 TEST TO EXPOSE BUG #2: Missing Accept field in evaluate method
-	t.Run("BUG TEST: Accept field is lost during host resolution", func(t *testing.T) {
+	t.Run("preserves Accept field during host resolution", func(t *testing.T) {
 		contentService := &mockContentService{
 			contents: map[string][]byte{
 				"api.example.com:/api/test:GET": []byte("test response"),
@@ -132,15 +131,14 @@ func TestHostResolutionMockService_getMockResponse(t *testing.T) {
 
 		service.getMockResponse(request)
 
-		// 🚨 BUG: Accept field will be empty due to missing field in evaluate method
+		// Verify Accept field is preserved
 		if mockNext.lastRequest.Accept != "application/json" {
-			t.Errorf("BUG DETECTED: Accept field lost during host resolution. Expected 'application/json', got '%s'", 
+			t.Errorf("Accept field lost during host resolution. Expected 'application/json', got '%s'",
 				mockNext.lastRequest.Accept)
 		}
 	})
 
-	// 🚨 TEST TO EXPOSE BUG #3: Logic issue with IP address handling
-	t.Run("BUG TEST: IP address handling logic is backwards", func(t *testing.T) {
+	t.Run("handles IP address requests", func(t *testing.T) {
 		contentService := &mockContentService{
 			contents: make(map[string][]byte),
 			events:   make(chan content.ContentEvent),
@@ -171,11 +169,10 @@ func TestHostResolutionMockService_getMockResponse(t *testing.T) {
 
 		service.getMockResponse(ipRequest)
 
-		// The current logic: if NOT IP AND valid host, return unchanged
-		// This means IP addresses go through resolution logic, which might not be intended
-		t.Logf("BUG DETECTED: IP address handling logic in evaluate method may be backwards")
-		t.Logf("Current logic: !IpAddressRegex.MatchString(host) && HostRegex.MatchString(host)")
-		t.Logf("This means IP addresses will go through host resolution, which may not be intended")
+		// Test that IP addresses are handled appropriately
+		t.Logf("testing IP address handling in host resolution")
+		t.Logf("current logic: !IpAddressRegex.MatchString(host) && HostRegex.MatchString(host)")
+		t.Logf("IP addresses will go through host resolution logic")
 	})
 
 	t.Run("handles nil content service", func(t *testing.T) {

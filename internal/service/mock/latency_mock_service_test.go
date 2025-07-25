@@ -91,23 +91,22 @@ func TestLatencyMockService_getMockResponse(t *testing.T) {
 		}
 	})
 
-	// 🚨 TEST TO EXPOSE BUG #4: Potential nil pointer dereference
-	t.Run("BUG TEST: nil pointer dereference with P95 but no P99", func(t *testing.T) {
+	t.Run("handles P95 with nil P99 using Max as upper bound", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: map[string]config.HostConfig{
 				"example.com": {
 					LatencyConfig: &config.LatencyConfig{
 						Min: intPtr(10),
-						Max: intPtr(20),
+						Max: intPtr(200), // Max should be used as upper bound when P99 is nil
 						P95: intPtr(100), // P95 is set
-						P99: nil,         // 🚨 P99 is nil - this will cause nil pointer dereference
+						P99: nil,         // P99 is nil - should use Max instead
 					},
 				},
 			},
 		}
 
 		service := newLatencyMockService(hostsConfig)
-		
+
 		testData3 := []byte("test response")
 		mockNext := &mockMockService{
 			response: &MockResponse{
@@ -124,18 +123,26 @@ func TestLatencyMockService_getMockResponse(t *testing.T) {
 			Uuid:   "test-uuid",
 		}
 
-		// This should panic due to nil pointer dereference when drawn <= 5 and hasP95=true
+		// Should handle nil P99 gracefully without panicking
+		var panicOccurred bool
 		defer func() {
 			if r := recover(); r != nil {
-				t.Logf("BUG DETECTED: Panic due to nil pointer dereference in latency calculation: %v", r)
-				t.Logf("Bug location: drawLatencyWithUpperAndLowerBounds(latencyConfig.P95, latencyConfig.P99)")
-				t.Logf("P99 is nil but not checked before use")
+				panicOccurred = true
+				t.Errorf("unexpected panic with nil P99: %v", r)
 			}
 		}()
 
-		// Run multiple times to increase chance of hitting the bug (drawn <= 5)
+		// Run multiple times to test thoroughly
 		for i := 0; i < 100; i++ {
-			service.getMockResponse(request)
+			response := service.getMockResponse(request)
+			if response == nil {
+				t.Error("response should not be nil")
+				break
+			}
+		}
+
+		if !panicOccurred {
+			t.Log("successfully handled P95 with nil P99 using Max as upper bound")
 		}
 	})
 
@@ -225,26 +232,39 @@ func TestLatencyMockService_drawLatency(t *testing.T) {
 		}
 	})
 
-	// 🚨 TEST TO EXPOSE BUG #4: Nil P99 with non-nil P95
-	t.Run("BUG TEST: nil P99 with non-nil P95 causes panic", func(t *testing.T) {
+	t.Run("handles nil P99 with non-nil P95 correctly", func(t *testing.T) {
 		latencyConfig := &config.LatencyConfig{
 			Min: intPtr(10),
-			Max: intPtr(20),
+			Max: intPtr(200), // Should be used when P99 is nil
 			P95: intPtr(100), // P95 is set
-			P99: nil,         // 🚨 P99 is nil
+			P99: nil,         // P99 is nil - should use Max
 		}
 
 		service := &latencyMockService{}
 
+		var panicOccurred bool
 		defer func() {
 			if r := recover(); r != nil {
-				t.Logf("BUG DETECTED: Panic when P95 is set but P99 is nil: %v", r)
+				panicOccurred = true
+				t.Errorf("unexpected panic with nil P99: %v", r)
 			}
 		}()
 
-		// Run many times to increase chance of hitting the bug condition (drawn <= 5)
+		// Run many times to test thoroughly
+		var latencies []int
 		for i := 0; i < 1000; i++ {
-			service.drawLatency(latencyConfig)
+			latency := service.drawLatency(latencyConfig)
+			latencies = append(latencies, latency)
+
+			// Verify latency is within reasonable bounds
+			if latency < 10 || latency > 200 {
+				t.Errorf("latency %d is outside expected range [10, 200]", latency)
+			}
+		}
+
+		if !panicOccurred {
+			t.Log("successfully handled P95 with nil P99")
+			t.Logf("generated %d latency values successfully", len(latencies))
 		}
 	})
 }
