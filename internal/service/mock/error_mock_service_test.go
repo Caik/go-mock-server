@@ -27,7 +27,7 @@ func TestErrorMockService_getMockResponse(t *testing.T) {
 		}
 
 		service := newErrorMockService(hostsConfig)
-		
+
 		successData := []byte("success response")
 		mockNext := &mockMockService{
 			response: &MockResponse{
@@ -75,7 +75,7 @@ func TestErrorMockService_getMockResponse(t *testing.T) {
 		}
 
 		service := newErrorMockService(hostsConfig)
-		
+
 		successData2 := []byte("success response")
 		mockNext := &mockMockService{
 			response: &MockResponse{
@@ -110,7 +110,7 @@ func TestErrorMockService_getMockResponse(t *testing.T) {
 		}
 
 		service := newErrorMockService(hostsConfig)
-		
+
 		successData3 := []byte("success response")
 		mockNext := &mockMockService{
 			response: &MockResponse{
@@ -156,7 +156,7 @@ func TestErrorMockService_drawError(t *testing.T) {
 		// Should always return the error
 		for i := 0; i < 10; i++ {
 			wrapper := service.drawError(&errorsConfig)
-			
+
 			if wrapper == nil {
 				t.Error("expected error wrapper, got nil")
 				continue

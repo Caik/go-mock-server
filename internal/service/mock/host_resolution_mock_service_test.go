@@ -35,7 +35,7 @@ func (m *mockContentService) DeleteContent(host, uri, method, uuid string) error
 
 func (m *mockContentService) ListContents(uuid string) (*[]content.ContentData, error) {
 	var contents []content.ContentData
-	for _ = range m.contents {
+	for range m.contents {
 		contents = append(contents, content.ContentData{
 			Host:   "example.com",
 			Uri:    "/api/test",

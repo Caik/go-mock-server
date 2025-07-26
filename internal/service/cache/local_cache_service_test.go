@@ -135,7 +135,7 @@ func TestInMemoryCacheService_Set(t *testing.T) {
 			}
 
 			if string(*storedData) != string(expectedData) {
-				t.Errorf("for key '%s', expected data '%s', got '%s'", 
+				t.Errorf("for key '%s', expected data '%s', got '%s'",
 					key, string(expectedData), string(*storedData))
 			}
 		}
@@ -315,7 +315,7 @@ func TestInMemoryCacheService_Get(t *testing.T) {
 			}
 
 			if string(*retrievedData) != string(expectedData) {
-				t.Errorf("for key '%s', expected data '%s', got '%s'", 
+				t.Errorf("for key '%s', expected data '%s', got '%s'",
 					key, string(expectedData), string(*retrievedData))
 			}
 		}

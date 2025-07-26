@@ -69,7 +69,7 @@ func TestNewMockServiceFactory(t *testing.T) {
 			Hosts: make(map[string]config.HostConfig),
 		}
 		appArgs := &config.AppArguments{
-			DisableLatency: true,  // Disabled
+			DisableLatency: true, // Disabled
 			DisableError:   false,
 			DisableCache:   false,
 		}
@@ -185,7 +185,6 @@ func TestMockServiceFactory_GetMockResponse(t *testing.T) {
 			t.Error("response should have data")
 		}
 	})
-
 
 }
 

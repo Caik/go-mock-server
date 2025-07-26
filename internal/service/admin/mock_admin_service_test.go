@@ -19,7 +19,7 @@ func (m *mockContentService) GetContent(host, uri, method, uuid string) (*[]byte
 	if m.shouldError {
 		return nil, errors.New(m.errorMsg)
 	}
-	
+
 	key := host + ":" + uri + ":" + method
 	if data, exists := m.contents[key]; exists {
 		return &data, nil
@@ -31,7 +31,7 @@ func (m *mockContentService) SetContent(host, uri, method, uuid string, data *[]
 	if m.shouldError {
 		return errors.New(m.errorMsg)
 	}
-	
+
 	key := host + ":" + uri + ":" + method
 	if data != nil {
 		m.contents[key] = *data
@@ -45,7 +45,7 @@ func (m *mockContentService) DeleteContent(host, uri, method, uuid string) error
 	if m.shouldError {
 		return errors.New(m.errorMsg)
 	}
-	
+
 	key := host + ":" + uri + ":" + method
 	delete(m.contents, key)
 	return nil
@@ -55,9 +55,9 @@ func (m *mockContentService) ListContents(uuid string) (*[]content.ContentData, 
 	if m.shouldError {
 		return nil, errors.New(m.errorMsg)
 	}
-	
+
 	var contents []content.ContentData
-	for _ = range m.contents {
+	for range m.contents {
 		contents = append(contents, content.ContentData{
 			Host:   "example.com",
 			Uri:    "/api/test",

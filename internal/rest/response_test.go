@@ -41,7 +41,7 @@ func TestStatusConstants(t *testing.T) {
 // Test Status type behavior
 func TestStatusType(t *testing.T) {
 	var status Status = "custom"
-	
+
 	if string(status) != "custom" {
 		t.Errorf("expected 'custom', got %s", string(status))
 	}
@@ -160,7 +160,7 @@ func TestResponseJSONMarshaling(t *testing.T) {
 			expected: `{"status":"success","data":[1,2,3]}`,
 		},
 		{
-			name: "empty response",
+			name:     "empty response",
 			response: Response{},
 			expected: `{"status":""}`,
 		},
@@ -267,7 +267,7 @@ func TestResponseJSONUnmarshaling(t *testing.T) {
 				if response.Data == nil {
 					t.Error("expected data to be non-nil")
 				}
-				// Note: Deep comparison of interface{} can be complex, 
+				// Note: Deep comparison of interface{} can be complex,
 				// but for our test cases, we can verify the structure is preserved
 			} else if response.Data != nil {
 				t.Error("expected data to be nil")

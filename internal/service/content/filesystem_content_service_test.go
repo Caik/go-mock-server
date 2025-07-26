@@ -98,7 +98,7 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 
 		for _, method := range methods {
 			path := service.getFinalFilePath("example.com", "/api/test", method)
-			
+
 			expectedSuffix := "." + strings.ToLower(method)
 			if !strings.HasSuffix(path, expectedSuffix) {
 				t.Errorf("path should end with '%s', got '%s'", expectedSuffix, path)
@@ -194,9 +194,9 @@ func TestFilesystemContentService_filePathToContentData(t *testing.T) {
 
 	t.Run("rejects invalid file patterns", func(t *testing.T) {
 		invalidPaths := []string{
-			filepath.Join(tempDir, "invalid"),           // No slash or dot
-			filepath.Join(tempDir, "no-dot-extension"),  // No dot
-			filepath.Join(tempDir, ".hidden"),           // No slash before dot
+			filepath.Join(tempDir, "invalid"),          // No slash or dot
+			filepath.Join(tempDir, "no-dot-extension"), // No dot
+			filepath.Join(tempDir, ".hidden"),          // No slash before dot
 		}
 
 		for _, invalidPath := range invalidPaths {
@@ -428,9 +428,9 @@ func TestFilesystemContentService_ListContents(t *testing.T) {
 
 	// Create test files (using valid hostnames that match the regex)
 	testFiles := map[string][]byte{
-		"example.com/api/users.get":      []byte("users get"),
-		"example.com/api/users.post":     []byte("users post"),
-		"api.test.com/v1/health.get":     []byte("health check"),
+		"example.com/api/users.get":        []byte("users get"),
+		"example.com/api/users.post":       []byte("users post"),
+		"api.test.com/v1/health.get":       []byte("health check"),
 		"admin.local.com/admin/status.get": []byte("admin status"),
 	}
 

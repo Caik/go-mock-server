@@ -571,5 +571,3 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 		})
 	}
 }
-
-

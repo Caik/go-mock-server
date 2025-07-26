@@ -255,7 +255,7 @@ func TestNewMocksDirectoryConfig_ExistingDirectory(t *testing.T) {
 
 func TestNewMocksDirectoryConfig_RelativePath(t *testing.T) {
 	relativePath := "test-mocks"
-	
+
 	appArgs := &AppArguments{
 		MocksDirectory: relativePath,
 	}

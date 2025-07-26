@@ -14,7 +14,7 @@ func TestInitRoutes(t *testing.T) {
 
 	t.Run("initializes all routes correctly", func(t *testing.T) {
 		router := gin.New()
-		
+
 		// Create mock controllers (they can be nil for route testing)
 		adminMocksController := &AdminMocksController{}
 		adminHostsController := &AdminHostsController{}
@@ -214,7 +214,7 @@ func TestRouteGrouping(t *testing.T) {
 
 	t.Run("admin routes are properly grouped", func(t *testing.T) {
 		router := gin.New()
-		
+
 		adminMocksController := &AdminMocksController{}
 		adminHostsController := &AdminHostsController{}
 		mocksController := &MocksController{}
@@ -242,7 +242,7 @@ func TestRouteGrouping(t *testing.T) {
 
 	t.Run("non-admin routes handled by NoRoute", func(t *testing.T) {
 		router := gin.New()
-		
+
 		adminMocksController := &AdminMocksController{}
 		adminHostsController := &AdminHostsController{}
 		mocksController := &MocksController{}

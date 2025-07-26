@@ -26,7 +26,7 @@ func TestLogger(t *testing.T) {
 		log.Logger = zerolog.New(&buf).With().Timestamp().Logger()
 
 		router := gin.New()
-		
+
 		// Set UUID first, then logger
 		router.Use(func(c *gin.Context) {
 			c.Set(util.UuidKey, "test-uuid-123")
@@ -44,7 +44,7 @@ func TestLogger(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		logOutput := buf.String()
-		
+
 		// Verify request received log
 		if !strings.Contains(logOutput, "request received") {
 			t.Error("should log 'request received'")
@@ -81,7 +81,7 @@ func TestLogger(t *testing.T) {
 		log.Logger = zerolog.New(&buf).With().Timestamp().Logger()
 
 		router := gin.New()
-		
+
 		router.Use(func(c *gin.Context) {
 			c.Set(util.UuidKey, "test-uuid-456")
 			c.Next()
@@ -120,7 +120,7 @@ func TestLogger(t *testing.T) {
 				log.Logger = zerolog.New(&buf).With().Timestamp().Logger()
 
 				router := gin.New()
-				
+
 				router.Use(func(c *gin.Context) {
 					c.Set(util.UuidKey, "test-uuid-"+method)
 					c.Next()
@@ -149,7 +149,7 @@ func TestLogger(t *testing.T) {
 		log.Logger = zerolog.New(&buf).With().Timestamp().Logger()
 
 		router := gin.New()
-		
+
 		// Don't set UUID to test graceful handling
 		router.Use(Logger)
 		router.GET("/test", func(c *gin.Context) {
@@ -173,7 +173,7 @@ func TestLogger(t *testing.T) {
 		log.Logger = zerolog.New(&buf).With().Timestamp().Logger()
 
 		router := gin.New()
-		
+
 		router.Use(func(c *gin.Context) {
 			c.Set(util.UuidKey, "structured-test-uuid")
 			c.Next()
@@ -190,10 +190,10 @@ func TestLogger(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		logOutput := buf.String()
-		
+
 		// Parse the log lines to verify structured logging
 		lines := strings.Split(strings.TrimSpace(logOutput), "\n")
-		
+
 		for _, line := range lines {
 			if strings.Contains(line, "request received") || strings.Contains(line, "request finished") {
 				var logEntry map[string]interface{}
@@ -237,7 +237,7 @@ func TestLogger(t *testing.T) {
 		log.Logger = zerolog.New(&buf).With().Timestamp().Logger()
 
 		router := gin.New()
-		
+
 		router.Use(func(c *gin.Context) {
 			c.Set(util.UuidKey, "latency-test-uuid")
 			c.Next()
@@ -257,7 +257,7 @@ func TestLogger(t *testing.T) {
 		actualDuration := time.Since(start)
 
 		logOutput := buf.String()
-		
+
 		// Find the finished log line
 		lines := strings.Split(strings.TrimSpace(logOutput), "\n")
 		for _, line := range lines {

@@ -21,7 +21,7 @@ func TestHostRegex(t *testing.T) {
 		{"single letter subdomain", "a.example.com", true},
 		{"numbers in domain", "api1.example2.com", true},
 		{"long domain", "very-long-subdomain-name.example.com", true},
-		
+
 		// Invalid hosts
 		{"no domain", "localhost", false},
 		{"starts with dot", ".example.com", false},
@@ -35,9 +35,9 @@ func TestHostRegex(t *testing.T) {
 		{"no TLD", "example", false},
 
 		// Valid hosts (based on actual regex behavior)
-		{"IP address format", "192.168.1.1", true}, // \w includes digits
-		{"starts with hyphen", "-api.example.com", true}, // [\w-] allows leading hyphen
-		{"ends with hyphen", "api-.example.com", true}, // [\w-] allows trailing hyphen
+		{"IP address format", "192.168.1.1", true},        // \w includes digits
+		{"starts with hyphen", "-api.example.com", true},  // [\w-] allows leading hyphen
+		{"ends with hyphen", "api-.example.com", true},    // [\w-] allows trailing hyphen
 		{"with underscore", "api_test.example.com", true}, // \w includes underscore
 	}
 
@@ -66,7 +66,7 @@ func TestIpAddressRegex(t *testing.T) {
 		{"max IP", "255.255.255.255", true},
 		{"single digit octets", "1.2.3.4", true},
 		{"mixed octets", "192.168.0.1", true},
-		
+
 		// Invalid IP addresses
 		{"too many octets", "192.168.1.1.1", false},
 		{"too few octets", "192.168.1", false},
@@ -116,7 +116,7 @@ func TestUriRegex(t *testing.T) {
 		{"multiple query params", "/api/users?id=123&name=john", true},
 		{"query with hyphens", "/api/users?user-id=123", true},
 		{"query with underscores", "/api/users?user_id=123", true},
-		
+
 		// Invalid URIs
 		{"root path", "/", false}, // Regex requires at least one path segment
 		{"empty path", "", false}, // Regex requires at least one path segment
@@ -245,7 +245,7 @@ func TestRegexPatterns(t *testing.T) {
 		if pattern == "" {
 			t.Error("HttpMethodRegex pattern should not be empty")
 		}
-		
+
 		// Verify it contains all HTTP methods
 		for _, method := range []string{"GET", "POST", "PUT", "DELETE"} {
 			if !strings.Contains(pattern, method) {
@@ -254,5 +254,3 @@ func TestRegexPatterns(t *testing.T) {
 		}
 	})
 }
-
-

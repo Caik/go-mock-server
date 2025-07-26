@@ -403,7 +403,6 @@ func TestAddDeleteGetHostRequest_validate(t *testing.T) {
 			expectError: true,
 			errorMsg:    "invalid host provided",
 		},
-
 	}
 
 	for _, tt := range tests {

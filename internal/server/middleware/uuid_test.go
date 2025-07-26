@@ -17,9 +17,9 @@ func TestUuid(t *testing.T) {
 	t.Run("sets UUID in context", func(t *testing.T) {
 		// Create a test router
 		router := gin.New()
-		
+
 		var capturedUUID string
-		
+
 		// Add the UUID middleware and a test handler
 		router.Use(Uuid)
 		router.GET("/test", func(c *gin.Context) {
@@ -47,9 +47,9 @@ func TestUuid(t *testing.T) {
 
 	t.Run("generates different UUIDs for different requests", func(t *testing.T) {
 		router := gin.New()
-		
+
 		var uuids []string
-		
+
 		router.Use(Uuid)
 		router.GET("/test", func(c *gin.Context) {
 			uuids = append(uuids, c.GetString(util.UuidKey))
@@ -80,9 +80,9 @@ func TestUuid(t *testing.T) {
 
 	t.Run("calls next middleware", func(t *testing.T) {
 		router := gin.New()
-		
+
 		nextCalled := false
-		
+
 		router.Use(Uuid)
 		router.Use(func(c *gin.Context) {
 			nextCalled = true
@@ -103,9 +103,9 @@ func TestUuid(t *testing.T) {
 
 	t.Run("UUID persists through middleware chain", func(t *testing.T) {
 		router := gin.New()
-		
+
 		var uuid1, uuid2 string
-		
+
 		router.Use(Uuid)
 		router.Use(func(c *gin.Context) {
 			uuid1 = c.GetString(util.UuidKey)

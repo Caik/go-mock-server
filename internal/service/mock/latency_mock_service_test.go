@@ -8,8 +8,6 @@ import (
 	"github.com/Caik/go-mock-server/internal/config"
 )
 
-
-
 func TestLatencyMockService_getMockResponse(t *testing.T) {
 	t.Run("applies latency when config exists", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
@@ -24,7 +22,7 @@ func TestLatencyMockService_getMockResponse(t *testing.T) {
 		}
 
 		service := newLatencyMockService(hostsConfig)
-		
+
 		testData := []byte("test response")
 		mockNext := &mockMockService{
 			response: &MockResponse{
@@ -61,7 +59,7 @@ func TestLatencyMockService_getMockResponse(t *testing.T) {
 		}
 
 		service := newLatencyMockService(hostsConfig)
-		
+
 		testData2 := []byte("test response")
 		mockNext := &mockMockService{
 			response: &MockResponse{
@@ -195,7 +193,7 @@ func TestLatencyMockService_drawLatency(t *testing.T) {
 		// Test multiple draws to ensure they're within range
 		for i := 0; i < 100; i++ {
 			latency := service.drawLatency(latencyConfig)
-			
+
 			if latency < 10 || latency > 20 {
 				t.Errorf("latency %d is outside range [10, 20]", latency)
 			}

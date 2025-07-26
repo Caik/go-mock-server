@@ -414,9 +414,9 @@ func TestComplexDependencyGraph(t *testing.T) {
 	}
 
 	type OrderService struct {
-		DB         *Database
-		Logger     *Logger
-		UserSvc    *UserService
+		DB      *Database
+		Logger  *Logger
+		UserSvc *UserService
 	}
 
 	type APIController struct {
