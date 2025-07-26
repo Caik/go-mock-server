@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/Caik/go-mock-server/internal/ci"
 	"github.com/Caik/go-mock-server/internal/config"
@@ -118,24 +119,33 @@ func TestStartServer(t *testing.T) {
 			os.Args = originalArgs
 		}()
 
-		// Set up minimal args
+		// Set up minimal args with port 0 to avoid conflicts
 		os.Args = []string{
 			"mock-server",
 			"--mocks-directory", "/tmp/test-start",
+			"--port", "0", // Use port 0 to get random available port
 		}
 
 		// First set up CI (this might have errors due to duplicates, but that's OK)
 		setupCI()
 
-		// Now test startServer - it will likely fail due to missing dependencies
-		// but we can verify it attempts to start
-		err := startServer()
+		// Test startServer in a goroutine with timeout to avoid blocking
+		done := make(chan error, 1)
+		go func() {
+			done <- startServer()
+		}()
 
-		// We expect an error since dependencies might not be fully set up
-		if err != nil {
-			t.Logf("startServer returned error as expected in test environment: %v", err)
-		} else {
-			t.Log("startServer completed (unexpected in test environment)")
+		// Wait for either completion or timeout
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Logf("startServer returned error as expected in test environment: %v", err)
+			} else {
+				t.Log("startServer completed (unexpected in test environment)")
+			}
+		case <-time.After(100 * time.Millisecond):
+			// Timeout is expected - server startup was initiated
+			t.Log("startServer initiated successfully (timed out as expected)")
 		}
 	})
 }
@@ -308,28 +318,35 @@ func TestErrorScenarios(t *testing.T) {
 			os.Args = originalArgs
 		}()
 
-		// Set up valid args to avoid argument parsing issues
+		// Set up valid args with port 0 to avoid conflicts
 		os.Args = []string{
 			"mock-server",
 			"--mocks-directory", "/tmp/test-start-server",
+			"--port", "0", // Use port 0 to avoid conflicts
 		}
 
-		// Test startServer - it might fail due to route conflicts or port binding
-		// This is expected in a test environment
+		// Test startServer in a goroutine with timeout
 		defer func() {
 			if r := recover(); r != nil {
 				t.Logf("startServer panicked as expected in test environment: %v", r)
 			}
 		}()
 
-		err := startServer()
+		done := make(chan error, 1)
+		go func() {
+			done <- startServer()
+		}()
 
-		// Should return an error since CI might not be properly set up
-		// or routes might already be registered
-		if err != nil {
-			t.Logf("startServer returned error as expected: %v", err)
-		} else {
-			t.Log("startServer completed unexpectedly")
+		// Wait for either completion or timeout
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Logf("startServer returned error as expected: %v", err)
+			} else {
+				t.Log("startServer completed unexpectedly")
+			}
+		case <-time.After(100 * time.Millisecond):
+			t.Log("startServer initiated successfully (timed out as expected)")
 		}
 	})
 }

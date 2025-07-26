@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"math/rand"
 	"testing"
 	"time"
 
@@ -180,6 +181,9 @@ func TestLatencyMockService_getMockResponse(t *testing.T) {
 }
 
 func TestLatencyMockService_drawLatency(t *testing.T) {
+	// Set a fixed seed for deterministic random behavior in tests
+	rand.Seed(12345)
+
 	service := &latencyMockService{}
 
 	t.Run("draws latency within min-max range", func(t *testing.T) {
