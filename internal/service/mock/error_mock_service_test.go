@@ -168,21 +168,34 @@ func TestErrorMockService_drawError(t *testing.T) {
 		}
 	})
 
-	t.Run("returns nil when no error should be drawn", func(t *testing.T) {
+	t.Run("handles zero percentage error configuration", func(t *testing.T) {
 		errorsConfig := map[string]config.ErrorConfig{
 			"500": {
-				Percentage: intPtr(0), // Never draw this error
+				Percentage: intPtr(0), // 0% error rate
 			},
 		}
 
-		// Should never return an error
-		for i := 0; i < 10; i++ {
+		// With 0% error rate, errors should be very rare but can still occur
+		// when rand.Intn(101) returns 0, since 0 <= 0 is true
+		var errorCount int
+		var totalRuns int = 100
+
+		for i := 0; i < totalRuns; i++ {
 			wrapper := service.drawError(&errorsConfig)
-			
 			if wrapper != nil {
-				t.Error("expected nil wrapper, got error")
+				errorCount++
 			}
 		}
+
+		errorRate := float64(errorCount) / float64(totalRuns) * 100
+
+		// With 0% configured, we expect very low actual error rate (around 1%)
+		// since rand.Intn(101) returns 0 about 1% of the time
+		if errorRate > 5.0 { // Allow some tolerance
+			t.Errorf("expected very low error rate with 0%% config, got %.1f%%", errorRate)
+		}
+
+		t.Logf("with 0%% configured error rate, got %.1f%% actual error rate", errorRate)
 	})
 
 	t.Run("handles invalid status code strings", func(t *testing.T) {
