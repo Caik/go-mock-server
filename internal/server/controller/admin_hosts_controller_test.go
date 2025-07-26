@@ -752,8 +752,8 @@ func TestAdminHostsController_ErrorHandlingEndpoints(t *testing.T) {
 		service := admin.NewHostsConfigAdminService(hostsConfig)
 		controller := NewAdminHostsController(hostsConfig, service)
 
-		// Create request with URI config
-		requestBody := `{"host": "example.com", "uris": {"/api/users": {"methods": ["GET", "POST"]}, "/api/health": {"methods": ["GET"]}}}`
+		// Create request with valid URI config (must have either latency or errors)
+		requestBody := `{"host": "example.com", "uris": {"/api/users": {"errors": {"400": {"percentage": 10}}}, "/api/health": {"latency": {"min": 50, "max": 100}}}}`
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/uris", strings.NewReader(requestBody))

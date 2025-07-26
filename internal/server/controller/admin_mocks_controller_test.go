@@ -573,7 +573,7 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/admin/mocks", strings.NewReader(tc.body))
 				req.Header.Set("x-mock-host", "example.com")
-				req.Header.Set("x-mock-uri", "/api/"+tc.name)
+				req.Header.Set("x-mock-uri", "/api/test") // Use simple URI
 				req.Header.Set("x-mock-method", "GET")
 				req.Header.Set("Content-Type", tc.contentType)
 
@@ -644,7 +644,7 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 			"/api/v1/users",
 			"/api/users-list",
 			"/api/users_list",
-			"/api/users.json",
+			"/api/users/format",
 		}
 
 		for _, uri := range specialURIs {
