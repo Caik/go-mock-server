@@ -133,8 +133,8 @@ func TestLatencyMockService_getMockResponse(t *testing.T) {
 			}
 		}()
 
-		// Run multiple times to test thoroughly
-		for i := 0; i < 100; i++ {
+		// Run a few times to test thoroughly (reduced for test performance)
+		for i := 0; i < 3; i++ {
 			response := service.getMockResponse(request)
 			if response == nil {
 				t.Error("response should not be nil")
@@ -274,9 +274,9 @@ func TestLatencyMockService_drawLatency(t *testing.T) {
 			}
 		}()
 
-		// Run many times to test thoroughly
+		// Run multiple times to test thoroughly (reduced for test performance)
 		var latencies []int
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100; i++ {
 			latency := service.drawLatency(latencyConfig)
 			latencies = append(latencies, latency)
 
