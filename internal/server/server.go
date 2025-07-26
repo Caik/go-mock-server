@@ -2,9 +2,9 @@ package server
 
 import (
 	"fmt"
-	"sync"
 	"github.com/Caik/go-mock-server/internal/server/controller"
 	"go.uber.org/dig"
+	"sync"
 
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/server/middleware"
@@ -22,11 +22,10 @@ type StartServerParams struct {
 	MocksController      *controller.MocksController
 }
 
-var ginModeOnce sync.Once
+var once sync.Once
 
 func NewServer() *gin.Engine {
-	// Set gin mode only once to avoid race conditions in tests
-	ginModeOnce.Do(func() {
+	once.Do(func() {
 		gin.SetMode(gin.ReleaseMode)
 	})
 
