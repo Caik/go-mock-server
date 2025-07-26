@@ -117,6 +117,9 @@ func TestNewServer(t *testing.T) {
 }
 
 func TestStartServer(t *testing.T) {
+	// Set gin mode once to avoid race conditions
+	gin.SetMode(gin.TestMode)
+
 	t.Run("initializes routes correctly", func(t *testing.T) {
 		// Create mock controllers
 		adminMocksController := &controller.AdminMocksController{}

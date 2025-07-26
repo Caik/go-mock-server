@@ -201,8 +201,9 @@ func TestBroadcaster_Publish(t *testing.T) {
 		// Publish in a goroutine
 		go broadcaster.Publish(event, "test-uuid")
 
-		// Collect events from all channels
-		var receivedEvents []TestEvent
+		// Collect events from all channels with proper synchronization
+		receivedEvents := make([]TestEvent, 0, 3)
+		var mu sync.Mutex
 		var wg sync.WaitGroup
 		wg.Add(3)
 
@@ -210,7 +211,9 @@ func TestBroadcaster_Publish(t *testing.T) {
 			defer wg.Done()
 			select {
 			case event := <-ch:
+				mu.Lock()
 				receivedEvents = append(receivedEvents, event)
+				mu.Unlock()
 			case <-time.After(1 * time.Second):
 				t.Error("timeout waiting for event")
 			}
@@ -222,16 +225,22 @@ func TestBroadcaster_Publish(t *testing.T) {
 
 		wg.Wait()
 
-		if len(receivedEvents) != 3 {
-			t.Errorf("expected 3 events, got %d", len(receivedEvents))
+		mu.Lock()
+		eventCount := len(receivedEvents)
+		mu.Unlock()
+
+		if eventCount != 3 {
+			t.Errorf("expected 3 events, got %d", eventCount)
 		}
 
 		// Verify all events are correct
+		mu.Lock()
 		for i, receivedEvent := range receivedEvents {
 			if receivedEvent.ID != event.ID || receivedEvent.Message != event.Message {
 				t.Errorf("event %d: expected %+v, got %+v", i, event, receivedEvent)
 			}
 		}
+		mu.Unlock()
 	})
 
 	t.Run("publish with accept function filtering", func(t *testing.T) {
