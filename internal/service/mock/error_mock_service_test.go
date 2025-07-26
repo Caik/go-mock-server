@@ -3,7 +3,6 @@ package mock
 import (
 	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/Caik/go-mock-server/internal/config"
 )
