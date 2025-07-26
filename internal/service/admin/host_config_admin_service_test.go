@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Caik/go-mock-server/internal/config"
@@ -453,6 +454,436 @@ func TestHostsConfigAdminService_DeleteHostLatency(t *testing.T) {
 
 		if result != nil {
 			t.Error("DeleteHostLatency should return nil result for non-existent host")
+		}
+	})
+}
+
+func TestHostsConfigAdminService_ErrorScenarios(t *testing.T) {
+	t.Run("AddUpdateHost handles validation errors", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		// Test with invalid latency config (min > max)
+		request := HostAddDeleteRequest{
+			Host: "example.com",
+			LatencyConfig: &config.LatencyConfig{
+				Min: intPtr(100),
+				Max: intPtr(50), // Invalid: min > max
+			},
+		}
+
+		result, err := service.AddUpdateHost(request)
+
+		if err == nil {
+			t.Error("AddUpdateHost should return error for invalid latency config")
+		}
+
+		if result != nil {
+			t.Error("AddUpdateHost should return nil result on validation error")
+		}
+
+		if !strings.Contains(err.Error(), "error while validating host config") {
+			t.Errorf("expected validation error message, got: %v", err)
+		}
+	})
+
+	t.Run("AddUpdateHostLatency handles validation errors", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		// Test with invalid latency config
+		request := HostAddDeleteRequest{
+			Host: "example.com",
+			LatencyConfig: &config.LatencyConfig{
+				Min: intPtr(200),
+				Max: intPtr(100), // Invalid: min > max
+			},
+		}
+
+		result, err := service.AddUpdateHostLatency(request)
+
+		if err == nil {
+			t.Error("AddUpdateHostLatency should return error for invalid config")
+		}
+
+		if result != nil {
+			t.Error("AddUpdateHostLatency should return nil result on validation error")
+		}
+	})
+
+	t.Run("AddUpdateHostErrors handles validation errors", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		// Test with invalid error config (percentage > 100)
+		request := HostAddDeleteRequest{
+			Host: "example.com",
+			ErrorConfig: map[string]config.ErrorConfig{
+				"500": {
+					Percentage: intPtr(150), // Invalid: > 100%
+				},
+			},
+		}
+
+		result, err := service.AddUpdateHostErrors(request)
+
+		if err == nil {
+			t.Error("AddUpdateHostErrors should return error for invalid config")
+		}
+
+		if result != nil {
+			t.Error("AddUpdateHostErrors should return nil result on validation error")
+		}
+	})
+
+	t.Run("AddUpdateHostUris handles validation errors", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		// Test with invalid URI config (invalid error percentage)
+		request := HostAddDeleteRequest{
+			Host: "example.com",
+			UriConfig: map[string]config.UriConfig{
+				"/api/test": {
+					ErrorsConfig: map[string]config.ErrorConfig{
+						"400": {
+							Percentage: intPtr(200), // Invalid: > 100%
+						},
+					},
+				},
+			},
+		}
+
+		result, err := service.AddUpdateHostUris(request)
+
+		if err == nil {
+			t.Error("AddUpdateHostUris should return error for invalid URI config")
+		}
+
+		if result != nil {
+			t.Error("AddUpdateHostUris should return nil result on validation error")
+		}
+	})
+}
+
+func TestHostsConfigAdminService_EdgeCases(t *testing.T) {
+	t.Run("handles empty host name", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		request := HostAddDeleteRequest{
+			Host: "", // Empty host name
+			LatencyConfig: &config.LatencyConfig{
+				Min: intPtr(10),
+				Max: intPtr(20),
+			},
+		}
+
+		result, err := service.AddUpdateHost(request)
+
+		// This should work - empty string is a valid key
+		if err != nil {
+			t.Errorf("AddUpdateHost should handle empty host name: %v", err)
+		}
+
+		if result == nil {
+			t.Error("AddUpdateHost should return result for empty host name")
+		}
+	})
+
+	t.Run("handles nil latency config", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		request := HostAddDeleteRequest{
+			Host:          "example.com",
+			LatencyConfig: nil, // Nil latency config
+		}
+
+		result, err := service.AddUpdateHost(request)
+
+		if err != nil {
+			t.Errorf("AddUpdateHost should handle nil latency config: %v", err)
+		}
+
+		if result == nil {
+			t.Error("AddUpdateHost should return result for nil latency config")
+		}
+	})
+
+	t.Run("handles nil error config", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		request := HostAddDeleteRequest{
+			Host:        "example.com",
+			ErrorConfig: nil, // Nil error config
+		}
+
+		result, err := service.AddUpdateHost(request)
+
+		if err != nil {
+			t.Errorf("AddUpdateHost should handle nil error config: %v", err)
+		}
+
+		if result == nil {
+			t.Error("AddUpdateHost should return result for nil error config")
+		}
+	})
+
+	t.Run("handles nil URI config", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		request := HostAddDeleteRequest{
+			Host:      "example.com",
+			UriConfig: nil, // Nil URI config
+		}
+
+		result, err := service.AddUpdateHost(request)
+
+		if err != nil {
+			t.Errorf("AddUpdateHost should handle nil URI config: %v", err)
+		}
+
+		if result == nil {
+			t.Error("AddUpdateHost should return result for nil URI config")
+		}
+	})
+}
+
+func TestHostsConfigAdminService_AddUpdateHostErrors(t *testing.T) {
+	t.Run("adds error config to existing host", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		request := HostAddDeleteRequest{
+			Host: "example.com",
+			ErrorConfig: map[string]config.ErrorConfig{
+				"500": {Percentage: intPtr(10)},
+				"404": {Percentage: intPtr(5)},
+			},
+		}
+
+		result, err := service.AddUpdateHostErrors(request)
+
+		if err != nil {
+			t.Fatalf("AddUpdateHostErrors should not return error: %v", err)
+		}
+
+		if result == nil {
+			t.Fatal("AddUpdateHostErrors should return non-nil host config")
+		}
+
+		// Verify error config was added
+		storedConfig := hostsConfig.GetHostConfig("example.com")
+		if storedConfig == nil {
+			t.Fatal("host should exist in hosts config")
+		}
+
+		if len(storedConfig.ErrorsConfig) != 2 {
+			t.Errorf("expected 2 error configs, got %d", len(storedConfig.ErrorsConfig))
+		}
+	})
+
+	t.Run("handles non-existent host by returning nil", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		request := HostAddDeleteRequest{
+			Host: "non-existent.com",
+			ErrorConfig: map[string]config.ErrorConfig{
+				"500": {Percentage: intPtr(10)},
+			},
+		}
+
+		result, err := service.AddUpdateHostErrors(request)
+
+		if err != nil {
+			t.Errorf("AddUpdateHostErrors should not return error for non-existent host: %v", err)
+		}
+
+		if result != nil {
+			t.Error("AddUpdateHostErrors should return nil result for non-existent host")
+		}
+	})
+}
+
+func TestHostsConfigAdminService_DeleteHostError(t *testing.T) {
+	t.Run("deletes specific error from host", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {
+					ErrorsConfig: map[string]config.ErrorConfig{
+						"500": {Percentage: intPtr(10)},
+						"404": {Percentage: intPtr(5)},
+					},
+				},
+			},
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		result, err := service.DeleteHostError("example.com", "500")
+
+		if err != nil {
+			t.Fatalf("DeleteHostError should not return error: %v", err)
+		}
+
+		if result == nil {
+			t.Fatal("DeleteHostError should return non-nil host config")
+		}
+
+		// Verify specific error was deleted
+		storedConfig := hostsConfig.GetHostConfig("example.com")
+		if storedConfig == nil {
+			t.Fatal("host should still exist in hosts config")
+		}
+
+		if len(storedConfig.ErrorsConfig) != 1 {
+			t.Errorf("expected 1 error config remaining, got %d", len(storedConfig.ErrorsConfig))
+		}
+
+		if _, exists := storedConfig.ErrorsConfig["500"]; exists {
+			t.Error("error 500 should be deleted")
+		}
+
+		if _, exists := storedConfig.ErrorsConfig["404"]; !exists {
+			t.Error("error 404 should still exist")
+		}
+	})
+
+	t.Run("handles non-existent host by returning nil", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		result, err := service.DeleteHostError("non-existent.com", "500")
+
+		if err != nil {
+			t.Errorf("DeleteHostError should not return error for non-existent host: %v", err)
+		}
+
+		if result != nil {
+			t.Error("DeleteHostError should return nil result for non-existent host")
+		}
+	})
+}
+
+func TestHostsConfigAdminService_AddUpdateHostUris(t *testing.T) {
+	t.Run("adds URI config to existing host", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		request := HostAddDeleteRequest{
+			Host: "example.com",
+			UriConfig: map[string]config.UriConfig{
+				"/api/users": {
+					ErrorsConfig: map[string]config.ErrorConfig{
+						"400": {Percentage: intPtr(10)},
+					},
+				},
+				"/api/orders": {
+					LatencyConfig: &config.LatencyConfig{
+						Min: intPtr(50),
+						Max: intPtr(100),
+					},
+				},
+			},
+		}
+
+		result, err := service.AddUpdateHostUris(request)
+
+		if err != nil {
+			t.Fatalf("AddUpdateHostUris should not return error: %v", err)
+		}
+
+		if result == nil {
+			t.Fatal("AddUpdateHostUris should return non-nil host config")
+		}
+
+		// Verify URI config was added
+		storedConfig := hostsConfig.GetHostConfig("example.com")
+		if storedConfig == nil {
+			t.Fatal("host should exist in hosts config")
+		}
+
+		if len(storedConfig.UrisConfig) != 2 {
+			t.Errorf("expected 2 URI configs, got %d", len(storedConfig.UrisConfig))
+		}
+	})
+
+	t.Run("handles non-existent host by returning nil", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+
+		service := NewHostsConfigAdminService(hostsConfig)
+
+		request := HostAddDeleteRequest{
+			Host: "non-existent.com",
+			UriConfig: map[string]config.UriConfig{
+				"/api/test": {
+					ErrorsConfig: map[string]config.ErrorConfig{
+						"400": {Percentage: intPtr(10)},
+					},
+				},
+			},
+		}
+
+		result, err := service.AddUpdateHostUris(request)
+
+		if err != nil {
+			t.Errorf("AddUpdateHostUris should not return error for non-existent host: %v", err)
+		}
+
+		if result != nil {
+			t.Error("AddUpdateHostUris should return nil result for non-existent host")
 		}
 	})
 }
