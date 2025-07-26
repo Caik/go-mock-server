@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"sync"
 	"github.com/Caik/go-mock-server/internal/server/controller"
 	"go.uber.org/dig"
 
@@ -21,8 +22,13 @@ type StartServerParams struct {
 	MocksController      *controller.MocksController
 }
 
+var ginModeOnce sync.Once
+
 func NewServer() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
+	// Set gin mode only once to avoid race conditions in tests
+	ginModeOnce.Do(func() {
+		gin.SetMode(gin.ReleaseMode)
+	})
 
 	r := gin.New()
 	r.Use(gin.Recovery())

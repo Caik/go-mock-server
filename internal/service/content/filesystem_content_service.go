@@ -143,7 +143,7 @@ func (f *FilesystemContentService) Unsubscribe(subscriberId string) {
 }
 
 func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) string {
-	parts := strings.Split(uri, "?")
+	parts := strings.SplitN(uri, "?", 2)
 	isRootPath := strings.HasSuffix(parts[0], "/")
 	uriFixed := strings.ReplaceAll(parts[0], "/", pathSeparator)
 
