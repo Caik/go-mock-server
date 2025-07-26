@@ -200,3 +200,110 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 		controller.handleMockRequest(c)
 	})
 }
+
+func TestMocksController_RequestParsing(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("handles different HTTP methods in request parsing", func(t *testing.T) {
+		controller := &MocksController{}
+
+		methods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+
+		for _, method := range methods {
+			t.Run("method "+method, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+
+				req := httptest.NewRequest(method, "/api/test", nil)
+				req.Host = "example.com"
+				c.Request = req
+				c.Set(util.UuidKey, "test-uuid")
+
+				mockRequest := controller.newMockRequest(c)
+
+				if mockRequest.Method != method {
+					t.Errorf("expected method %s, got %s", method, mockRequest.Method)
+				}
+
+				if mockRequest.Host != "example.com" {
+					t.Errorf("expected host 'example.com', got '%s'", mockRequest.Host)
+				}
+
+				if mockRequest.URI != "/api/test" {
+					t.Errorf("expected URI '/api/test', got '%s'", mockRequest.URI)
+				}
+
+				if mockRequest.Uuid != "test-uuid" {
+					t.Errorf("expected UUID 'test-uuid', got '%s'", mockRequest.Uuid)
+				}
+			})
+		}
+	})
+
+	t.Run("handles different Accept headers", func(t *testing.T) {
+		controller := &MocksController{}
+
+		acceptHeaders := []string{
+			"application/json",
+			"application/xml",
+			"text/plain",
+			"text/html",
+			"*/*",
+		}
+
+		for _, acceptHeader := range acceptHeaders {
+			t.Run("accept "+acceptHeader, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+
+				req := httptest.NewRequest("GET", "/api/test", nil)
+				req.Host = "example.com"
+				req.Header.Set("Accept", acceptHeader)
+				c.Request = req
+				c.Set(util.UuidKey, "test-uuid")
+
+				mockRequest := controller.newMockRequest(c)
+
+				if mockRequest.Accept != acceptHeader {
+					t.Errorf("expected Accept '%s', got '%s'", acceptHeader, mockRequest.Accept)
+				}
+			})
+		}
+	})
+
+	t.Run("handles complex URIs", func(t *testing.T) {
+		controller := &MocksController{}
+
+		complexURIs := []string{
+			"/api/users?id=123&name=test",
+			"/api/v1/users/123",
+			"/api/users-list",
+			"/api/users_list",
+			"/api/users.json",
+			"/api/users?filter=name%3Dtest",
+		}
+
+		for _, uri := range complexURIs {
+			t.Run("URI "+uri, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+
+				req := httptest.NewRequest("GET", uri, nil)
+				req.Host = "example.com"
+				c.Request = req
+				c.Set(util.UuidKey, "test-uuid")
+
+				mockRequest := controller.newMockRequest(c)
+
+				if mockRequest.URI != uri {
+					t.Errorf("expected URI '%s', got '%s'", uri, mockRequest.URI)
+				}
+			})
+		}
+	})
+}
+
+// Helper function
+func stringPtr(s string) *string {
+	return &s
+}

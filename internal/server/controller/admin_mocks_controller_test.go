@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -497,4 +498,174 @@ func TestAddDeleteMockRequest_validate(t *testing.T) {
 	}
 }
 
+func TestAdminMocksController_HTTPIntegration(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 
+	t.Run("handles different HTTP methods correctly", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		methods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+
+		for _, method := range methods {
+			t.Run("method "+method, func(t *testing.T) {
+				// Test adding mock for each method
+				requestBody := []byte(`{"message": "test data for ` + method + `"}`)
+				req := httptest.NewRequest(http.MethodPost, "/admin/mocks", bytes.NewBuffer(requestBody))
+				req.Header.Set("x-mock-host", "example.com")
+				req.Header.Set("x-mock-uri", "/api/test")
+				req.Header.Set("x-mock-method", method)
+
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+				c.Request = req
+				c.Set(util.UuidKey, "test-uuid")
+
+				controller.handleMockAddUpdate(c)
+
+				if w.Code != http.StatusOK {
+					t.Errorf("expected status 200 for method %s, got %d", method, w.Code)
+				}
+
+				var response rest.Response
+				json.Unmarshal(w.Body.Bytes(), &response)
+				if response.Status != rest.Success {
+					t.Errorf("expected success for method %s, got %s", method, response.Status)
+				}
+			})
+		}
+	})
+
+	t.Run("handles different content types", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		testCases := []struct {
+			name        string
+			contentType string
+			body        string
+		}{
+			{
+				name:        "JSON content",
+				contentType: "application/json",
+				body:        `{"key": "value", "number": 123}`,
+			},
+			{
+				name:        "XML content",
+				contentType: "application/xml",
+				body:        `<root><key>value</key></root>`,
+			},
+			{
+				name:        "plain text",
+				contentType: "text/plain",
+				body:        "simple text response",
+			},
+			{
+				name:        "HTML content",
+				contentType: "text/html",
+				body:        `<html><body><h1>Test</h1></body></html>`,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				req := httptest.NewRequest(http.MethodPost, "/admin/mocks", strings.NewReader(tc.body))
+				req.Header.Set("x-mock-host", "example.com")
+				req.Header.Set("x-mock-uri", "/api/"+tc.name)
+				req.Header.Set("x-mock-method", "GET")
+				req.Header.Set("Content-Type", tc.contentType)
+
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+				c.Request = req
+				c.Set(util.UuidKey, "test-uuid")
+
+				controller.handleMockAddUpdate(c)
+
+				if w.Code != http.StatusOK {
+					t.Errorf("expected status 200 for %s, got %d", tc.name, w.Code)
+				}
+
+				var response rest.Response
+				json.Unmarshal(w.Body.Bytes(), &response)
+				if response.Status != rest.Success {
+					t.Errorf("expected success for %s, got %s", tc.name, response.Status)
+				}
+			})
+		}
+	})
+
+	t.Run("handles large request bodies", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		// Create a large JSON payload
+		largeData := make(map[string]interface{})
+		for i := 0; i < 1000; i++ {
+			largeData[fmt.Sprintf("key_%d", i)] = fmt.Sprintf("value_%d", i)
+		}
+
+		largeBody, _ := json.Marshal(largeData)
+
+		req := httptest.NewRequest(http.MethodPost, "/admin/mocks", bytes.NewBuffer(largeBody))
+		req.Header.Set("x-mock-host", "example.com")
+		req.Header.Set("x-mock-uri", "/api/large")
+		req.Header.Set("x-mock-method", "POST")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockAddUpdate(c)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200 for large body, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+		if response.Status != rest.Success {
+			t.Errorf("expected success for large body, got %s", response.Status)
+		}
+	})
+
+	t.Run("handles special characters in URIs", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		specialURIs := []string{
+			"/api/users?id=123",
+			"/api/users/123",
+			"/api/v1/users",
+			"/api/users-list",
+			"/api/users_list",
+			"/api/users.json",
+		}
+
+		for _, uri := range specialURIs {
+			t.Run("URI "+uri, func(t *testing.T) {
+				requestBody := []byte(`{"message": "test"}`)
+				req := httptest.NewRequest(http.MethodPost, "/admin/mocks", bytes.NewBuffer(requestBody))
+				req.Header.Set("x-mock-host", "example.com")
+				req.Header.Set("x-mock-uri", uri)
+				req.Header.Set("x-mock-method", "GET")
+
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+				c.Request = req
+				c.Set(util.UuidKey, "test-uuid")
+
+				controller.handleMockAddUpdate(c)
+
+				if w.Code != http.StatusOK {
+					t.Errorf("expected status 200 for URI %s, got %d", uri, w.Code)
+				}
+			})
+		}
+	})
+}
