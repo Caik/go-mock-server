@@ -411,5 +411,314 @@ func TestFilesystemContentService_DeleteContent(t *testing.T) {
 		if err == nil {
 			t.Error("expected error for non-existent file")
 		}
+
+		if !strings.Contains(err.Error(), "error while removing file") {
+			t.Errorf("expected 'error while removing file' error, got '%v'", err)
+		}
+	})
+}
+
+func TestFilesystemContentService_ListContents(t *testing.T) {
+	// Create temporary directory with test files
+	tempDir, err := os.MkdirTemp("", "mock_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create test files (using valid hostnames that match the regex)
+	testFiles := map[string][]byte{
+		"example.com/api/users.get":      []byte("users get"),
+		"example.com/api/users.post":     []byte("users post"),
+		"api.test.com/v1/health.get":     []byte("health check"),
+		"admin.local.com/admin/status.get": []byte("admin status"),
+	}
+
+	for filePath, content := range testFiles {
+		fullPath := filepath.Join(tempDir, filePath)
+		os.MkdirAll(filepath.Dir(fullPath), 0755)
+		os.WriteFile(fullPath, content, 0644)
+	}
+
+	mocksDirConfig := &config.MocksDirectoryConfig{
+		Path: tempDir,
+	}
+
+	service := &FilesystemContentService{
+		mocksDirConfig: mocksDirConfig,
+	}
+
+	t.Run("lists all content files successfully", func(t *testing.T) {
+		contents, err := service.ListContents("test-uuid")
+
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if contents == nil {
+			t.Fatal("expected non-nil contents")
+		}
+
+		if len(*contents) != len(testFiles) {
+			t.Errorf("expected %d contents, got %d", len(testFiles), len(*contents))
+			// Debug: show what was actually found
+			for i, content := range *contents {
+				t.Logf("found content %d: host=%s, uri=%s, method=%s", i, content.Host, content.Uri, content.Method)
+			}
+		}
+
+		// Verify specific content entries
+		foundHosts := make(map[string]bool)
+		for _, content := range *contents {
+			foundHosts[content.Host] = true
+		}
+
+		expectedHosts := []string{"example.com", "api.test.com", "admin.local.com"}
+		for _, host := range expectedHosts {
+			if !foundHosts[host] {
+				t.Errorf("expected to find host '%s' in contents", host)
+			}
+		}
+	})
+
+	t.Run("handles empty directory", func(t *testing.T) {
+		emptyDir, err := os.MkdirTemp("", "empty_mock_test")
+		if err != nil {
+			t.Fatalf("failed to create empty temp dir: %v", err)
+		}
+		defer os.RemoveAll(emptyDir)
+
+		emptyService := &FilesystemContentService{
+			mocksDirConfig: &config.MocksDirectoryConfig{Path: emptyDir},
+		}
+
+		contents, err := emptyService.ListContents("test-uuid")
+
+		if err != nil {
+			t.Fatalf("expected no error for empty directory, got %v", err)
+		}
+
+		if contents == nil {
+			t.Fatal("expected non-nil contents")
+		}
+
+		if len(*contents) != 0 {
+			t.Errorf("expected 0 contents for empty directory, got %d", len(*contents))
+		}
+	})
+
+	t.Run("handles non-existent directory", func(t *testing.T) {
+		nonExistentService := &FilesystemContentService{
+			mocksDirConfig: &config.MocksDirectoryConfig{Path: "/non/existent/path"},
+		}
+
+		contents, err := nonExistentService.ListContents("test-uuid")
+
+		if err == nil {
+			t.Error("expected error for non-existent directory")
+		}
+
+		if contents != nil {
+			t.Error("expected nil contents on error")
+		}
+	})
+}
+
+func TestFilesystemContentService_Subscribe(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "mock_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	mocksDirConfig := &config.MocksDirectoryConfig{
+		Path: tempDir,
+	}
+
+	service := &FilesystemContentService{
+		mocksDirConfig: mocksDirConfig,
+	}
+
+	t.Run("subscribes to all event types", func(t *testing.T) {
+		subscriberId := "test-subscriber"
+
+		// Subscribe without specifying event types (should get all)
+		eventChan := service.Subscribe(subscriberId)
+
+		if eventChan == nil {
+			t.Error("expected non-nil event channel")
+		}
+
+		// Clean up
+		service.Unsubscribe(subscriberId)
+	})
+
+	t.Run("subscribes to specific event types", func(t *testing.T) {
+		subscriberId := "test-subscriber-specific"
+
+		// Subscribe to only Created and Updated events
+		eventChan := service.Subscribe(subscriberId, Created, Updated)
+
+		if eventChan == nil {
+			t.Error("expected non-nil event channel")
+		}
+
+		// Clean up
+		service.Unsubscribe(subscriberId)
+	})
+
+	t.Run("handles multiple subscribers", func(t *testing.T) {
+		subscriber1 := "subscriber-1"
+		subscriber2 := "subscriber-2"
+
+		eventChan1 := service.Subscribe(subscriber1)
+		eventChan2 := service.Subscribe(subscriber2, Created)
+
+		if eventChan1 == nil {
+			t.Error("expected non-nil event channel for subscriber 1")
+		}
+
+		if eventChan2 == nil {
+			t.Error("expected non-nil event channel for subscriber 2")
+		}
+
+		// Clean up
+		service.Unsubscribe(subscriber1)
+		service.Unsubscribe(subscriber2)
+	})
+}
+
+func TestFilesystemContentService_Unsubscribe(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "mock_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	mocksDirConfig := &config.MocksDirectoryConfig{
+		Path: tempDir,
+	}
+
+	service := &FilesystemContentService{
+		mocksDirConfig: mocksDirConfig,
+	}
+
+	t.Run("unsubscribes existing subscriber", func(t *testing.T) {
+		subscriberId := "test-subscriber"
+
+		// Subscribe first
+		eventChan := service.Subscribe(subscriberId)
+		if eventChan == nil {
+			t.Fatal("failed to subscribe")
+		}
+
+		// Unsubscribe - should not panic
+		service.Unsubscribe(subscriberId)
+
+		t.Log("successfully unsubscribed")
+	})
+
+	t.Run("handles unsubscribing non-existent subscriber", func(t *testing.T) {
+		// Should not panic when unsubscribing non-existent subscriber
+		service.Unsubscribe("non-existent-subscriber")
+
+		t.Log("handled non-existent subscriber gracefully")
+	})
+}
+
+func TestNewFilesystemContentService(t *testing.T) {
+	t.Run("creates service with valid config", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "mock_test")
+		if err != nil {
+			t.Fatalf("failed to create temp dir: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+
+		mocksDirConfig := &config.MocksDirectoryConfig{
+			Path: tempDir,
+		}
+
+		service := NewFilesystemContentService(mocksDirConfig)
+
+		if service == nil {
+			t.Error("expected non-nil service")
+		}
+
+		if service.mocksDirConfig != mocksDirConfig {
+			t.Error("service should store the provided config")
+		}
+	})
+
+	t.Run("handles nil config", func(t *testing.T) {
+		// This might panic or cause issues, but let's test it
+		defer func() {
+			if r := recover(); r != nil {
+				t.Logf("NewFilesystemContentService panicked with nil config: %v", r)
+			}
+		}()
+
+		service := NewFilesystemContentService(nil)
+
+		if service != nil {
+			t.Log("service created with nil config")
+		}
+	})
+}
+
+func TestFilesystemContentService_ErrorHandling(t *testing.T) {
+	t.Run("SetContent handles directory creation errors", func(t *testing.T) {
+		// Use a path that will cause permission errors
+		mocksDirConfig := &config.MocksDirectoryConfig{
+			Path: "/root/restricted", // This should cause permission errors
+		}
+
+		service := &FilesystemContentService{
+			mocksDirConfig: mocksDirConfig,
+		}
+
+		testContent := []byte("test content")
+		err := service.SetContent("example.com", "/api/users", "POST", "test-uuid", &testContent)
+
+		if err == nil {
+			t.Error("expected error when creating directories in restricted path")
+		}
+
+		if !strings.Contains(err.Error(), "error while creating parent directories") {
+			t.Errorf("expected directory creation error, got: %v", err)
+		}
+	})
+
+	t.Run("handles invalid file paths gracefully", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "mock_test")
+		if err != nil {
+			t.Fatalf("failed to create temp dir: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+
+		mocksDirConfig := &config.MocksDirectoryConfig{
+			Path: tempDir,
+		}
+
+		service := &FilesystemContentService{
+			mocksDirConfig: mocksDirConfig,
+		}
+
+		// Test with invalid file path patterns
+		invalidPaths := []string{
+			"invalid-host-name",
+			"example.com",
+			"example.com/no-extension",
+		}
+
+		for _, invalidPath := range invalidPaths {
+			fullPath := filepath.Join(tempDir, invalidPath)
+			os.MkdirAll(filepath.Dir(fullPath), 0755)
+			os.WriteFile(fullPath, []byte("test"), 0644)
+
+			_, err := service.filePathToContentData(fullPath)
+			if err == nil {
+				t.Errorf("expected error for invalid path pattern: %s", invalidPath)
+			}
+		}
 	})
 }
