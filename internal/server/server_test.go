@@ -19,6 +19,9 @@ func TestNewServer(t *testing.T) {
 	originalMode := gin.Mode()
 	defer gin.SetMode(originalMode)
 
+	// Ensure gin is in release mode for this test
+	gin.SetMode(gin.ReleaseMode)
+
 	t.Run("creates server with correct configuration", func(t *testing.T) {
 		engine := NewServer()
 
