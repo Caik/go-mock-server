@@ -302,6 +302,18 @@ func TestErrorScenarios(t *testing.T) {
 	})
 
 	t.Run("tests startServer error handling", func(t *testing.T) {
+		// Save original args
+		originalArgs := os.Args
+		defer func() {
+			os.Args = originalArgs
+		}()
+
+		// Set up valid args to avoid argument parsing issues
+		os.Args = []string{
+			"mock-server",
+			"--mocks-directory", "/tmp/test-start-server",
+		}
+
 		// Test startServer - it might fail due to route conflicts or port binding
 		// This is expected in a test environment
 		defer func() {
