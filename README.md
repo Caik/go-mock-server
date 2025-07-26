@@ -83,6 +83,8 @@ Optimize performance and enhance Go Mock Server's reliability, making it more su
 
 Ensure accurate content-type handling by Go Mock Server. The application automatically returns the client's request content-type. In cases where no content-type is passed in the request, the application defaults to `text/plain`, ensuring seamless handling and compatibility with diverse APIs.
 
+To override the `Content-Type` header regardless of the client's Accept header, you can use the `--content-type CONTENT_TYPE` flag. When specified, the mock server will include `Content-Type: CONTENT_TYPE` in all responses, allowing for consistent response headers across all requests.
+
 ### 7. Dynamic Mock Creation
 
 Dynamically create mocks on the fly in two convenient ways:
