@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*.*.*'
 
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
 env:
   DOCKERHUB_REPO: caik/go-mock-server
 
