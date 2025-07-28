@@ -13,45 +13,49 @@ var (
 )
 
 func TestSetAppropriateContentType_JSON(t *testing.T) {
-	mime := ctms.setAppropriateContentType("application/json")
-	if mime != gin.MIMEJSON {
+	actual := ctms.setAppropriateContentType("application/json")
+	expected := gin.MIMEJSON
+	if actual != expected {
 		t.Errorf(
 			"expected %s, got %s",
-			gin.MIMEJSON,
-			mime,
+			expected,
+			actual,
 		)
 	}
 }
 
 func TestSetAppropriateContentType_PLAIN_FROM_ANY(t *testing.T) {
-	mime := ctms.setAppropriateContentType("*/*")
-	if mime != gin.MIMEPlain {
+	actual := ctms.setAppropriateContentType("*/*")
+	expected := gin.MIMEPlain
+	if actual != expected {
 		t.Errorf(
 			"expected %s, got %s",
-			gin.MIMEJSON,
-			mime,
+			expected,
+			actual,
 		)
 	}
 }
 
 func TestSetAppropriateContentType_PLAIN_FROM_EMPTY(t *testing.T) {
-	mime := ctms.setAppropriateContentType("")
-	if mime != gin.MIMEPlain {
+	actual := ctms.setAppropriateContentType("")
+	expected := gin.MIMEPlain
+	if actual != expected {
 		t.Errorf(
 			"expected %s, got %s",
-			gin.MIMEJSON,
-			mime,
+			expected,
+			actual,
 		)
 	}
 }
 
 func TestSetAppropriateContentType_JSON_HTML(t *testing.T) {
-	mime := ctms.setAppropriateContentType("application/json, text/html, */*; q=0.1")
-	if mime != gin.MIMEJSON {
+	actual := ctms.setAppropriateContentType("application/json, text/html, */*; q=0.1")
+	expected := gin.MIMEJSON
+	if actual != expected {
 		t.Errorf(
 			"expected %s, got %s",
-			gin.MIMEJSON,
-			mime,
+			expected,
+			actual,
 		)
 	}
 }
