@@ -25,7 +25,7 @@ func (m *MockServiceFactory) initServiceChain(
 	disableLatency,
 	disableErrors,
 	disableCache bool,
-	contentTypeOverride string,
+	defaultContentType string,
 	hostsConfig *config.HostsConfig,
 ) {
 	if m.mockServiceChain != nil {
@@ -70,7 +70,7 @@ func (m *MockServiceFactory) initServiceChain(
 		}
 
 		// content type
-		addNextFn(newContentTypeMockService(MockServiceParams{contentTypeOverride: contentTypeOverride}))
+		addNextFn(newContentTypeMockService(MockServiceParams{defaultContentType: defaultContentType}))
 
 		// cache
 		if !disableLatency {
@@ -98,7 +98,7 @@ func NewMockServiceFactory(
 		arguments.DisableLatency,
 		arguments.DisableError,
 		arguments.DisableCache,
-		arguments.ContentType,
+		arguments.DefaultContentType,
 		hostsConfig,
 	)
 

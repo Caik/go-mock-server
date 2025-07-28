@@ -1,6 +1,7 @@
 # Usage:
 # make                                  # build go source code, build go source code for windows
 # make build                            # build go source code for current platform
+# make test                             # run all unit tests						
 # make build_mac_amd64                  # build go source code for mac AMD64
 # make build_mac_arm64                  # build go source code for mac ARM64
 # make build_linux                      # build go source code for linux
@@ -8,8 +9,8 @@
 # make build_and_push_docker_image      # build and push docker image
 # make run_docker                       # run docker environment
 
-all: build_linux build_mac_amd64 build_mac_arm64 build_windows
-.PHONY: all build build_mac_amd64 build_mac_arm64 build_linux build_windows build_and_push_docker_image run_docker
+all: test build_linux build_mac_amd64 build_mac_arm64 build_windows
+.PHONY: all build test build_mac_amd64 build_mac_arm64 build_linux build_windows build_and_push_docker_image run_docker
 
 build: ./cmd/mock-server/main.go
 	@echo ""
@@ -18,6 +19,14 @@ build: ./cmd/mock-server/main.go
 	@echo "########################################"
 	@echo ""
 	@CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static" -s -w' -o dist/mock-server $<
+
+test:
+	@echo ""
+	@echo "########################################"
+	@echo "##        Running all tests           ##"
+	@echo "########################################"
+	@echo ""
+	@CGO_ENABLED=0 go test -timeout 30s ./internal/...
 
 build_mac_amd64: ./cmd/mock-server/main.go
 	@echo ""
@@ -38,7 +47,7 @@ build_mac_arm64: ./cmd/mock-server/main.go
 build_linux: ./cmd/mock-server/main.go
 	@echo ""
 	@echo "########################################"
-	@echo "##  Building Mock Server for Linux  ##"
+	@echo "##  Building Mock Server for Linux    ##"
 	@echo "########################################"
 	@echo ""
 	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s -w' -o dist/mock-server_linux $<

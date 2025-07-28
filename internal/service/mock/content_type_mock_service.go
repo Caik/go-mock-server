@@ -3,12 +3,11 @@ package mock
 import (
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
 
 type MockServiceParams struct {
-	contentTypeOverride string
+	defaultContentType string
 }
 
 type contentTypeMockService struct {
@@ -34,11 +33,7 @@ func (c *contentTypeMockService) getMockResponse(mockRequest MockRequest) *MockR
 		Str("content_type", contentType).
 		Msg("setting content type")
 
-	if c.params.contentTypeOverride != "" {
-		mockResponse.ContentType = c.params.contentTypeOverride
-	} else {
-		mockResponse.ContentType = contentType
-	}
+	mockResponse.ContentType = contentType
 
 	return mockResponse
 }
@@ -57,7 +52,7 @@ func (c *contentTypeMockService) nextOrNil(mockRequest MockRequest) *MockRespons
 
 func (c *contentTypeMockService) setAppropriateContentType(acceptHeader string) string {
 	if len(acceptHeader) == 0 || strings.EqualFold(strings.TrimSpace(acceptHeader), "*/*") {
-		return gin.MIMEPlain
+		return c.params.defaultContentType
 	}
 
 	parts := strings.Split(acceptHeader, ",")
@@ -68,7 +63,7 @@ func (c *contentTypeMockService) setAppropriateContentType(acceptHeader string) 
 		return acceptParts[0]
 	}
 
-	return gin.MIMEPlain
+	return c.params.defaultContentType
 }
 
 func newContentTypeMockService(params MockServiceParams) *contentTypeMockService {
