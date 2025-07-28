@@ -33,6 +33,13 @@ func (m *MocksController) handleMockRequest(c *gin.Context) {
 		}
 	}
 
+	// Set additional headers if present
+	if mockResponse.Headers != nil {
+		for key, value := range *mockResponse.Headers {
+			c.Header(key, value)
+		}
+	}
+
 	c.Data(mockResponse.StatusCode, mockResponse.ContentType, *mockResponse.Data)
 }
 

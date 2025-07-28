@@ -1,11 +1,10 @@
 package mock
 
 import (
-	"fmt"
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	"github.com/Caik/go-mock-server/internal/service/content"
-	"log"
+	"github.com/rs/zerolog/log"
 	"sync"
 )
 
@@ -18,7 +17,7 @@ func (m *MockServiceFactory) GetMockResponse(mockRequest MockRequest) *MockRespo
 	return m.mockServiceChain.getMockResponse(mockRequest)
 }
 
-func (m *MockServiceFactory) initServiceChain(contentService content.ContentService, cacheService cache.CacheService, disableLatency, disableErrors, disableCache bool, hostsConfig *config.HostsConfig) {
+func (m *MockServiceFactory) initServiceChain(contentService content.ContentService, cacheService cache.CacheService, disableLatency, disableErrors, disableCache, disableCors bool, hostsConfig *config.HostsConfig) {
 	if m.mockServiceChain != nil {
 		return
 	}
@@ -43,12 +42,16 @@ func (m *MockServiceFactory) initServiceChain(contentService content.ContentServ
 		hostResolutionMockService, err := newHostResolutionMockService(contentService)
 
 		if err != nil {
-			log.Fatalf(fmt.Sprintf("error while starting HostResolutionMockService: %v", err))
+			log.Fatal().
+				Msgf("error while starting HostResolutionMockService: %v", err)
 		}
 
 		addNextFn(hostResolutionMockService)
 
-		// TODO: add CORS MockService
+		// cors
+		if !disableCors {
+			addNextFn(newCorsMockService())
+		}
 
 		// latency
 		if !disableLatency {
@@ -78,7 +81,7 @@ func (m *MockServiceFactory) initServiceChain(contentService content.ContentServ
 
 func NewMockServiceFactory(contentService content.ContentService, cacheService cache.CacheService, arguments *config.AppArguments, hostsConfig *config.HostsConfig) *MockServiceFactory {
 	factory := MockServiceFactory{}
-	factory.initServiceChain(contentService, cacheService, arguments.DisableLatency, arguments.DisableError, arguments.DisableCache, hostsConfig)
+	factory.initServiceChain(contentService, cacheService, arguments.DisableLatency, arguments.DisableError, arguments.DisableCache, arguments.DisableCors, hostsConfig)
 
 	return &factory
 }
