@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Caik/go-mock-server/internal/server/controller"
 	"go.uber.org/dig"
+	"sync"
 
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/server/middleware"
@@ -21,8 +22,12 @@ type StartServerParams struct {
 	MocksController      *controller.MocksController
 }
 
+var once sync.Once
+
 func NewServer() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
+	once.Do(func() {
+		gin.SetMode(gin.ReleaseMode)
+	})
 
 	r := gin.New()
 	r.Use(gin.Recovery())

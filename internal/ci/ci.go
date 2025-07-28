@@ -17,8 +17,6 @@ func Invoke(constructor interface{}, opts ...dig.InvokeOption) error {
 
 	if dig.CanVisualizeError(err) {
 		_ = dig.Visualize(container, os.Stdout)
-
-		return err
 	}
 
 	return err
