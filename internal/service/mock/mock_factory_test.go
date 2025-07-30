@@ -6,6 +6,7 @@ import (
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	"github.com/Caik/go-mock-server/internal/service/content"
+	"github.com/gin-gonic/gin"
 )
 
 // Mock implementations for testing - using the one from host_resolution_mock_service_test.go
@@ -313,10 +314,10 @@ func TestMockServiceFactory_initServiceChain(t *testing.T) {
 		factory := &MockServiceFactory{}
 
 		// Call initServiceChain multiple times
-		factory.initServiceChain(contentService, cacheService, false, false, false, false, hostsConfig)
+		factory.initServiceChain(contentService, cacheService, false, false, false, false, gin.MIMEPlain, hostsConfig)
 		firstChain := factory.mockServiceChain
 
-		factory.initServiceChain(contentService, cacheService, false, false, false, false, hostsConfig)
+		factory.initServiceChain(contentService, cacheService, false, false, false, false, gin.MIMEPlain, hostsConfig)
 		secondChain := factory.mockServiceChain
 
 		// Should be the same instance (sync.Once behavior)
