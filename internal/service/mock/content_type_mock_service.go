@@ -3,12 +3,16 @@ package mock
 import (
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
 
+type MockServiceParams struct {
+	defaultContentType string
+}
+
 type contentTypeMockService struct {
-	next mockService
+	next   mockService
+	params MockServiceParams
 }
 
 func (c *contentTypeMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
@@ -48,7 +52,7 @@ func (c *contentTypeMockService) nextOrNil(mockRequest MockRequest) *MockRespons
 
 func (c *contentTypeMockService) setAppropriateContentType(acceptHeader string) string {
 	if len(acceptHeader) == 0 || strings.EqualFold(strings.TrimSpace(acceptHeader), "*/*") {
-		return gin.MIMEPlain
+		return c.params.defaultContentType
 	}
 
 	parts := strings.Split(acceptHeader, ",")
@@ -59,9 +63,9 @@ func (c *contentTypeMockService) setAppropriateContentType(acceptHeader string) 
 		return acceptParts[0]
 	}
 
-	return gin.MIMEPlain
+	return c.params.defaultContentType
 }
 
-func newContentTypeMockService() *contentTypeMockService {
-	return &contentTypeMockService{}
+func newContentTypeMockService(params MockServiceParams) *contentTypeMockService {
+	return &contentTypeMockService{params: params}
 }

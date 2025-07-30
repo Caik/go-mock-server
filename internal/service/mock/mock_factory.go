@@ -2,11 +2,12 @@ package mock
 
 import (
 	"fmt"
+	"log"
+	"sync"
+
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	"github.com/Caik/go-mock-server/internal/service/content"
-	"log"
-	"sync"
 )
 
 type MockServiceFactory struct {
@@ -18,7 +19,15 @@ func (m *MockServiceFactory) GetMockResponse(mockRequest MockRequest) *MockRespo
 	return m.mockServiceChain.getMockResponse(mockRequest)
 }
 
-func (m *MockServiceFactory) initServiceChain(contentService content.ContentService, cacheService cache.CacheService, disableLatency, disableErrors, disableCache bool, hostsConfig *config.HostsConfig) {
+func (m *MockServiceFactory) initServiceChain(
+	contentService content.ContentService,
+	cacheService cache.CacheService,
+	disableLatency,
+	disableErrors,
+	disableCache bool,
+	defaultContentType string,
+	hostsConfig *config.HostsConfig,
+) {
 	if m.mockServiceChain != nil {
 		return
 	}
@@ -61,7 +70,7 @@ func (m *MockServiceFactory) initServiceChain(contentService content.ContentServ
 		}
 
 		// content type
-		addNextFn(newContentTypeMockService())
+		addNextFn(newContentTypeMockService(MockServiceParams{defaultContentType: defaultContentType}))
 
 		// cache
 		if !disableCache {
@@ -76,9 +85,22 @@ func (m *MockServiceFactory) initServiceChain(contentService content.ContentServ
 	})
 }
 
-func NewMockServiceFactory(contentService content.ContentService, cacheService cache.CacheService, arguments *config.AppArguments, hostsConfig *config.HostsConfig) *MockServiceFactory {
+func NewMockServiceFactory(
+	contentService content.ContentService,
+	cacheService cache.CacheService,
+	arguments *config.AppArguments,
+	hostsConfig *config.HostsConfig,
+) *MockServiceFactory {
 	factory := MockServiceFactory{}
-	factory.initServiceChain(contentService, cacheService, arguments.DisableLatency, arguments.DisableError, arguments.DisableCache, hostsConfig)
+	factory.initServiceChain(
+		contentService,
+		cacheService,
+		arguments.DisableLatency,
+		arguments.DisableError,
+		arguments.DisableCache,
+		arguments.DefaultContentType,
+		hostsConfig,
+	)
 
 	return &factory
 }

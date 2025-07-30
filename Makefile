@@ -1,7 +1,15 @@
 # Usage:
 # make run_docker                       # run docker environment
 
-.PHONY: run_docker
+.PHONY: run_docker test
+
+test:
+	@echo ""
+	@echo "########################################"
+	@echo "##        Running all tests           ##"
+	@echo "########################################"
+	@echo ""
+	@CGO_ENABLED=0 go test -timeout 30s ./internal/...
 
 run_docker: ./docker-compose.yml
 	@echo ""

@@ -81,7 +81,8 @@ Optimize performance and enhance Go Mock Server's reliability, making it more su
 
 ### 6. Content-Type Awareness
 
-Ensure accurate content-type handling by Go Mock Server. The application automatically returns the client's request content-type. In cases where no content-type is passed in the request, the application defaults to `text/plain`, ensuring seamless handling and compatibility with diverse APIs.
+To ensure proper Content-Type handling, the Go Mock Server sets the response's Content-Type to match that of the incoming request.
+If no Content-Type is provided, it defaults to text/plain, unless overridden via the --default-content-type flag.
 
 ### 7. Dynamic Mock Creation
 
