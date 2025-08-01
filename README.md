@@ -303,15 +303,16 @@ Go Mock Server will handle the request and respond according to the configured m
 
 To customize Go Mock Server's behavior, you can use the following command-line options:
 
-| Option                  | Description                                                |
-|-------------------------|------------------------------------------------------------|
-| --mocks-directory       | Specify the directory for mock files.                      |
-| --port                  | Set the port for the mock server. Default is 8080.         |
-| --mocks-config-file     | Specify the path to a config file for additional settings. |
-| --disable-cache         | Disable caching of responses.                              |
-| --disable-latency       | Disable simulation of latency in responses.                |
-| --disable-error         | Disable simulation of error responses.                     |
-| --disable-cors          | Disable CORS headers in responses.                         |
+| Option                 | Description                                                        |
+|------------------------|--------------------------------------------------------------------|
+| --mocks-directory      | Specify the directory for mock files.                              |
+| --port                 | Set the port for the mock server. Default is 8080.                 |
+| --mocks-config-file    | Specify the path to a config file for additional settings.         |
+| --default-content-type | Set the default content type for responses. Default is text/plain. |
+| --disable-cache        | Disable caching of responses.                                      |
+| --disable-latency      | Disable simulation of latency in responses.                        |
+| --disable-error        | Disable simulation of error responses.                             |
+| --disable-cors         | Disable CORS headers in responses.                                 |
 
 **Example:**
 
