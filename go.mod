@@ -9,7 +9,7 @@ require (
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.34.0
 	go.uber.org/dig v1.18.0
 )
 
