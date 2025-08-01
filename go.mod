@@ -6,7 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/alexflint/go-arg v1.6.0
-	github.com/fsnotify/fsnotify v1.8.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-gonic/gin v1.10.1
 	github.com/google/uuid v1.6.0
 	github.com/rs/zerolog v1.34.0
