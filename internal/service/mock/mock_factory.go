@@ -1,13 +1,11 @@
 package mock
 
 import (
-	"fmt"
-	"log"
-	"sync"
-
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	"github.com/Caik/go-mock-server/internal/service/content"
+	"github.com/rs/zerolog/log"
+	"sync"
 )
 
 type MockServiceFactory struct {
@@ -24,7 +22,8 @@ func (m *MockServiceFactory) initServiceChain(
 	cacheService cache.CacheService,
 	disableLatency,
 	disableErrors,
-	disableCache bool,
+	disableCache,
+	disableCors bool,
 	defaultContentType string,
 	hostsConfig *config.HostsConfig,
 ) {
@@ -52,12 +51,16 @@ func (m *MockServiceFactory) initServiceChain(
 		hostResolutionMockService, err := newHostResolutionMockService(contentService)
 
 		if err != nil {
-			log.Fatalf(fmt.Sprintf("error while starting HostResolutionMockService: %v", err))
+			log.Fatal().
+				Msgf("error while starting HostResolutionMockService: %v", err)
 		}
 
 		addNextFn(hostResolutionMockService)
 
-		// TODO: add CORS MockService
+		// cors
+		if !disableCors {
+			addNextFn(newCorsMockService())
+		}
 
 		// latency
 		if !disableLatency {
@@ -92,15 +95,7 @@ func NewMockServiceFactory(
 	hostsConfig *config.HostsConfig,
 ) *MockServiceFactory {
 	factory := MockServiceFactory{}
-	factory.initServiceChain(
-		contentService,
-		cacheService,
-		arguments.DisableLatency,
-		arguments.DisableError,
-		arguments.DisableCache,
-		arguments.DefaultContentType,
-		hostsConfig,
-	)
+	factory.initServiceChain(contentService, cacheService, arguments.DisableLatency, arguments.DisableError, arguments.DisableCache, arguments.DisableCors, arguments.DefaultContentType, hostsConfig)
 
 	return &factory
 }
