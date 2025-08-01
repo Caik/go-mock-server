@@ -26,6 +26,9 @@ func (m *mockCacheService) Get(key, uuid string) (*[]byte, bool) {
 }
 
 func (m *mockCacheService) Set(key string, data *[]byte, uuid string) {
+	if m.cache == nil {
+		m.cache = make(map[string][]byte)
+	}
 	m.cache[key] = *data
 }
 
@@ -45,6 +48,7 @@ func TestNewMockServiceFactory(t *testing.T) {
 			DisableLatency: false,
 			DisableError:   false,
 			DisableCache:   false,
+			DisableCors:    false,
 		}
 
 		factory := NewMockServiceFactory(contentService, cacheService, appArgs, hostsConfig)
@@ -73,6 +77,7 @@ func TestNewMockServiceFactory(t *testing.T) {
 			DisableLatency: true, // Disabled
 			DisableError:   false,
 			DisableCache:   false,
+			DisableCors:    false,
 		}
 
 		factory := NewMockServiceFactory(contentService, cacheService, appArgs, hostsConfig)
@@ -113,6 +118,7 @@ func TestNewMockServiceFactory(t *testing.T) {
 			DisableLatency: true,
 			DisableError:   false,
 			DisableCache:   false,
+			DisableCors:    false,
 		}
 
 		factory1 := NewMockServiceFactory(contentService, cacheService, appArgs1, hostsConfig)
@@ -122,6 +128,7 @@ func TestNewMockServiceFactory(t *testing.T) {
 			DisableLatency: false,
 			DisableError:   false,
 			DisableCache:   true,
+			DisableCors:    false,
 		}
 
 		factory2 := NewMockServiceFactory(contentService, cacheService, appArgs2, hostsConfig)
@@ -131,17 +138,118 @@ func TestNewMockServiceFactory(t *testing.T) {
 			DisableLatency: true,
 			DisableError:   false,
 			DisableCache:   true,
+			DisableCors:    false,
 		}
 
 		factory3 := NewMockServiceFactory(contentService, cacheService, appArgs3, hostsConfig)
 
+		// Test case 4: DisableCors=true should disable CORS service
+		appArgs4 := &config.AppArguments{
+			DisableLatency: false,
+			DisableError:   false,
+			DisableCache:   false,
+			DisableCors:    true,
+		}
+
+		factory4 := NewMockServiceFactory(contentService, cacheService, appArgs4, hostsConfig)
+
 		// All factories should be created successfully
-		if factory1 == nil || factory2 == nil || factory3 == nil {
+		if factory1 == nil || factory2 == nil || factory3 == nil || factory4 == nil {
 			t.Error("all factories should be created successfully")
 		}
 
-		t.Log("disable flags work correctly for latency and cache services")
+		t.Log("disable flags work correctly for latency, cache, and CORS services")
 		t.Log("factory creation successful with various disable flag combinations")
+	})
+}
+
+func TestMockServiceFactory_DisableCorsFlag(t *testing.T) {
+	t.Run("CORS service behavior with disable flag", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: make(map[string][]byte),
+			events:   make(chan content.ContentEvent),
+		}
+		cacheService := &mockCacheService{
+			cache: make(map[string][]byte),
+		}
+		hostsConfig := &config.HostsConfig{}
+
+		// Add some test content so the service chain doesn't fail
+		testData := []byte(`{"message": "test"}`)
+		contentService.contents["example.com/api/test.get"] = testData
+
+		// Test case 1: CORS enabled (default)
+		appArgsEnabled := &config.AppArguments{
+			DisableLatency: true,  // Disable to simplify test
+			DisableError:   true,  // Disable to simplify test
+			DisableCache:   true,  // Disable to simplify test
+			DisableCors:    false, // CORS enabled
+		}
+
+		factoryEnabled := NewMockServiceFactory(contentService, cacheService, appArgsEnabled, hostsConfig)
+
+		// Test case 2: CORS disabled
+		appArgsDisabled := &config.AppArguments{
+			DisableLatency: true, // Disable to simplify test
+			DisableError:   true, // Disable to simplify test
+			DisableCache:   true, // Disable to simplify test
+			DisableCors:    true, // CORS disabled
+		}
+
+		factoryDisabled := NewMockServiceFactory(contentService, cacheService, appArgsDisabled, hostsConfig)
+
+		// Create a test request
+		testRequest := MockRequest{
+			Host:   "example.com",
+			Method: "GET",
+			URI:    "/api/test",
+			Accept: "application/json",
+			Uuid:   "test-uuid",
+		}
+
+		// Test with CORS enabled - should have CORS headers
+		responseEnabled := factoryEnabled.GetMockResponse(testRequest)
+		if responseEnabled != nil && responseEnabled.Headers != nil {
+			corsHeaders := []string{
+				"Access-Control-Allow-Origin",
+				"Access-Control-Allow-Methods",
+				"Access-Control-Allow-Headers",
+				"Access-Control-Max-Age",
+			}
+
+			for _, header := range corsHeaders {
+				if _, exists := (*responseEnabled.Headers)[header]; !exists {
+					t.Errorf("Expected CORS header %s to be present when CORS is enabled", header)
+				}
+			}
+			t.Log("CORS headers correctly added when CORS is enabled")
+		} else {
+			t.Error("Expected response with headers when CORS is enabled")
+		}
+
+		// Test with CORS disabled - should not have CORS headers
+		responseDisabled := factoryDisabled.GetMockResponse(testRequest)
+		if responseDisabled != nil {
+			if responseDisabled.Headers != nil {
+				corsHeaders := []string{
+					"Access-Control-Allow-Origin",
+					"Access-Control-Allow-Methods",
+					"Access-Control-Allow-Headers",
+					"Access-Control-Max-Age",
+				}
+
+				for _, header := range corsHeaders {
+					if _, exists := (*responseDisabled.Headers)[header]; exists {
+						t.Errorf("Expected CORS header %s to NOT be present when CORS is disabled", header)
+					}
+				}
+			}
+			t.Log("CORS headers correctly omitted when CORS is disabled")
+		} else {
+			t.Error("Expected response when CORS is disabled")
+		}
+
+		t.Log("CORS disable flag works correctly")
 	})
 }
 
@@ -163,6 +271,7 @@ func TestMockServiceFactory_GetMockResponse(t *testing.T) {
 			DisableLatency: false,
 			DisableError:   false,
 			DisableCache:   false,
+			DisableCors:    false,
 		}
 
 		factory := NewMockServiceFactory(contentService, cacheService, appArgs, hostsConfig)
@@ -205,10 +314,10 @@ func TestMockServiceFactory_initServiceChain(t *testing.T) {
 		factory := &MockServiceFactory{}
 
 		// Call initServiceChain multiple times
-		factory.initServiceChain(contentService, cacheService, false, false, false, gin.MIMEPlain, hostsConfig)
+		factory.initServiceChain(contentService, cacheService, false, false, false, false, gin.MIMEPlain, hostsConfig)
 		firstChain := factory.mockServiceChain
 
-		factory.initServiceChain(contentService, cacheService, false, false, false, gin.MIMEPlain, hostsConfig)
+		factory.initServiceChain(contentService, cacheService, false, false, false, false, gin.MIMEPlain, hostsConfig)
 		secondChain := factory.mockServiceChain
 
 		// Should be the same instance (sync.Once behavior)

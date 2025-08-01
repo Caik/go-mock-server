@@ -8,4 +8,5 @@ type AppArguments struct {
 	DisableCache       bool   `arg:"--disable-cache" help:"disable the caching"`
 	DisableLatency     bool   `arg:"--disable-latency" help:"disable latency simulation"`
 	DisableError       bool   `arg:"--disable-error" help:"disable error simulation"`
+	DisableCors        bool   `arg:"--disable-cors" help:"disable CORS headers"`
 }
