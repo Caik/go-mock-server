@@ -84,7 +84,11 @@ Optimize performance and enhance Go Mock Server's reliability, making it more su
 To ensure proper Content-Type handling, the Go Mock Server sets the response's Content-Type to match that of the incoming request.
 If no Content-Type is provided, it defaults to text/plain, unless overridden via the --default-content-type flag.
 
-### 7. Dynamic Mock Creation
+### 7. CORS Support
+
+Automatically adds Cross-Origin Resource Sharing (CORS) headers to all mock responses, making the mock server compatible with web applications that require CORS. The CORS service can be disabled using the `--disable-cors` flag if not needed.
+
+### 8. Dynamic Mock Creation
 
 Dynamically create mocks on the fly in two convenient ways:
 
@@ -92,11 +96,11 @@ Dynamically create mocks on the fly in two convenient ways:
 
 2. **API Interaction:** Interact with Go Mock Server's API to dynamically create, update, or delete mocks. This provides users with fine-grained control over mock configurations during runtime.
 
-### 8. Dynamic Configuration via API
+### 9. Dynamic Configuration via API
 
 Configure the simulation of errors and latencies dynamically with Go Mock Server's powerful API. This feature empowers users to fine-tune error simulation and adjust latencies for specific hosts and/or URIs during runtime. Gain precise control over the testing environment to ensure comprehensive and targeted evaluations of your application's resilience and performance.
 
-### 9. Cross-Platform Support
+### 10. Cross-Platform Support
 
 Go Mock Server provides precompiled binaries for Linux, Mac (AMD64 and ARM64), and Windows. Choose the binary that suits your platform or build from source if preferred.
 
@@ -299,20 +303,25 @@ Go Mock Server will handle the request and respond according to the configured m
 
 To customize Go Mock Server's behavior, you can use the following command-line options:
 
-| Option                  | Description                                                |
-|-------------------------|------------------------------------------------------------|
-| --mocks-directory       | Specify the directory for mock files.                      |
-| --port                  | Set the port for the mock server. Default is 8080.         |
-| --mocks-config-file     | Specify the path to a config file for additional settings. |
-| --disable-cache         | Disable caching of responses.                              |
-| --disable-latency       | Disable simulation of latency in responses.                |
-| --disable-error         | Disable simulation of error responses.                     |
+| Option                 | Description                                                        |
+|------------------------|--------------------------------------------------------------------|
+| --mocks-directory      | Specify the directory for mock files.                              |
+| --port                 | Set the port for the mock server. Default is 8080.                 |
+| --mocks-config-file    | Specify the path to a config file for additional settings.         |
+| --default-content-type | Set the default content type for responses. Default is text/plain. |
+| --disable-cache        | Disable caching of responses.                                      |
+| --disable-latency      | Disable simulation of latency in responses.                        |
+| --disable-error        | Disable simulation of error responses.                             |
+| --disable-cors         | Disable CORS headers in responses.                                 |
 
 **Example:**
 
 ```bash
 # Run the server on port 9090 with a custom mock directory and disable cache
 ./mock-server_mac --mocks-directory ./custom-mocks --port 9090 --disable-cache
+
+# Run the server with CORS disabled for environments that don't need it
+./mock-server_mac --mocks-directory ./mocks --disable-cors
 ```
 
 <br />

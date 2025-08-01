@@ -22,8 +22,21 @@ type MockResponse struct {
 	StatusCode          int
 	Data                *[]byte
 	ContentType         string
+	Headers             *map[string]string
 	activeErrorConfig   *config.ErrorConfig
 	activeLatencyConfig *config.LatencyConfig
+}
+
+// AddHeaders adds the provided headers to the MockResponse, merging with existing headers if present
+func (m *MockResponse) AddHeaders(headers map[string]string) {
+	if m.Headers == nil {
+		m.Headers = &headers
+	} else {
+		// Merge headers with existing ones
+		for key, value := range headers {
+			(*m.Headers)[key] = value
+		}
+	}
 }
 
 func GenerateCacheKey(mockRequest MockRequest) string {
