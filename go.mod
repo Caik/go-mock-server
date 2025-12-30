@@ -3,7 +3,7 @@ module github.com/Caik/go-mock-server
 go 1.24.0
 
 require (
-	github.com/alexflint/go-arg v1.6.0
+	github.com/alexflint/go-arg v1.6.1
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.0
