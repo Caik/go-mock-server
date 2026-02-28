@@ -1,10 +1,11 @@
 package mock
 
 import (
-	"github.com/Caik/go-mock-server/internal/config"
-	"github.com/rs/zerolog/log"
 	"math/rand"
 	"strconv"
+
+	"github.com/Caik/go-mock-server/internal/config"
+	"github.com/rs/zerolog/log"
 )
 
 type errorMockService struct {

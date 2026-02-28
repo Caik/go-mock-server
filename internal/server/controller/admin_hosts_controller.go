@@ -3,9 +3,10 @@ package controller
 import (
 	"errors"
 	"fmt"
-	"github.com/Caik/go-mock-server/internal/config"
 	"net/http"
 	"strings"
+
+	"github.com/Caik/go-mock-server/internal/config"
 
 	"github.com/Caik/go-mock-server/internal/rest"
 	"github.com/Caik/go-mock-server/internal/service/admin"

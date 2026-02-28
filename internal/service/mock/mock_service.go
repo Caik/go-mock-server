@@ -1,8 +1,9 @@
 package mock
 
 import (
-	"github.com/Caik/go-mock-server/internal/config"
 	"strings"
+
+	"github.com/Caik/go-mock-server/internal/config"
 )
 
 type mockService interface {

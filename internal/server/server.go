@@ -2,9 +2,10 @@ package server
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/Caik/go-mock-server/internal/server/controller"
 	"go.uber.org/dig"
-	"sync"
 
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/server/middleware"

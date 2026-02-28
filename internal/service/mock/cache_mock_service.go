@@ -2,6 +2,7 @@ package mock
 
 import (
 	"encoding/json"
+
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	"github.com/rs/zerolog/log"
 )
