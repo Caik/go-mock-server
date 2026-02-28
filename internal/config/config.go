@@ -2,10 +2,11 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"os"
 	"path/filepath"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/alexflint/go-arg"
 )

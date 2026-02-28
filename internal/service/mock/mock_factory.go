@@ -1,11 +1,12 @@
 package mock
 
 import (
+	"sync"
+
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	"github.com/Caik/go-mock-server/internal/service/content"
 	"github.com/rs/zerolog/log"
-	"sync"
 )
 
 type MockServiceFactory struct {

@@ -2,8 +2,9 @@ package ci
 
 import (
 	"errors"
-	"go.uber.org/dig"
 	"os"
+
+	"go.uber.org/dig"
 )
 
 var container = dig.New()
