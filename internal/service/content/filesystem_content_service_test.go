@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Caik/go-mock-server/internal/config"
+	"github.com/Caik/go-mock-server/internal/util"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -24,6 +25,7 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 	}
 
 	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 		mocksDirConfig: mocksDirConfig,
 	}
 
@@ -122,6 +124,7 @@ func TestFilesystemContentService_filePathToContentData(t *testing.T) {
 	}
 
 	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 		mocksDirConfig: mocksDirConfig,
 	}
 
@@ -276,6 +279,7 @@ func TestFilesystemContentService_GetContent(t *testing.T) {
 	}
 
 	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 		mocksDirConfig: mocksDirConfig,
 	}
 
@@ -325,6 +329,7 @@ func TestFilesystemContentService_SetContent(t *testing.T) {
 	}
 
 	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 		mocksDirConfig: mocksDirConfig,
 	}
 
@@ -399,6 +404,7 @@ func TestFilesystemContentService_DeleteContent(t *testing.T) {
 	}
 
 	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 		mocksDirConfig: mocksDirConfig,
 	}
 
@@ -455,6 +461,7 @@ func TestFilesystemContentService_ListContents(t *testing.T) {
 	}
 
 	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 		mocksDirConfig: mocksDirConfig,
 	}
 
@@ -499,6 +506,7 @@ func TestFilesystemContentService_ListContents(t *testing.T) {
 		defer os.RemoveAll(emptyDir)
 
 		emptyService := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: &config.MocksDirectoryConfig{Path: emptyDir},
 		}
 
@@ -519,6 +527,7 @@ func TestFilesystemContentService_ListContents(t *testing.T) {
 
 	t.Run("handles non-existent directory", func(t *testing.T) {
 		nonExistentService := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: &config.MocksDirectoryConfig{Path: "/non/existent/path"},
 		}
 
@@ -547,6 +556,7 @@ func TestFilesystemContentService_Subscribe(t *testing.T) {
 
 	service := &FilesystemContentService{
 		mocksDirConfig: mocksDirConfig,
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 	}
 
 	t.Run("subscribes to all event types", func(t *testing.T) {
@@ -738,6 +748,7 @@ func TestFilesystemContentService_Unsubscribe(t *testing.T) {
 	}
 
 	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 		mocksDirConfig: mocksDirConfig,
 	}
 
@@ -811,6 +822,7 @@ func TestFilesystemContentService_ErrorHandling(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -838,6 +850,7 @@ func TestFilesystemContentService_ErrorHandling(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -876,6 +889,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -920,6 +934,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -976,6 +991,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -1024,6 +1040,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -1079,6 +1096,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -1129,6 +1147,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -1173,6 +1192,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -1219,6 +1239,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -1257,6 +1278,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 
@@ -1325,6 +1347,7 @@ func TestFilesystemContentService_startContentWatcher(t *testing.T) {
 		}
 
 		service := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
 			mocksDirConfig: mocksDirConfig,
 		}
 

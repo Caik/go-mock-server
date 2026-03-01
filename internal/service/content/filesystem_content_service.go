@@ -22,7 +22,7 @@ const (
 
 type FilesystemContentService struct {
 	mocksDirConfig *config.MocksDirectoryConfig
-	broadcaster    util.Broadcaster[ContentEvent]
+	broadcaster    *util.Broadcaster[ContentEvent]
 }
 
 func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*ContentResult, error) {
@@ -373,14 +373,12 @@ func (f *FilesystemContentService) handleFilesystemEvent(event fsnotify.Event, w
 }
 
 func NewFilesystemContentService(mocksDirConfig *config.MocksDirectoryConfig) *FilesystemContentService {
-	var broadcaster util.Broadcaster[ContentEvent]
-
-	service := FilesystemContentService{
+	service := &FilesystemContentService{
 		mocksDirConfig: mocksDirConfig,
-		broadcaster:    broadcaster,
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 	}
 
 	service.startContentWatcher()
 
-	return &service
+	return service
 }
