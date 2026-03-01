@@ -12,15 +12,19 @@
       "name": "MIT",
       "url": "https://opensource.org/licenses/MIT"
     },
-    "version": "1.0.0"
+    "version": "2.0.0"
   },
   "servers": [
     {
-      "url": "http://localhost:8080",
-      "description": "Local dev server"
+      "url": "http://localhost:9090",
+      "description": "Admin server"
     }
   ],
   "tags": [
+    {
+      "name": "Health",
+      "description": "Health check endpoints"
+    },
     {
       "name": "Mock Admin",
       "description": "Managing mocks"
@@ -31,7 +35,29 @@
     }
   ],
   "paths": {
-    "/admin/config/hosts": {
+    "/health": {
+      "get": {
+        "description": "Returns the health status of the admin server",
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health check endpoint",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/200Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/hosts": {
       "get": {
         "description": "List all the active configurations for all hosts",
         "tags": [
@@ -112,7 +138,7 @@
         }
       }
     },
-    "/admin/config/hosts/{host}": {
+    "/api/v1/config/hosts/{host}": {
       "get": {
         "description": "Gets the active configuration for the specified host",
         "tags": [
@@ -218,7 +244,7 @@
         }
       }
     },
-    "/admin/config/hosts/{host}/errors": {
+    "/api/v1/config/hosts/{host}/errors": {
       "post": {
         "description": "Creates a new errors configuration for the specified host, or updates it if there's already an existing one",
         "tags": [
@@ -281,7 +307,7 @@
         }
       }
     },
-    "/admin/config/hosts/{host}/errors/{errorCode}": {
+    "/api/v1/config/hosts/{host}/errors/{errorCode}": {
       "delete": {
         "description": "Deletes the error configuration for the specified host and error code",
         "tags": [
@@ -345,7 +371,7 @@
         }
       }
     },
-    "/admin/config/hosts/{host}/latencies": {
+    "/api/v1/config/hosts/{host}/latencies": {
       "post": {
         "description": "Creates a new default latency configuration for the specified host, or updates it if there's already an existing one",
         "tags": [
@@ -460,7 +486,7 @@
         }
       }
     },
-    "/admin/config/hosts/{host}/uris": {
+    "/api/v1/config/hosts/{host}/uris": {
       "post": {
         "description": "Creates a new URI-based configuration for the specified host, or updates it if there's already an existing one",
         "tags": [
@@ -523,7 +549,7 @@
         }
       }
     },
-    "/admin/mocks": {
+    "/api/v1/mocks": {
       "post": {
         "description": "Creates a new mock for the specified host, HTTP method and URI or updates it if there's already an existing one",
         "tags": [

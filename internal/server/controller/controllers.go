@@ -1,14 +1,35 @@
 package controller
 
 import (
+	"net/http"
+
+	"github.com/Caik/go-mock-server/internal/rest"
 	"github.com/gin-gonic/gin"
 )
 
-func InitRoutes(r *gin.Engine, adminMocksController *AdminMocksController, adminHostsController *AdminHostsController, mocksController *MocksController) {
-	initAdminMocksController(r.Group("/admin/mocks"), adminMocksController)
-	initAdminHostsController(r.Group("/admin/config/hosts"), adminHostsController)
-
+// InitMockRoutes initializes routes for the mock server
+func InitMockRoutes(r *gin.Engine, mocksController *MocksController) {
 	r.NoRoute(mocksController.handleMockRequest)
+}
+
+// InitAdminRoutes initializes routes for the admin server
+func InitAdminRoutes(r *gin.Engine, adminMocksController *AdminMocksController, adminHostsController *AdminHostsController) {
+	// Health check endpoint
+	r.GET("/health", handleHealthCheck)
+
+	// API v1 routes
+	v1 := r.Group("/api/v1")
+	{
+		initAdminMocksController(v1.Group("/mocks"), adminMocksController)
+		initAdminHostsController(v1.Group("/config/hosts"), adminHostsController)
+	}
+}
+
+func handleHealthCheck(c *gin.Context) {
+	c.JSON(http.StatusOK, rest.Response{
+		Status:  rest.Success,
+		Message: "healthy",
+	})
 }
 
 func initAdminMocksController(r *gin.RouterGroup, controller *AdminMocksController) {

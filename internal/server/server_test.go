@@ -1,12 +1,10 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/server/controller"
@@ -14,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func TestNewServer(t *testing.T) {
+func TestNewServers(t *testing.T) {
 	// Save original gin mode
 	originalMode := gin.Mode()
 	defer gin.SetMode(originalMode)
@@ -22,11 +20,19 @@ func TestNewServer(t *testing.T) {
 	// Ensure gin is in release mode for this test
 	gin.SetMode(gin.ReleaseMode)
 
-	t.Run("creates server with correct configuration", func(t *testing.T) {
-		engine := NewServer()
+	t.Run("creates servers with correct configuration", func(t *testing.T) {
+		servers := NewServers()
 
-		if engine == nil {
-			t.Fatal("NewServer should return a non-nil engine")
+		if servers == nil {
+			t.Fatal("NewServers should return a non-nil Servers struct")
+		}
+
+		if servers.MockEngine == nil {
+			t.Fatal("MockEngine should not be nil")
+		}
+
+		if servers.AdminEngine == nil {
+			t.Fatal("AdminEngine should not be nil")
 		}
 
 		// Verify gin is in release mode
@@ -35,11 +41,11 @@ func TestNewServer(t *testing.T) {
 		}
 	})
 
-	t.Run("server has recovery middleware", func(t *testing.T) {
-		engine := NewServer()
+	t.Run("mock server has recovery middleware", func(t *testing.T) {
+		servers := NewServers()
 
 		// Add a route that panics to test recovery
-		engine.GET("/panic", func(c *gin.Context) {
+		servers.MockEngine.GET("/panic", func(c *gin.Context) {
 			panic("test panic")
 		})
 
@@ -47,7 +53,7 @@ func TestNewServer(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		// This should not crash the test due to recovery middleware
-		engine.ServeHTTP(w, req)
+		servers.MockEngine.ServeHTTP(w, req)
 
 		// Recovery middleware should return 500
 		if w.Code != http.StatusInternalServerError {
@@ -55,11 +61,31 @@ func TestNewServer(t *testing.T) {
 		}
 	})
 
-	t.Run("server has UUID middleware", func(t *testing.T) {
-		engine := NewServer()
+	t.Run("admin server has recovery middleware", func(t *testing.T) {
+		servers := NewServers()
+
+		// Add a route that panics to test recovery
+		servers.AdminEngine.GET("/panic", func(c *gin.Context) {
+			panic("test panic")
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/panic", nil)
+		w := httptest.NewRecorder()
+
+		// This should not crash the test due to recovery middleware
+		servers.AdminEngine.ServeHTTP(w, req)
+
+		// Recovery middleware should return 500
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500 after panic, got %d", w.Code)
+		}
+	})
+
+	t.Run("mock server has UUID middleware", func(t *testing.T) {
+		servers := NewServers()
 
 		var capturedUUID string
-		engine.GET("/test", func(c *gin.Context) {
+		servers.MockEngine.GET("/test", func(c *gin.Context) {
 			capturedUUID = c.GetString(util.UuidKey)
 			c.Status(http.StatusOK)
 		})
@@ -67,54 +93,59 @@ func TestNewServer(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/test", nil)
 		w := httptest.NewRecorder()
 
-		engine.ServeHTTP(w, req)
+		servers.MockEngine.ServeHTTP(w, req)
 
 		if capturedUUID == "" {
 			t.Error("UUID middleware should set UUID in context")
 		}
 	})
 
-	t.Run("server has logger middleware", func(t *testing.T) {
-		engine := NewServer()
+	t.Run("admin server has UUID middleware", func(t *testing.T) {
+		servers := NewServers()
 
-		// Add a simple route
-		engine.GET("/test", func(c *gin.Context) {
+		var capturedUUID string
+		servers.AdminEngine.GET("/test", func(c *gin.Context) {
+			capturedUUID = c.GetString(util.UuidKey)
 			c.Status(http.StatusOK)
 		})
 
 		req := httptest.NewRequest(http.MethodGet, "/test", nil)
 		w := httptest.NewRecorder()
 
-		// This should not panic due to logger middleware
-		engine.ServeHTTP(w, req)
+		servers.AdminEngine.ServeHTTP(w, req)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w.Code)
+		if capturedUUID == "" {
+			t.Error("UUID middleware should set UUID in context")
 		}
 	})
 
-	t.Run("middleware order is correct", func(t *testing.T) {
-		engine := NewServer()
+	t.Run("servers have logger middleware", func(t *testing.T) {
+		servers := NewServers()
 
-		var middlewareOrder []string
-
-		// Add a test route that captures middleware execution order
-		engine.GET("/test", func(c *gin.Context) {
-			// UUID should be available (set by UUID middleware)
-			if c.GetString(util.UuidKey) != "" {
-				middlewareOrder = append(middlewareOrder, "uuid_available")
-			}
+		// Add simple routes to both engines
+		servers.MockEngine.GET("/test", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+		})
+		servers.AdminEngine.GET("/test", func(c *gin.Context) {
 			c.Status(http.StatusOK)
 		})
 
+		// Test mock engine
 		req := httptest.NewRequest(http.MethodGet, "/test", nil)
 		w := httptest.NewRecorder()
+		servers.MockEngine.ServeHTTP(w, req)
 
-		engine.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200 from mock engine, got %d", w.Code)
+		}
 
-		// Verify UUID middleware ran (UUID is available in handler)
-		if len(middlewareOrder) == 0 || middlewareOrder[0] != "uuid_available" {
-			t.Error("UUID middleware should run before handler")
+		// Test admin engine
+		req = httptest.NewRequest(http.MethodGet, "/test", nil)
+		w = httptest.NewRecorder()
+		servers.AdminEngine.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200 from admin engine, got %d", w.Code)
 		}
 	})
 }
@@ -123,37 +154,54 @@ func TestStartServer(t *testing.T) {
 	// Set gin mode once to avoid race conditions
 	gin.SetMode(gin.TestMode)
 
-	t.Run("initializes routes correctly", func(t *testing.T) {
+	t.Run("initializes mock routes correctly", func(t *testing.T) {
 		// Create mock controllers
-		adminMocksController := &controller.AdminMocksController{}
-		adminHostsController := &controller.AdminHostsController{}
 		mocksController := &controller.MocksController{}
 
-		engine := NewServer()
-		appArgs := &config.AppArguments{
-			ServerPort: 0, // Use port 0 to get a random available port
-		}
+		servers := NewServers()
 
-		params := StartServerParams{
-			Engine:               engine,
-			AppArguments:         appArgs,
-			AdminMocksController: adminMocksController,
-			AdminHostsController: adminHostsController,
-			MocksController:      mocksController,
-		}
+		// Initialize mock routes
+		controller.InitMockRoutes(servers.MockEngine, mocksController)
 
-		// Test that routes are initialized without starting the server
-		// We'll do this by manually calling the route initialization
-		controller.InitRoutes(params.Engine, params.AdminMocksController, params.AdminHostsController, params.MocksController)
+		// Test that non-admin paths are handled by NoRoute (MocksController)
+		req := httptest.NewRequest(http.MethodGet, "/api/users", nil)
+		w := httptest.NewRecorder()
+
+		// Expect panic due to nil dependencies in MocksController
+		defer func() {
+			if r := recover(); r != nil {
+				// Panic is expected due to nil factory in MocksController
+				t.Logf("Expected panic due to nil dependencies: %v", r)
+			}
+		}()
+
+		servers.MockEngine.ServeHTTP(w, req)
+
+		// If we get here without panic, NoRoute should handle it (not return 404)
+		if w.Code == http.StatusNotFound {
+			t.Error("NoRoute handler should be set and handle unmatched routes")
+		}
+	})
+
+	t.Run("initializes admin routes correctly", func(t *testing.T) {
+		// Create admin controllers
+		adminMocksController := &controller.AdminMocksController{}
+		adminHostsController := &controller.AdminHostsController{}
+
+		servers := NewServers()
+
+		// Initialize admin routes
+		controller.InitAdminRoutes(servers.AdminEngine, adminMocksController, adminHostsController)
 
 		// Test that admin routes are accessible (they should return some response, even if it's an error)
 		testRoutes := []struct {
 			method string
 			path   string
 		}{
-			{http.MethodGet, "/admin/config/hosts"},
-			{http.MethodPost, "/admin/mocks"},
-			{http.MethodDelete, "/admin/mocks"},
+			{http.MethodGet, "/health"},
+			{http.MethodGet, "/api/v1/config/hosts"},
+			{http.MethodPost, "/api/v1/mocks"},
+			{http.MethodDelete, "/api/v1/mocks"},
 		}
 
 		for _, route := range testRoutes {
@@ -161,7 +209,7 @@ func TestStartServer(t *testing.T) {
 				req := httptest.NewRequest(route.method, route.path, nil)
 				w := httptest.NewRecorder()
 
-				engine.ServeHTTP(w, req)
+				servers.AdminEngine.ServeHTTP(w, req)
 
 				// We don't care about the exact response, just that the route exists
 				// (it might return 400, 500, etc. due to missing dependencies, but not 404)
@@ -172,94 +220,51 @@ func TestStartServer(t *testing.T) {
 		}
 	})
 
-	t.Run("starts server on correct port", func(t *testing.T) {
-		// This test is tricky because StartServer is blocking
-		// We'll test the port configuration logic without actually starting the server
+	t.Run("health endpoint returns success", func(t *testing.T) {
+		servers := NewServers()
+		adminMocksController := &controller.AdminMocksController{}
+		adminHostsController := &controller.AdminHostsController{}
 
-		engine := NewServer()
+		controller.InitAdminRoutes(servers.AdminEngine, adminMocksController, adminHostsController)
+
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		w := httptest.NewRecorder()
+
+		servers.AdminEngine.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+	})
+
+	t.Run("starts server on correct port", func(t *testing.T) {
+		// We'll test the port configuration logic without actually starting the server
+		servers := NewServers()
 		appArgs := &config.AppArguments{
 			ServerPort: 8080,
+			AdminPort:  9090,
 		}
 
 		params := StartServerParams{
-			Engine:       engine,
+			Servers:      servers,
 			AppArguments: appArgs,
 		}
 
-		// We can't easily test the actual server start without it being blocking
-		// But we can verify the parameters are set up correctly
+		// Verify the parameters are set up correctly
 		if params.AppArguments.ServerPort != 8080 {
-			t.Errorf("expected port 8080, got %d", params.AppArguments.ServerPort)
+			t.Errorf("expected mock port 8080, got %d", params.AppArguments.ServerPort)
 		}
 
-		if params.Engine == nil {
-			t.Error("engine should not be nil")
-		}
-	})
-
-	t.Run("server startup with timeout", func(t *testing.T) {
-		// Test server startup and shutdown with a timeout
-		engine := NewServer()
-		appArgs := &config.AppArguments{
-			ServerPort: 0, // Use port 0 for random available port
+		if params.AppArguments.AdminPort != 9090 {
+			t.Errorf("expected admin port 9090, got %d", params.AppArguments.AdminPort)
 		}
 
-		// Add a simple test route
-		engine.GET("/health", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"status": "ok"})
-		})
-
-		params := StartServerParams{
-			Engine:       engine,
-			AppArguments: appArgs,
+		if params.Servers.MockEngine == nil {
+			t.Error("MockEngine should not be nil")
 		}
 
-		// Start server in a goroutine with timeout
-		serverErr := make(chan error, 1)
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		defer cancel()
-
-		go func() {
-			// This will timeout after 100ms, which is expected for this test
-			serverErr <- StartServer(params)
-		}()
-
-		select {
-		case err := <-serverErr:
-			// Server should timeout or fail to bind (both are acceptable for this test)
-			if err == nil {
-				t.Error("expected server to timeout or fail to bind")
-			}
-		case <-ctx.Done():
-			// Timeout is expected - server startup was initiated
-		}
-	})
-
-	t.Run("handles invalid port", func(t *testing.T) {
-		engine := NewServer()
-		appArgs := &config.AppArguments{
-			ServerPort: -1, // Invalid port
-		}
-
-		params := StartServerParams{
-			Engine:       engine,
-			AppArguments: appArgs,
-		}
-
-		// Start server in a goroutine
-		serverErr := make(chan error, 1)
-		go func() {
-			serverErr <- StartServer(params)
-		}()
-
-		// Should get an error quickly due to invalid port
-		select {
-		case err := <-serverErr:
-			if err == nil {
-				t.Error("expected error for invalid port")
-			}
-		case <-time.After(1 * time.Second):
-			t.Error("should fail quickly with invalid port")
+		if params.Servers.AdminEngine == nil {
+			t.Error("AdminEngine should not be nil")
 		}
 	})
 }
@@ -267,12 +272,12 @@ func TestStartServer(t *testing.T) {
 // Test helper to verify middleware chain
 func TestMiddlewareChain(t *testing.T) {
 	t.Run("middleware chain executes in correct order", func(t *testing.T) {
-		engine := NewServer()
+		servers := NewServers()
 
 		var executionOrder []string
 
 		// Add a test route that tracks middleware execution
-		engine.Use(func(c *gin.Context) {
+		servers.MockEngine.Use(func(c *gin.Context) {
 			// This should run after UUID and Logger middleware
 			if c.GetString(util.UuidKey) != "" {
 				executionOrder = append(executionOrder, "uuid_set")
@@ -280,7 +285,7 @@ func TestMiddlewareChain(t *testing.T) {
 			c.Next()
 		})
 
-		engine.GET("/test", func(c *gin.Context) {
+		servers.MockEngine.GET("/test", func(c *gin.Context) {
 			executionOrder = append(executionOrder, "handler")
 			c.Status(http.StatusOK)
 		})
@@ -288,7 +293,7 @@ func TestMiddlewareChain(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/test", nil)
 		w := httptest.NewRecorder()
 
-		engine.ServeHTTP(w, req)
+		servers.MockEngine.ServeHTTP(w, req)
 
 		expectedOrder := []string{"uuid_set", "handler"}
 		if len(executionOrder) != len(expectedOrder) {

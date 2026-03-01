@@ -25,8 +25,8 @@ func main() {
 			Msgf("error while setting up CI config: %v", errs)
 	}
 
-	// starting server
-	if err := startServer(); err != nil {
+	// starting servers
+	if err := startServers(); err != nil {
 		log.Fatal().
 			Err(err).
 			Stack().
@@ -53,8 +53,8 @@ func setupCI() []error {
 		errs = append(errs, err)
 	}
 
-	// server
-	if err := ci.Add(server.NewServer); err != nil {
+	// servers (mock and admin)
+	if err := ci.Add(server.NewServers); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -98,6 +98,6 @@ func setupCI() []error {
 	return errs
 }
 
-func startServer() error {
-	return ci.Invoke(server.StartServer)
+func startServers() error {
+	return ci.Invoke(server.StartServers)
 }
