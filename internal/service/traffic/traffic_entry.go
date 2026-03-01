@@ -18,7 +18,7 @@ type TrafficResponse struct {
 	StatusCode  int    `json:"status_code"`
 	ContentType string `json:"content_type,omitempty"`
 	BodySize    int    `json:"body_size"`
-	LatencyMs   int64  `json:"latency_ms,omitempty"`
+	LatencyMs   int64  `json:"latency_ms"`
 }
 
 // TrafficMock captures metadata about how the mock was resolved
