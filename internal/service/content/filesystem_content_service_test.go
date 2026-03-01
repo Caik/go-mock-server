@@ -280,14 +280,22 @@ func TestFilesystemContentService_GetContent(t *testing.T) {
 	}
 
 	t.Run("reads existing file successfully", func(t *testing.T) {
-		data, err := service.GetContent("example.com", "/api/users", "GET", "test-uuid")
+		result, err := service.GetContent("example.com", "/api/users", "GET", "test-uuid")
 
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		if string(*data) != string(testContent) {
-			t.Errorf("expected content '%s', got '%s'", string(testContent), string(*data))
+		if string(*result.Data) != string(testContent) {
+			t.Errorf("expected content '%s', got '%s'", string(testContent), string(*result.Data))
+		}
+
+		if result.Source != "filesystem" {
+			t.Errorf("expected source 'filesystem', got '%s'", result.Source)
+		}
+
+		if result.Path == "" {
+			t.Error("expected non-empty path")
 		}
 	})
 

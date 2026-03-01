@@ -21,7 +21,7 @@ import (
 // mockContentService is a minimal implementation for testing
 type mockContentService struct{}
 
-func (m *mockContentService) GetContent(host, uri, method, uuid string) (*[]byte, error) {
+func (m *mockContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
 	return nil, nil
 }
 

@@ -25,7 +25,7 @@ type FilesystemContentService struct {
 	broadcaster    util.Broadcaster[ContentEvent]
 }
 
-func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*[]byte, error) {
+func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*ContentResult, error) {
 	absolutePath := f.getFinalFilePath(host, uri, method)
 	data, err := os.ReadFile(absolutePath)
 
@@ -38,7 +38,11 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*
 		return nil, errors.New("mock not found")
 	}
 
-	return &data, err
+	return &ContentResult{
+		Data:   &data,
+		Source: "filesystem",
+		Path:   absolutePath,
+	}, nil
 }
 
 func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {

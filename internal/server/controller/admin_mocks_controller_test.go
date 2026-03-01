@@ -30,12 +30,16 @@ func (m *mockContentService) SetContent(host, uri, method, uuid string, data *[]
 	return nil
 }
 
-func (m *mockContentService) GetContent(host, uri, method, uuid string) (*[]byte, error) {
+func (m *mockContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
 	if m.shouldError {
 		return nil, errors.New(m.errorMsg)
 	}
 	data := []byte("mock content")
-	return &data, nil
+	return &content.ContentResult{
+		Data:   &data,
+		Source: "mock",
+		Path:   "/mock/path",
+	}, nil
 }
 
 func (m *mockContentService) DeleteContent(host, uri, method, uuid string) error {

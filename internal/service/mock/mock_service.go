@@ -19,11 +19,19 @@ type MockRequest struct {
 	Uuid   string
 }
 
+// MockResponseMetadata contains metadata about how the mock was resolved
+type MockResponseMetadata struct {
+	Matched bool   `json:"matched"`
+	Source  string `json:"source,omitempty"` // e.g., "filesystem", "cache" — only set when Matched=true
+	Path    string `json:"path,omitempty"`   // file path, cache key, S3 key, etc. — only set when Matched=true
+}
+
 type MockResponse struct {
 	StatusCode          int
 	Data                *[]byte
 	ContentType         string
 	Headers             *map[string]string
+	Metadata            *MockResponseMetadata
 	activeErrorConfig   *config.ErrorConfig
 	activeLatencyConfig *config.LatencyConfig
 }
