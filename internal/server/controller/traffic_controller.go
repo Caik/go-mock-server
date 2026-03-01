@@ -47,7 +47,7 @@ func (t *TrafficController) handleTrafficStream(c *gin.Context) {
 		Str("uuid", uuid).
 		Msg("starting traffic stream")
 
-	// Set SSE headers
+	// Set SSE headers and flush immediately so client receives them
 	t.addSSEHeaders(c)
 
 	// Subscribe to live traffic
@@ -95,6 +95,7 @@ func (t *TrafficController) addSSEHeaders(c *gin.Context) {
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 	c.Header("X-Accel-Buffering", "no") // Disable nginx buffering
+	c.Writer.Flush()
 }
 
 // parseFilters extracts filter parameters from query string

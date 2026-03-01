@@ -91,7 +91,7 @@ func setupCI() []error {
 	}
 
 	// mock services
-	if err := ci.Add(mock.NewMockServiceFactory); err != nil {
+	if err := ci.Add(mock.NewMockServiceFactory, dig.As(new(controller.MockResponseProvider))); err != nil {
 		errs = append(errs, err)
 	}
 
