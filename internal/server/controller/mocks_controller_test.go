@@ -23,7 +23,7 @@ func TestNewMocksController(t *testing.T) {
 	t.Run("creates controller with factory", func(t *testing.T) {
 		// We can't easily mock MockServiceFactory since it's a concrete struct
 		// So we'll test with a nil factory and verify the controller is created
-		controller := NewMocksController(nil)
+		controller := NewMocksController(nil, nil)
 
 		if controller == nil {
 			t.Fatal("NewMocksController should return non-nil controller")
@@ -187,7 +187,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 
 	t.Run("returns 500 when factory returns nil response", func(t *testing.T) {
 		mockProvider := &mockResponseProvider{response: nil}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -224,7 +224,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Headers:     &headers,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -271,7 +271,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Headers:     nil,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -309,7 +309,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Data:        &data,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -335,7 +335,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Data:        &data,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -365,7 +365,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Data:        &data,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -391,7 +391,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Data:        &emptyData,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -421,7 +421,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Data:        &data,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -459,7 +459,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Headers:     &headers,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -485,7 +485,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Data:        &data,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -513,7 +513,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				Headers:     &headers,
 			},
 		}
-		controller := NewMocksController(mockProvider)
+		controller := NewMocksController(mockProvider, nil)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)

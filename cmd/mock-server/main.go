@@ -9,6 +9,7 @@ import (
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	"github.com/Caik/go-mock-server/internal/service/content"
 	"github.com/Caik/go-mock-server/internal/service/mock"
+	"github.com/Caik/go-mock-server/internal/service/traffic"
 	"github.com/rs/zerolog/log"
 	"go.uber.org/dig"
 )
@@ -92,6 +93,11 @@ func setupCI() []error {
 
 	// cache service
 	if err := ci.Add(cache.NewInMemoryCacheService, dig.As(new(cache.CacheService))); err != nil {
+		errs = append(errs, err)
+	}
+
+	// traffic log service
+	if err := ci.Add(traffic.NewTrafficLogService); err != nil {
 		errs = append(errs, err)
 	}
 

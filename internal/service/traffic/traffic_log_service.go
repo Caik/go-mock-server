@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/util"
+	"github.com/rs/zerolog/log"
 )
 
 // TrafficLogService manages traffic logging with an in-memory ring buffer
@@ -12,37 +14,37 @@ import (
 type TrafficLogService struct {
 	ringBuffer  *util.RingBuffer[TrafficEntry]
 	broadcaster *util.Broadcaster[TrafficEntry]
-	enabled     bool
 }
 
-// NewTrafficLogService creates a new TrafficLogService with the specified buffer size.
-// If bufferSize is 0 or negative, traffic logging is disabled.
-func NewTrafficLogService(bufferSize int) *TrafficLogService {
-	if bufferSize <= 0 {
-		return &TrafficLogService{
-			enabled: false,
-		}
+// NewTrafficLogService creates a new TrafficLogService from AppArguments.
+// Returns nil if traffic logging is disabled (bufferSize <= 0).
+func NewTrafficLogService(args *config.AppArguments) *TrafficLogService {
+	if args.TrafficLogBufferSize <= 0 {
+		return nil
 	}
 
-	ringBuffer, err := util.NewRingBuffer[TrafficEntry](bufferSize)
+	ringBuffer, err := util.NewRingBuffer[TrafficEntry](args.TrafficLogBufferSize)
 
 	if err != nil {
 		// This should never happen since we check bufferSize > 0 above
-		return &TrafficLogService{
-			enabled: false,
-		}
+		log.Warn().
+			Err(err).
+			Stack().
+			Int("buffer_size", args.TrafficLogBufferSize).
+			Msg("unexpected error creating ring buffer for traffic log service, disabling traffic logging")
+
+		return nil
 	}
 
 	return &TrafficLogService{
 		ringBuffer:  ringBuffer,
 		broadcaster: &util.Broadcaster[TrafficEntry]{},
-		enabled:     true,
 	}
 }
 
 // Capture adds a traffic entry to the log and broadcasts it to subscribers.
 func (t *TrafficLogService) Capture(entry TrafficEntry) {
-	if !t.enabled {
+	if t == nil {
 		return
 	}
 
@@ -52,7 +54,7 @@ func (t *TrafficLogService) Capture(entry TrafficEntry) {
 
 // GetAll returns all entries in the buffer, ordered from oldest to newest.
 func (t *TrafficLogService) GetAll() []TrafficEntry {
-	if !t.enabled {
+	if t == nil {
 		return []TrafficEntry{}
 	}
 
@@ -61,7 +63,7 @@ func (t *TrafficLogService) GetAll() []TrafficEntry {
 
 // GetRecent returns the n most recent entries, ordered from oldest to newest.
 func (t *TrafficLogService) GetRecent(n int) []TrafficEntry {
-	if !t.enabled {
+	if t == nil {
 		return []TrafficEntry{}
 	}
 
@@ -71,7 +73,7 @@ func (t *TrafficLogService) GetRecent(n int) []TrafficEntry {
 // GetFiltered returns entries matching the provided filters.
 // If filters is nil or empty, all entries are returned.
 func (t *TrafficLogService) GetFiltered(filters *TrafficFilters) []TrafficEntry {
-	if !t.enabled {
+	if t == nil {
 		return []TrafficEntry{}
 	}
 
@@ -95,9 +97,9 @@ func (t *TrafficLogService) GetFiltered(filters *TrafficFilters) []TrafficEntry 
 // Subscribe returns a channel that receives new traffic entries.
 // If filters is nil or empty, all entries are received.
 // Otherwise, only entries matching the filter are received.
-// Returns nil if the service is disabled.
+// Returns nil if the service is nil.
 func (t *TrafficLogService) Subscribe(subscriberID string, filters *TrafficFilters) <-chan TrafficEntry {
-	if !t.enabled || t.broadcaster == nil {
+	if t == nil {
 		return nil
 	}
 
@@ -114,7 +116,7 @@ func (t *TrafficLogService) Subscribe(subscriberID string, filters *TrafficFilte
 
 // Unsubscribe removes a subscriber.
 func (t *TrafficLogService) Unsubscribe(subscriberID string) {
-	if t.broadcaster == nil {
+	if t == nil {
 		return
 	}
 
@@ -123,7 +125,7 @@ func (t *TrafficLogService) Unsubscribe(subscriberID string) {
 
 // Clear removes all entries from the buffer.
 func (t *TrafficLogService) Clear() {
-	if !t.enabled {
+	if t == nil {
 		return
 	}
 
@@ -132,16 +134,11 @@ func (t *TrafficLogService) Clear() {
 
 // Size returns the current number of entries in the buffer.
 func (t *TrafficLogService) Size() int {
-	if !t.enabled {
+	if t == nil {
 		return 0
 	}
 
 	return t.ringBuffer.Size()
-}
-
-// IsEnabled returns whether traffic logging is enabled.
-func (t *TrafficLogService) IsEnabled() bool {
-	return t.enabled
 }
 
 // TrafficFilters contains optional filters for querying traffic entries.

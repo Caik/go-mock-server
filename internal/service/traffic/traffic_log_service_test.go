@@ -3,37 +3,46 @@ package traffic
 import (
 	"testing"
 	"time"
+
+	"github.com/Caik/go-mock-server/internal/config"
 )
 
+// newTestService creates a TrafficLogService for testing with the given buffer size
+func newTestService(bufferSize int) *TrafficLogService {
+	return NewTrafficLogService(&config.AppArguments{
+		TrafficLogBufferSize: bufferSize,
+	})
+}
+
 func TestNewTrafficLogService(t *testing.T) {
-	t.Run("creates enabled service with positive buffer size", func(t *testing.T) {
-		service := NewTrafficLogService(100)
+	t.Run("creates service with positive buffer size", func(t *testing.T) {
+		service := newTestService(100)
 
-		if !service.IsEnabled() {
-			t.Error("expected service to be enabled")
+		if service == nil {
+			t.Error("expected non-nil service")
 		}
 	})
 
-	t.Run("creates disabled service with zero buffer size", func(t *testing.T) {
-		service := NewTrafficLogService(0)
+	t.Run("returns nil with zero buffer size", func(t *testing.T) {
+		service := newTestService(0)
 
-		if service.IsEnabled() {
-			t.Error("expected service to be disabled")
+		if service != nil {
+			t.Error("expected nil service when disabled")
 		}
 	})
 
-	t.Run("creates disabled service with negative buffer size", func(t *testing.T) {
-		service := NewTrafficLogService(-10)
+	t.Run("returns nil with negative buffer size", func(t *testing.T) {
+		service := newTestService(-10)
 
-		if service.IsEnabled() {
-			t.Error("expected service to be disabled")
+		if service != nil {
+			t.Error("expected nil service when disabled")
 		}
 	})
 }
 
 func TestTrafficLogService_Capture(t *testing.T) {
 	t.Run("captures entry and increases size", func(t *testing.T) {
-		service := NewTrafficLogService(10)
+		service := newTestService(10)
 
 		entry := TrafficEntry{
 			UUID:      "test-uuid",
@@ -51,7 +60,7 @@ func TestTrafficLogService_Capture(t *testing.T) {
 	})
 
 	t.Run("does nothing when disabled", func(t *testing.T) {
-		service := NewTrafficLogService(0)
+		service := newTestService(0)
 
 		entry := TrafficEntry{UUID: "test-uuid"}
 		service.Capture(entry)
@@ -64,7 +73,7 @@ func TestTrafficLogService_Capture(t *testing.T) {
 
 func TestTrafficLogService_GetAll(t *testing.T) {
 	t.Run("returns all entries in order", func(t *testing.T) {
-		service := NewTrafficLogService(10)
+		service := newTestService(10)
 
 		for i := 0; i < 3; i++ {
 			service.Capture(TrafficEntry{UUID: string(rune('a' + i))})
@@ -82,7 +91,7 @@ func TestTrafficLogService_GetAll(t *testing.T) {
 	})
 
 	t.Run("returns empty slice when disabled", func(t *testing.T) {
-		service := NewTrafficLogService(0)
+		service := newTestService(0)
 
 		entries := service.GetAll()
 
@@ -93,7 +102,7 @@ func TestTrafficLogService_GetAll(t *testing.T) {
 }
 
 func TestTrafficLogService_GetFiltered(t *testing.T) {
-	service := NewTrafficLogService(10)
+	service := newTestService(10)
 
 	// Add test entries
 	service.Capture(TrafficEntry{
@@ -190,7 +199,7 @@ func TestTrafficLogService_GetFiltered(t *testing.T) {
 	})
 
 	t.Run("returns empty when disabled", func(t *testing.T) {
-		disabledService := NewTrafficLogService(0)
+		disabledService := newTestService(0)
 		entries := disabledService.GetFiltered(&TrafficFilters{Hosts: []string{"example.com"}})
 
 		if len(entries) != 0 {
@@ -201,7 +210,7 @@ func TestTrafficLogService_GetFiltered(t *testing.T) {
 
 func TestTrafficLogService_Clear(t *testing.T) {
 	t.Run("clears all entries", func(t *testing.T) {
-		service := NewTrafficLogService(10)
+		service := newTestService(10)
 
 		service.Capture(TrafficEntry{UUID: "1"})
 		service.Capture(TrafficEntry{UUID: "2"})
@@ -214,14 +223,14 @@ func TestTrafficLogService_Clear(t *testing.T) {
 	})
 
 	t.Run("does nothing when disabled", func(t *testing.T) {
-		service := NewTrafficLogService(0)
+		service := newTestService(0)
 		service.Clear() // Should not panic
 	})
 }
 
 func TestTrafficLogService_Subscribe(t *testing.T) {
 	t.Run("subscriber receives captured entries without filter", func(t *testing.T) {
-		service := NewTrafficLogService(10)
+		service := newTestService(10)
 
 		ch := service.Subscribe("test-subscriber", nil)
 
@@ -245,7 +254,7 @@ func TestTrafficLogService_Subscribe(t *testing.T) {
 	})
 
 	t.Run("subscriber with filter only receives matching entries", func(t *testing.T) {
-		service := NewTrafficLogService(10)
+		service := newTestService(10)
 
 		filter := &TrafficFilters{Hosts: []string{"example.com"}}
 		ch := service.Subscribe("filtered-subscriber", filter)
@@ -272,7 +281,7 @@ func TestTrafficLogService_Subscribe(t *testing.T) {
 	})
 
 	t.Run("returns nil when disabled", func(t *testing.T) {
-		service := NewTrafficLogService(0)
+		service := newTestService(0)
 
 		ch := service.Subscribe("test-subscriber", nil)
 
@@ -287,7 +296,7 @@ func TestTrafficLogService_Subscribe(t *testing.T) {
 
 func TestTrafficLogService_GetRecent(t *testing.T) {
 	t.Run("returns recent entries", func(t *testing.T) {
-		service := NewTrafficLogService(10)
+		service := newTestService(10)
 
 		for i := 0; i < 5; i++ {
 			service.Capture(TrafficEntry{UUID: string(rune('a' + i))})
@@ -305,7 +314,7 @@ func TestTrafficLogService_GetRecent(t *testing.T) {
 	})
 
 	t.Run("returns empty when disabled", func(t *testing.T) {
-		service := NewTrafficLogService(0)
+		service := newTestService(0)
 
 		entries := service.GetRecent(3)
 
