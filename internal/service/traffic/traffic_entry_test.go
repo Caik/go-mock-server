@@ -99,4 +99,3 @@ func TestTrafficEntry_JSONSerialization(t *testing.T) {
 		}
 	})
 }
-

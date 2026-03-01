@@ -44,4 +44,3 @@ func NewTrafficEntry(uuid string) *TrafficEntry {
 		Timestamp: time.Now(),
 	}
 }
-

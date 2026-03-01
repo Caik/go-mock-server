@@ -146,8 +146,6 @@ func TestTrafficController_parseFilters(t *testing.T) {
 	})
 }
 
-
-
 func TestTrafficController_parseFilters_matched(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
