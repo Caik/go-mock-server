@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -220,8 +221,9 @@ func TestTrafficController_SSEStreaming(t *testing.T) {
 			controller.handleTrafficStream(c)
 		})
 
-		// Create request with timeout
-		req := httptest.NewRequest(http.MethodGet, "/api/v1/traffic", nil)
+		// Create request with cancellable context
+		ctx, cancel := context.WithCancel(context.Background())
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/traffic", nil).WithContext(ctx)
 		w := httptest.NewRecorder()
 
 		// Run in goroutine since SSE blocks
@@ -231,10 +233,12 @@ func TestTrafficController_SSEStreaming(t *testing.T) {
 			done <- true
 		}()
 
-		// Wait a bit for catch-up entries to be written
+		// Wait a bit for catch-up entries to be written, then cancel
 		time.Sleep(50 * time.Millisecond)
+		cancel()
+		<-done
 
-		// Check that we got SSE headers and catch-up data
+		// Check that we got catch-up data
 		result := w.Body.String()
 		if !strings.Contains(result, "entry-1") || !strings.Contains(result, "entry-2") {
 			t.Errorf("expected catch-up entries in response, got: %s", result)
@@ -251,14 +255,19 @@ func TestTrafficController_SSEStreaming(t *testing.T) {
 			controller.handleTrafficStream(c)
 		})
 
-		req := httptest.NewRequest(http.MethodGet, "/api/v1/traffic", nil)
+		ctx, cancel := context.WithCancel(context.Background())
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/traffic", nil).WithContext(ctx)
 		w := httptest.NewRecorder()
 
+		done := make(chan bool)
 		go func() {
 			router.ServeHTTP(w, req)
+			done <- true
 		}()
 
 		time.Sleep(50 * time.Millisecond)
+		cancel()
+		<-done
 
 		if w.Header().Get("Content-Type") != "text/event-stream" {
 			t.Errorf("expected Content-Type text/event-stream, got %s", w.Header().Get("Content-Type"))
@@ -279,14 +288,19 @@ func TestTrafficController_SSEStreaming(t *testing.T) {
 			controller.handleTrafficStream(c)
 		})
 
-		req := httptest.NewRequest(http.MethodGet, "/api/v1/traffic?hosts=example.com", nil)
+		ctx, cancel := context.WithCancel(context.Background())
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/traffic?hosts=example.com", nil).WithContext(ctx)
 		w := httptest.NewRecorder()
 
+		done := make(chan bool)
 		go func() {
 			router.ServeHTTP(w, req)
+			done <- true
 		}()
 
 		time.Sleep(50 * time.Millisecond)
+		cancel()
+		<-done
 
 		result := w.Body.String()
 		if !strings.Contains(result, "match") {
@@ -313,14 +327,19 @@ func TestTrafficController_SSEFormat(t *testing.T) {
 			controller.handleTrafficStream(c)
 		})
 
-		req := httptest.NewRequest(http.MethodGet, "/api/v1/traffic", nil)
+		ctx, cancel := context.WithCancel(context.Background())
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/traffic", nil).WithContext(ctx)
 		w := httptest.NewRecorder()
 
+		done := make(chan bool)
 		go func() {
 			router.ServeHTTP(w, req)
+			done <- true
 		}()
 
 		time.Sleep(50 * time.Millisecond)
+		cancel()
+		<-done
 
 		// Parse SSE response
 		scanner := bufio.NewScanner(strings.NewReader(w.Body.String()))

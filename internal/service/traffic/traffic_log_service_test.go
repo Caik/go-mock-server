@@ -233,6 +233,7 @@ func TestTrafficLogService_Subscribe(t *testing.T) {
 		service := newTestService(10)
 
 		ch := service.Subscribe("test-subscriber", nil)
+		defer service.Unsubscribe("test-subscriber")
 
 		// Capture an entry
 		entry := TrafficEntry{UUID: "test-uuid"}
@@ -247,10 +248,6 @@ func TestTrafficLogService_Subscribe(t *testing.T) {
 		case <-time.After(100 * time.Millisecond):
 			t.Error("timeout waiting for entry")
 		}
-
-		// Wait for async operations to complete before unsubscribing
-		time.Sleep(10 * time.Millisecond)
-		service.Unsubscribe("test-subscriber")
 	})
 
 	t.Run("subscriber with filter only receives matching entries", func(t *testing.T) {
@@ -258,6 +255,7 @@ func TestTrafficLogService_Subscribe(t *testing.T) {
 
 		filter := &TrafficFilters{Hosts: []string{"example.com"}}
 		ch := service.Subscribe("filtered-subscriber", filter)
+		defer service.Unsubscribe("filtered-subscriber")
 
 		// Capture a matching entry only (simpler test to avoid race conditions)
 		service.Capture(TrafficEntry{
@@ -274,10 +272,6 @@ func TestTrafficLogService_Subscribe(t *testing.T) {
 		case <-time.After(100 * time.Millisecond):
 			t.Error("timeout waiting for matching entry")
 		}
-
-		// Wait for async operations to complete before unsubscribing
-		time.Sleep(10 * time.Millisecond)
-		service.Unsubscribe("filtered-subscriber")
 	})
 
 	t.Run("returns nil when disabled", func(t *testing.T) {

@@ -7,11 +7,15 @@ import (
 )
 
 type Broadcaster[T any] struct {
+	mu                  sync.RWMutex
 	subscribers         map[string]chan T
 	subscribersAcceptFn map[string]func(event T) bool
 }
 
 func (b *Broadcaster[T]) Subscribe(subscriberId string, acceptFn func(event T) bool) <-chan T {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	if b.subscribers == nil {
 		b.subscribers = make(map[string]chan T)
 		b.subscribersAcceptFn = make(map[string]func(event T) bool)
@@ -28,6 +32,9 @@ func (b *Broadcaster[T]) Subscribe(subscriberId string, acceptFn func(event T) b
 }
 
 func (b *Broadcaster[T]) Unsubscribe(subscriberId string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	channel, exists := b.subscribers[subscriberId]
 
 	if !exists {
@@ -44,13 +51,36 @@ func (b *Broadcaster[T]) Publish(event T, uuid string) {
 		Str("uuid", uuid).
 		Msg("starting to broadcast event")
 
+	b.mu.RLock()
+	subscribersCopy := make(map[string]chan T, len(b.subscribers))
+	acceptFnCopy := make(map[string]func(event T) bool, len(b.subscribersAcceptFn))
+
+	for k, v := range b.subscribers {
+		subscribersCopy[k] = v
+	}
+
+	for k, v := range b.subscribersAcceptFn {
+		acceptFnCopy[k] = v
+	}
+
+	b.mu.RUnlock()
+
 	var wg sync.WaitGroup
-	wg.Add(len(b.subscribers))
+	wg.Add(len(subscribersCopy))
 
 	publishFn := func(subscriberId string, channel chan<- T) {
 		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				// Channel was closed, subscriber unsubscribed during publish
+				log.Debug().
+					Str("uuid", uuid).
+					Str("subscriber_id", subscriberId).
+					Msg("subscriber unsubscribed during publish")
+			}
+		}()
 
-		acceptFn, exists := b.subscribersAcceptFn[subscriberId]
+		acceptFn, exists := acceptFnCopy[subscriberId]
 
 		if !exists {
 			log.Warn().
@@ -66,7 +96,7 @@ func (b *Broadcaster[T]) Publish(event T, uuid string) {
 		channel <- event
 	}
 
-	for id, channel := range b.subscribers {
+	for id, channel := range subscribersCopy {
 		go publishFn(id, channel)
 	}
 
