@@ -28,6 +28,7 @@ type StartServerParams struct {
 	AppArguments         *config.AppArguments
 	AdminMocksController *controller.AdminMocksController
 	AdminHostsController *controller.AdminHostsController
+	TrafficController    *controller.TrafficController
 	MocksController      *controller.MocksController
 }
 
@@ -58,7 +59,7 @@ func StartServers(params StartServerParams) error {
 	controller.InitMockRoutes(params.Servers.MockEngine, params.MocksController)
 
 	// Initialize admin routes on admin engine
-	controller.InitAdminRoutes(params.Servers.AdminEngine, params.AdminMocksController, params.AdminHostsController)
+	controller.InitAdminRoutes(params.Servers.AdminEngine, params.AdminMocksController, params.AdminHostsController, params.TrafficController)
 
 	// Channel to capture errors from goroutines
 	errChan := make(chan error, 2)

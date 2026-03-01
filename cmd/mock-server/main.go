@@ -72,6 +72,10 @@ func setupCI() []error {
 		errs = append(errs, err)
 	}
 
+	if err := ci.Add(controller.NewTrafficController); err != nil {
+		errs = append(errs, err)
+	}
+
 	// admin services
 	if err := ci.Add(admin.NewHostsConfigAdminService); err != nil {
 		errs = append(errs, err)

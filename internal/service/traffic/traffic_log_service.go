@@ -158,8 +158,14 @@ func (f TrafficFilters) Validate() error {
 	}
 
 	for _, host := range f.Hosts {
-		if strings.TrimSpace(host) == "" {
+		host = strings.TrimSpace(host)
+
+		if host == "" {
 			return fmt.Errorf("invalid host: empty or whitespace-only host not allowed")
+		}
+
+		if !util.HostRegex.MatchString(host) && !util.IpAddressRegex.MatchString(host) {
+			return fmt.Errorf("invalid host %q: must be a valid hostname or IP address", host)
 		}
 	}
 

@@ -222,11 +222,12 @@ func TestStartServer(t *testing.T) {
 		// Create admin controllers
 		adminMocksController := &controller.AdminMocksController{}
 		adminHostsController := &controller.AdminHostsController{}
+		trafficController := controller.NewTrafficController(nil)
 
 		servers := NewServers()
 
 		// Initialize admin routes
-		controller.InitAdminRoutes(servers.AdminEngine, adminMocksController, adminHostsController)
+		controller.InitAdminRoutes(servers.AdminEngine, adminMocksController, adminHostsController, trafficController)
 
 		// Test that admin routes are accessible (they should return some response, even if it's an error)
 		testRoutes := []struct {
@@ -259,8 +260,9 @@ func TestStartServer(t *testing.T) {
 		servers := NewServers()
 		adminMocksController := &controller.AdminMocksController{}
 		adminHostsController := &controller.AdminHostsController{}
+		trafficController := controller.NewTrafficController(nil)
 
-		controller.InitAdminRoutes(servers.AdminEngine, adminMocksController, adminHostsController)
+		controller.InitAdminRoutes(servers.AdminEngine, adminMocksController, adminHostsController, trafficController)
 
 		req := httptest.NewRequest(http.MethodGet, "/health", nil)
 		w := httptest.NewRecorder()
@@ -377,9 +379,10 @@ func TestStartServersIntegration(t *testing.T) {
 		// We'll just test that admin routes work
 		adminMocksController := controller.NewAdminMocksController(admin.NewMockAdminService(contentSvc))
 		adminHostsController := controller.NewAdminHostsController(hostsConfig, admin.NewHostsConfigAdminService(hostsConfig))
+		trafficController := controller.NewTrafficController(nil)
 
 		// Initialize admin routes manually for testing
-		controller.InitAdminRoutes(servers.AdminEngine, adminMocksController, adminHostsController)
+		controller.InitAdminRoutes(servers.AdminEngine, adminMocksController, adminHostsController, trafficController)
 
 		// Add a simple mock route for testing
 		servers.MockEngine.GET("/test", func(c *gin.Context) {

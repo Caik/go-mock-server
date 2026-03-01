@@ -13,7 +13,7 @@ func InitMockRoutes(r *gin.Engine, mocksController *MocksController) {
 }
 
 // InitAdminRoutes initializes routes for the admin server
-func InitAdminRoutes(r *gin.Engine, adminMocksController *AdminMocksController, adminHostsController *AdminHostsController) {
+func InitAdminRoutes(r *gin.Engine, adminMocksController *AdminMocksController, adminHostsController *AdminHostsController, trafficController *TrafficController) {
 	// Health check endpoint
 	r.GET("/health", handleHealthCheck)
 
@@ -22,6 +22,7 @@ func InitAdminRoutes(r *gin.Engine, adminMocksController *AdminMocksController, 
 	{
 		initAdminMocksController(v1.Group("/mocks"), adminMocksController)
 		initAdminHostsController(v1.Group("/config/hosts"), adminHostsController)
+		initAdminTrafficController(v1.Group("/traffic"), trafficController)
 	}
 }
 
@@ -51,4 +52,8 @@ func initAdminHostsController(r *gin.RouterGroup, controller *AdminHostsControll
 	r.DELETE("/:host/errors/:error", controller.handleErrorDelete)
 
 	r.POST("/:host/uris", controller.handleUrisAddUpdate)
+}
+
+func initAdminTrafficController(r *gin.RouterGroup, controller *TrafficController) {
+	r.GET("", controller.handleTrafficStream)
 }

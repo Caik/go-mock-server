@@ -418,4 +418,30 @@ func TestTrafficFilters_Validate(t *testing.T) {
 			t.Error("expected error for whitespace-only host")
 		}
 	})
+
+	t.Run("invalid hostname fails validation", func(t *testing.T) {
+		filters := TrafficFilters{Hosts: []string{"not a valid host!"}}
+
+		err := filters.Validate()
+
+		if err == nil {
+			t.Error("expected error for invalid hostname")
+		}
+	})
+
+	t.Run("IP address passes validation", func(t *testing.T) {
+		filters := TrafficFilters{Hosts: []string{"192.168.1.1"}}
+
+		if err := filters.Validate(); err != nil {
+			t.Errorf("expected IP address to pass validation, got %v", err)
+		}
+	})
+
+	t.Run("localhost passes validation", func(t *testing.T) {
+		filters := TrafficFilters{Hosts: []string{"my-app.localhost"}}
+
+		if err := filters.Validate(); err != nil {
+			t.Errorf("expected localhost to pass validation, got %v", err)
+		}
+	})
 }

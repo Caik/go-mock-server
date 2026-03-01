@@ -18,9 +18,10 @@ func TestInitAdminRoutes(t *testing.T) {
 		// Create mock controllers (they can be nil for route testing)
 		adminMocksController := &AdminMocksController{}
 		adminHostsController := &AdminHostsController{}
+		trafficController := NewTrafficController(nil)
 
 		// Initialize admin routes
-		InitAdminRoutes(router, adminMocksController, adminHostsController)
+		InitAdminRoutes(router, adminMocksController, adminHostsController, trafficController)
 
 		// Test health endpoint
 		t.Run("GET /health", func(t *testing.T) {
@@ -231,8 +232,9 @@ func TestRouteGrouping(t *testing.T) {
 
 		adminMocksController := &AdminMocksController{}
 		adminHostsController := &AdminHostsController{}
+		trafficController := NewTrafficController(nil)
 
-		InitAdminRoutes(router, adminMocksController, adminHostsController)
+		InitAdminRoutes(router, adminMocksController, adminHostsController, trafficController)
 
 		// Test that admin routes are under correct paths
 		adminPaths := []string{
