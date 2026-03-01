@@ -13,8 +13,14 @@ var (
 	badConfigurationResponseData = []byte("bad mock server configuration")
 )
 
+// MockResponseProvider is an interface for getting mock responses
+// This allows for easier testing by enabling mock implementations
+type MockResponseProvider interface {
+	GetMockResponse(mockRequest mock.MockRequest) *mock.MockResponse
+}
+
 type MocksController struct {
-	factory *mock.MockServiceFactory
+	factory MockResponseProvider
 }
 
 func (m *MocksController) handleMockRequest(c *gin.Context) {
@@ -63,7 +69,7 @@ func (m *MocksController) sanitizeHost(host string) string {
 	return strings.ToLower(host[0:index])
 }
 
-func NewMocksController(factory *mock.MockServiceFactory) *MocksController {
+func NewMocksController(factory MockResponseProvider) *MocksController {
 	controller := MocksController{
 		factory: factory,
 	}

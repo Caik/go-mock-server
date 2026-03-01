@@ -10,6 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// mockResponseProvider is a test implementation of MockResponseProvider
+type mockResponseProvider struct {
+	response *mock.MockResponse
+}
+
+func (m *mockResponseProvider) GetMockResponse(mockRequest mock.MockRequest) *mock.MockResponse {
+	return m.response
+}
+
 func TestNewMocksController(t *testing.T) {
 	t.Run("creates controller with factory", func(t *testing.T) {
 		// We can't easily mock MockServiceFactory since it's a concrete struct
@@ -176,8 +185,9 @@ func TestMocksController_newMockRequest(t *testing.T) {
 func TestMocksController_handleMockRequest(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	t.Run("handles nil factory gracefully", func(t *testing.T) {
-		controller := NewMocksController(nil)
+	t.Run("returns 500 when factory returns nil response", func(t *testing.T) {
+		mockProvider := &mockResponseProvider{response: nil}
+		controller := NewMocksController(mockProvider)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -187,28 +197,18 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 		c.Request = req
 		c.Set(util.UuidKey, "test-uuid")
 
-		// This should panic or handle nil factory gracefully
-		// Since we can't easily mock the factory, we'll test the error case
-		defer func() {
-			if r := recover(); r == nil {
-				// If no panic, check if it handled nil gracefully
-				if w.Code != http.StatusInternalServerError {
-					t.Error("expected 500 status or panic with nil factory")
-				}
-			}
-		}()
-
 		controller.handleMockRequest(c)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+
+		if w.Body.String() != "bad mock server configuration" {
+			t.Errorf("expected 'bad mock server configuration', got %s", w.Body.String())
+		}
 	})
 
-	t.Run("handles response with headers", func(t *testing.T) {
-		// Test the header setting functionality by directly testing the controller logic
-		// Since we can't easily mock the factory, we'll test the header setting part
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-
-		// Create a mock response with headers
+	t.Run("returns valid response with headers", func(t *testing.T) {
 		headers := map[string]string{
 			"X-Custom-Header":              "custom-value",
 			"Access-Control-Allow-Origin":  "*",
@@ -216,68 +216,73 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 		}
 
 		xmlData := []byte(`<response>created</response>`)
-		mockResponse := &mock.MockResponse{
-			StatusCode:  201,
-			ContentType: "application/xml",
-			Data:        &xmlData,
-			Headers:     &headers,
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  201,
+				ContentType: "application/xml",
+				Data:        &xmlData,
+				Headers:     &headers,
+			},
 		}
+		controller := NewMocksController(mockProvider)
 
-		// Simulate the header setting logic from handleMockRequest
-		if mockResponse.Headers != nil {
-			for key, value := range *mockResponse.Headers {
-				c.Header(key, value)
-			}
-		}
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
 
-		c.Data(mockResponse.StatusCode, mockResponse.ContentType, *mockResponse.Data)
+		req := httptest.NewRequest(http.MethodPost, "/api/users", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
 
-		// Verify response
+		controller.handleMockRequest(c)
+
 		if w.Code != 201 {
 			t.Errorf("expected 201 status code, got %d", w.Code)
 		}
 
-		// Verify headers were set
 		if w.Header().Get("X-Custom-Header") != "custom-value" {
-			t.Errorf("expected custom header to be set, got %s", w.Header().Get("X-Custom-Header"))
+			t.Errorf("expected custom header, got %s", w.Header().Get("X-Custom-Header"))
 		}
 
 		if w.Header().Get("Access-Control-Allow-Origin") != "*" {
-			t.Errorf("expected CORS header to be set, got %s", w.Header().Get("Access-Control-Allow-Origin"))
+			t.Errorf("expected CORS header, got %s", w.Header().Get("Access-Control-Allow-Origin"))
 		}
 
 		if w.Header().Get("Access-Control-Allow-Methods") != "GET, POST, PUT, DELETE" {
-			t.Errorf("expected CORS methods header to be set, got %s", w.Header().Get("Access-Control-Allow-Methods"))
+			t.Errorf("expected CORS methods, got %s", w.Header().Get("Access-Control-Allow-Methods"))
 		}
 
 		if w.Body.String() != `<response>created</response>` {
 			t.Errorf("expected XML response, got %s", w.Body.String())
 		}
+
+		if w.Header().Get("Content-Type") != "application/xml" {
+			t.Errorf("expected content-type application/xml, got %s", w.Header().Get("Content-Type"))
+		}
 	})
 
-	t.Run("handles response without headers", func(t *testing.T) {
+	t.Run("returns valid response without headers", func(t *testing.T) {
+		jsonData := []byte(`{"message": "success"}`)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  200,
+				ContentType: "application/json",
+				Data:        &jsonData,
+				Headers:     nil,
+			},
+		}
+		controller := NewMocksController(mockProvider)
+
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 
-		// Create a mock response without headers
-		successData := []byte(`{"message": "success"}`)
-		mockResponse := &mock.MockResponse{
-			StatusCode:  200,
-			ContentType: "application/json",
-			Data:        &successData,
-			Headers:     nil, // No headers
-		}
+		req := httptest.NewRequest(http.MethodGet, "/api/status", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
 
-		// Simulate the header setting logic from handleMockRequest
-		if mockResponse.Headers != nil {
-			for key, value := range *mockResponse.Headers {
-				c.Header(key, value)
-			}
-		}
+		controller.handleMockRequest(c)
 
-		c.Data(mockResponse.StatusCode, mockResponse.ContentType, *mockResponse.Data)
-
-		// Verify response
 		if w.Code != 200 {
 			t.Errorf("expected 200 status code, got %d", w.Code)
 		}
@@ -286,12 +291,248 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 			t.Errorf("expected success message, got %s", w.Body.String())
 		}
 
-		// Should not have any custom headers
 		if w.Header().Get("X-Custom-Header") != "" {
 			t.Errorf("expected no custom headers, got %s", w.Header().Get("X-Custom-Header"))
 		}
+
+		if w.Header().Get("Content-Type") != "application/json" {
+			t.Errorf("expected content-type application/json, got %s", w.Header().Get("Content-Type"))
+		}
 	})
 
+	t.Run("handles 201 Created status code", func(t *testing.T) {
+		data := []byte(`{"id": 123, "name": "new resource"}`)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  201,
+				ContentType: "application/json",
+				Data:        &data,
+			},
+		}
+		controller := NewMocksController(mockProvider)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/resources", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockRequest(c)
+
+		if w.Code != 201 {
+			t.Errorf("expected 201 status code, got %d", w.Code)
+		}
+	})
+
+	t.Run("handles 404 Not Found status code", func(t *testing.T) {
+		data := []byte(`{"error": "resource not found"}`)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  404,
+				ContentType: "application/json",
+				Data:        &data,
+			},
+		}
+		controller := NewMocksController(mockProvider)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/missing", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockRequest(c)
+
+		if w.Code != 404 {
+			t.Errorf("expected 404 status code, got %d", w.Code)
+		}
+
+		if w.Body.String() != `{"error": "resource not found"}` {
+			t.Errorf("expected not found message, got %s", w.Body.String())
+		}
+	})
+
+	t.Run("handles 400 Bad Request status code", func(t *testing.T) {
+		data := []byte(`{"error": "invalid request"}`)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  400,
+				ContentType: "application/json",
+				Data:        &data,
+			},
+		}
+		controller := NewMocksController(mockProvider)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/users", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockRequest(c)
+
+		if w.Code != 400 {
+			t.Errorf("expected 400 status code, got %d", w.Code)
+		}
+	})
+
+	t.Run("handles 204 No Content status code", func(t *testing.T) {
+		emptyData := []byte(``)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  204,
+				ContentType: "",
+				Data:        &emptyData,
+			},
+		}
+		controller := NewMocksController(mockProvider)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		req := httptest.NewRequest(http.MethodDelete, "/api/resources/123", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockRequest(c)
+
+		if w.Code != 204 {
+			t.Errorf("expected 204 status code, got %d", w.Code)
+		}
+
+		if w.Body.String() != "" {
+			t.Errorf("expected empty body, got %s", w.Body.String())
+		}
+	})
+
+	t.Run("handles text/plain content type", func(t *testing.T) {
+		data := []byte(`Plain text response`)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  200,
+				ContentType: "text/plain",
+				Data:        &data,
+			},
+		}
+		controller := NewMocksController(mockProvider)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/text", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockRequest(c)
+
+		if w.Code != 200 {
+			t.Errorf("expected 200 status code, got %d", w.Code)
+		}
+
+		if w.Header().Get("Content-Type") != "text/plain" {
+			t.Errorf("expected content-type text/plain, got %s", w.Header().Get("Content-Type"))
+		}
+
+		if w.Body.String() != "Plain text response" {
+			t.Errorf("expected plain text response, got %s", w.Body.String())
+		}
+	})
+
+	t.Run("handles response with single header", func(t *testing.T) {
+		headers := map[string]string{
+			"X-Request-Id": "abc123",
+		}
+		data := []byte(`{"status": "ok"}`)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  200,
+				ContentType: "application/json",
+				Data:        &data,
+				Headers:     &headers,
+			},
+		}
+		controller := NewMocksController(mockProvider)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/status", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockRequest(c)
+
+		if w.Header().Get("X-Request-Id") != "abc123" {
+			t.Errorf("expected X-Request-Id header, got %s", w.Header().Get("X-Request-Id"))
+		}
+	})
+
+	t.Run("handles 503 Service Unavailable status code", func(t *testing.T) {
+		data := []byte(`{"error": "service temporarily unavailable"}`)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  503,
+				ContentType: "application/json",
+				Data:        &data,
+			},
+		}
+		controller := NewMocksController(mockProvider)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockRequest(c)
+
+		if w.Code != 503 {
+			t.Errorf("expected 503 status code, got %d", w.Code)
+		}
+	})
+
+	t.Run("handles response with empty headers map", func(t *testing.T) {
+		headers := map[string]string{}
+		data := []byte(`{"status": "ok"}`)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  200,
+				ContentType: "application/json",
+				Data:        &data,
+				Headers:     &headers,
+			},
+		}
+		controller := NewMocksController(mockProvider)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/status", nil)
+		req.Host = "api.example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockRequest(c)
+
+		if w.Code != 200 {
+			t.Errorf("expected 200 status code, got %d", w.Code)
+		}
+
+		if w.Body.String() != `{"status": "ok"}` {
+			t.Errorf("expected status ok message, got %s", w.Body.String())
+		}
+	})
 }
 
 func TestMocksController_RequestParsing(t *testing.T) {
