@@ -41,7 +41,7 @@ func NewServers() *Servers {
 
 	return &Servers{
 		MockEngine:  newGinEngine(),
-		AdminEngine: newGinEngine(),
+		AdminEngine: newAdminGinEngine(),
 	}
 }
 
@@ -54,12 +54,32 @@ func newGinEngine() *gin.Engine {
 	return r
 }
 
+func newAdminGinEngine() *gin.Engine {
+	r := gin.New()
+	r.Use(gin.Recovery())
+
+	// Enable CORS only in dev mode
+	if config.GetVersion() == "dev" {
+		r.Use(middleware.Cors)
+	}
+
+	r.Use(middleware.Uuid)
+	r.Use(middleware.Logger)
+
+	return r
+}
+
 func StartServers(params StartServerParams) error {
 	// Initialize mock routes on mock engine
 	controller.InitMockRoutes(params.Servers.MockEngine, params.MocksController)
 
 	// Initialize admin routes on admin engine
 	controller.InitAdminRoutes(params.Servers.AdminEngine, params.AdminMocksController, params.AdminHostsController, params.TrafficController)
+
+	// Initialize UI routes if a UI directory is configured
+	if params.AppArguments.UIDirectory != "" {
+		controller.InitUIRoutes(params.Servers.AdminEngine, params.AppArguments.UIDirectory)
+	}
 
 	// Channel to capture errors from goroutines
 	errChan := make(chan error, 2)

@@ -19,32 +19,33 @@ type MockRequest struct {
 	Uuid   string
 }
 
-// MockResponseMetadata contains metadata about how the mock was resolved
-type MockResponseMetadata struct {
-	Matched bool   `json:"matched"`
-	Source  string `json:"source,omitempty"` // e.g., "filesystem", "cache" — only set when Matched=true
-	Path    string `json:"path,omitempty"`   // file path, cache key, S3 key, etc. — only set when Matched=true
-}
-
 type MockResponse struct {
 	StatusCode          int
 	Data                *[]byte
 	ContentType         string
-	Headers             *map[string]string
-	Metadata            *MockResponseMetadata
+	Headers             map[string]string
+	Metadata            map[string]string
 	activeErrorConfig   *config.ErrorConfig
 	activeLatencyConfig *config.LatencyConfig
+}
+
+// AddMetadata adds a key-value pair to the response's Metadata map
+func (m *MockResponse) AddMetadata(key, value string) {
+	if m.Metadata == nil {
+		m.Metadata = make(map[string]string)
+	}
+
+	m.Metadata[key] = value
 }
 
 // AddHeaders adds the provided headers to the MockResponse, merging with existing headers if present
 func (m *MockResponse) AddHeaders(headers map[string]string) {
 	if m.Headers == nil {
-		m.Headers = &headers
-	} else {
-		// Merge headers with existing ones
-		for key, value := range headers {
-			(*m.Headers)[key] = value
-		}
+		m.Headers = make(map[string]string)
+	}
+
+	for key, value := range headers {
+		m.Headers[key] = value
 	}
 }
 

@@ -211,3 +211,10 @@ coverage.txt
 coverage.out
 coverage.html
 .augment/
+/tmp/
+
+# Claude Code local settings (personal/machine-specific)
+.claude/settings.local.json
+.claude/*.local.*
+.claude/CLAUDE.local.md
+.claude/projects/

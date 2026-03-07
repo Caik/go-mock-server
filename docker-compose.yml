@@ -9,11 +9,14 @@ services:
       - go-mock-server
     ports:
       - "8080:8080"
+      - "9090:9090"
     volumes:
       - ./sample-mocks/:/mocks
     command:
       - --mocks-directory
       - /mocks
+      - --ui-dir
+      - /app/ui
 
 networks:
   go-mock-server: null

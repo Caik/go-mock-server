@@ -34,7 +34,10 @@ func handleHealthCheck(c *gin.Context) {
 }
 
 func initAdminMocksController(r *gin.RouterGroup, controller *AdminMocksController) {
-	r.POST("", controller.handleMockAddUpdate)
+	r.GET("", controller.handleMocksList)
+	r.GET("/:id/content", controller.handleMockContent)
+	r.POST("", controller.handleMockCreate)
+	r.PUT("/:id", controller.handleMockUpdate)
 	r.DELETE("", controller.handleMockDelete)
 }
 

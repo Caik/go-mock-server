@@ -132,42 +132,46 @@ func (h *HostsConfig) UpdateHostUrisConfig(host string, urisConfig map[string]Ur
 	return &hostConfig, nil
 }
 
-func (h *HostsConfig) GetAppropriateErrorsConfig(host, uri string) *map[string]ErrorConfig {
+func (h *HostsConfig) GetAppropriateErrorsConfig(host, uri string) (*map[string]ErrorConfig, string) {
 	hostConfig, exists := h.Hosts[host]
 
 	if !exists {
-		return nil
+		return nil, ""
 	}
 
 	errorsConfig := hostConfig.ErrorsConfig
+	scope := "Host Default"
 	uriConfig, exists := hostConfig.UrisConfig[uri]
 
 	if exists && len(uriConfig.ErrorsConfig) > 0 {
 		errorsConfig = uriConfig.ErrorsConfig
+		scope = "URI Override"
 	}
 
 	if len(errorsConfig) > 0 {
-		return &errorsConfig
+		return &errorsConfig, scope
 	}
 
-	return nil
+	return nil, ""
 }
 
-func (h *HostsConfig) GetAppropriateLatencyConfig(host, uri string) *LatencyConfig {
+func (h *HostsConfig) GetAppropriateLatencyConfig(host, uri string) (*LatencyConfig, string) {
 	hostConfig, exists := h.Hosts[host]
 
 	if !exists {
-		return nil
+		return nil, ""
 	}
 
 	latencyConfig := hostConfig.LatencyConfig
+	scope := "Host Default"
 	uriConfig, exists := hostConfig.UrisConfig[uri]
 
 	if exists && uriConfig.LatencyConfig != nil {
 		latencyConfig = uriConfig.LatencyConfig
+		scope = "URI Override"
 	}
 
-	return latencyConfig
+	return latencyConfig, scope
 }
 
 func (h *HostConfig) Validate() error {

@@ -58,9 +58,11 @@ If you encounter any issues or have suggestions, please [open an issue](https://
 Make sure you have the following installed:
 
 - Go (at least version 1.21)
+- Node.js (v20+) and npm
 - Docker
 - Docker Compose
 - Make
+- [air](https://github.com/air-verse/air) _(optional, for live reloading during development)_
 
 ### Instructions
 
@@ -80,7 +82,36 @@ go build ./...
 3. Run the application:
 
 ```bash
-go run cmd/mock-server/main.go --mocks-directory "$(pwd)/sample-mocks" 
+go run cmd/mock-server/main.go --mocks-directory "$(pwd)/sample-mocks"
+```
+
+4. _(Optional)_ Run with live reloading using [air](https://github.com/air-verse/air):
+
+```bash
+air
+```
+
+The `.air.toml` configuration is already included in the repository. Air will automatically rebuild and restart the server whenever you change a `.go` file, using `./sample-mocks` as the mock directory.
+
+### Frontend Development
+
+The React UI lives in the `web/` directory.
+
+**Install dependencies:**
+
+```bash
+cd web && npm install
+```
+
+**Dev mode** (Vite dev server on port 5173, backend on 9090):
+
+```bash
+# Terminal 1 — backend
+go run cmd/mock-server/main.go --mocks-directory "$(pwd)/sample-mocks"
+
+# Terminal 2 — frontend
+cd web && npm run dev
+# Open http://localhost:5173/ui/
 ```
 
 <br />

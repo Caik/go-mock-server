@@ -30,15 +30,16 @@ func (c *contentMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 		return c.new404Response(err)
 	}
 
-	return &MockResponse{
+	resp := &MockResponse{
 		StatusCode: 200,
 		Data:       result.Data,
-		Metadata: &MockResponseMetadata{
-			Matched: true,
-			Source:  result.Source,
-			Path:    result.Path,
-		},
 	}
+
+	resp.AddMetadata(MetadataMatched, "true")
+	resp.AddMetadata(MetadataSource, result.Source)
+	resp.AddMetadata(MetadataPath, result.Path)
+
+	return resp
 }
 
 func (c *contentMockService) setNext(next mockService) {}
@@ -57,14 +58,15 @@ func (c *contentMockService) new404Response(err error) *MockResponse {
 		data = []byte(fmt.Sprintf("{%q:%q,%q:%q}", "status", res.Status, "message", res.Message))
 	}
 
-	return &MockResponse{
+	resp := &MockResponse{
 		StatusCode:  http.StatusNotFound,
 		Data:        &data,
 		ContentType: gin.MIMEJSON,
-		Metadata: &MockResponseMetadata{
-			Matched: false,
-		},
 	}
+
+	resp.AddMetadata(MetadataMatched, "false")
+
+	return resp
 }
 
 func (c *contentMockService) new500Response(err error) *MockResponse {
@@ -81,14 +83,15 @@ func (c *contentMockService) new500Response(err error) *MockResponse {
 		data = []byte(fmt.Sprintf("{%q:%q,%q:%q}", "status", res.Status, "message", res.Message))
 	}
 
-	return &MockResponse{
+	resp := &MockResponse{
 		StatusCode:  http.StatusInternalServerError,
 		Data:        &data,
 		ContentType: gin.MIMEJSON,
-		Metadata: &MockResponseMetadata{
-			Matched: false,
-		},
 	}
+
+	resp.AddMetadata(MetadataMatched, "false")
+
+	return resp
 }
 
 func newContentMockService(contentService content.ContentService) *contentMockService {

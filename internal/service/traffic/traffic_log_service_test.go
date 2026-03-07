@@ -49,7 +49,7 @@ func TestTrafficLogService_Capture(t *testing.T) {
 			Timestamp: time.Now(),
 			Request:   TrafficRequest{Method: "GET", Host: "example.com", Path: "/api"},
 			Response:  TrafficResponse{StatusCode: 200},
-			Mock:      TrafficMock{Matched: true, Source: "filesystem"},
+			Metadata:  map[string]string{metadataMatched: "true", metadataSource: "filesystem"},
 		}
 
 		service.Capture(entry)
@@ -109,25 +109,25 @@ func TestTrafficLogService_GetFiltered(t *testing.T) {
 		UUID:     "1",
 		Request:  TrafficRequest{Host: "example.com"},
 		Response: TrafficResponse{StatusCode: 200},
-		Mock:     TrafficMock{Matched: true},
+		Metadata: map[string]string{metadataMatched: "true"},
 	})
 	service.Capture(TrafficEntry{
 		UUID:     "2",
 		Request:  TrafficRequest{Host: "other.com"},
 		Response: TrafficResponse{StatusCode: 404},
-		Mock:     TrafficMock{Matched: false},
+		Metadata: map[string]string{metadataMatched: "false"},
 	})
 	service.Capture(TrafficEntry{
 		UUID:     "3",
 		Request:  TrafficRequest{Host: "example.com"},
 		Response: TrafficResponse{StatusCode: 500},
-		Mock:     TrafficMock{Matched: true},
+		Metadata: map[string]string{metadataMatched: "true"},
 	})
 	service.Capture(TrafficEntry{
 		UUID:     "4",
 		Request:  TrafficRequest{Host: "api.example.com"},
 		Response: TrafficResponse{StatusCode: 200},
-		Mock:     TrafficMock{Matched: true},
+		Metadata: map[string]string{metadataMatched: "true"},
 	})
 
 	t.Run("filters by single host", func(t *testing.T) {

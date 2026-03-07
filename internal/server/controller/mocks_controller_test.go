@@ -5,10 +5,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Caik/go-mock-server/internal/config"
 	"github.com/Caik/go-mock-server/internal/service/mock"
+	"github.com/Caik/go-mock-server/internal/service/traffic"
 	"github.com/Caik/go-mock-server/internal/util"
 	"github.com/gin-gonic/gin"
 )
+
+func newTestTrafficLogService(bufferSize int) *traffic.TrafficLogService {
+	return traffic.NewTrafficLogService(&config.AppArguments{
+		TrafficLogBufferSize: bufferSize,
+	})
+}
 
 // mockResponseProvider is a test implementation of MockResponseProvider
 type mockResponseProvider struct {
@@ -221,7 +229,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				StatusCode:  201,
 				ContentType: "application/xml",
 				Data:        &xmlData,
-				Headers:     &headers,
+				Headers:     headers,
 			},
 		}
 		controller := NewMocksController(mockProvider, nil)
@@ -456,7 +464,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				StatusCode:  200,
 				ContentType: "application/json",
 				Data:        &data,
-				Headers:     &headers,
+				Headers:     headers,
 			},
 		}
 		controller := NewMocksController(mockProvider, nil)
@@ -510,7 +518,7 @@ func TestMocksController_handleMockRequest(t *testing.T) {
 				StatusCode:  200,
 				ContentType: "application/json",
 				Data:        &data,
-				Headers:     &headers,
+				Headers:     headers,
 			},
 		}
 		controller := NewMocksController(mockProvider, nil)
@@ -633,6 +641,65 @@ func TestMocksController_RequestParsing(t *testing.T) {
 					t.Errorf("expected URI '%s', got '%s'", uri, mockRequest.URI)
 				}
 			})
+		}
+	})
+}
+
+func TestMocksController_captureTraffic(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("captures traffic when log service is active", func(t *testing.T) {
+		data := []byte(`{"status":"ok"}`)
+		mockProvider := &mockResponseProvider{
+			response: &mock.MockResponse{
+				StatusCode:  200,
+				ContentType: "application/json",
+				Data:        &data,
+				Metadata:    map[string]string{"Matched": "true", "Source": "mock"},
+			},
+		}
+
+		trafficLogService := newTestTrafficLogService(10)
+		controller := NewMocksController(mockProvider, trafficLogService)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		req := httptest.NewRequest(http.MethodGet, "/api/users?filter=active", nil)
+		req.Host = "example.com"
+		c.Request = req
+		c.Set(util.UuidKey, "test-capture-uuid")
+
+		controller.handleMockRequest(c)
+
+		if w.Code != 200 {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+
+		if trafficLogService.Size() != 1 {
+			t.Errorf("expected 1 traffic entry, got %d", trafficLogService.Size())
+		}
+
+		entries := trafficLogService.GetAll()
+		entry := entries[0]
+
+		if entry.UUID != "test-capture-uuid" {
+			t.Errorf("expected UUID 'test-capture-uuid', got '%s'", entry.UUID)
+		}
+
+		if entry.Request.Host != "example.com" {
+			t.Errorf("expected host 'example.com', got '%s'", entry.Request.Host)
+		}
+
+		if entry.Request.Method != "GET" {
+			t.Errorf("expected method 'GET', got '%s'", entry.Request.Method)
+		}
+
+		if entry.Response.StatusCode != 200 {
+			t.Errorf("expected StatusCode 200, got %d", entry.Response.StatusCode)
+		}
+
+		if entry.Metadata["Matched"] != "true" {
+			t.Errorf("expected Metadata[Matched]=true, got %q", entry.Metadata["Matched"])
 		}
 	})
 }

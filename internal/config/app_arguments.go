@@ -11,4 +11,5 @@ type AppArguments struct {
 	DisableLatency       bool   `arg:"--disable-latency" help:"disable latency simulation"`
 	DisableError         bool   `arg:"--disable-error" help:"disable error simulation"`
 	DisableCors          bool   `arg:"--disable-cors" help:"disable CORS headers"`
+	UIDirectory          string `arg:"--ui-dir" help:"path to the web UI directory to serve (optional)"`
 }

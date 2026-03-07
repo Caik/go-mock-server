@@ -153,9 +153,9 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
-            },
-            "example": "example.host.com"
+              "type": "string",
+              "example": "example.host.com"
+            }
           }
         ],
         "responses": {
@@ -205,9 +205,9 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
-            },
-            "example": "example.host.com"
+              "type": "string",
+              "example": "example.host.com"
+            }
           }
         ],
         "responses": {
@@ -259,9 +259,9 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
-            },
-            "example": "example.host.com"
+              "type": "string",
+              "example": "example.host.com"
+            }
           }
         ],
         "requestBody": {
@@ -322,9 +322,9 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
-            },
-            "example": "example.host.com"
+              "type": "string",
+              "example": "example.host.com"
+            }
           },
           {
             "description": "Error code whose configuration will be deleted",
@@ -332,9 +332,9 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
-            },
-            "example": "400"
+              "type": "string",
+              "example": "400"
+            }
           }
         ],
         "responses": {
@@ -386,9 +386,9 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
-            },
-            "example": "example.host.com"
+              "type": "string",
+              "example": "example.host.com"
+            }
           }
         ],
         "requestBody": {
@@ -447,9 +447,9 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
-            },
-            "example": "example.host.com"
+              "type": "string",
+              "example": "example.host.com"
+            }
           }
         ],
         "responses": {
@@ -501,9 +501,9 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
-            },
-            "example": "example.host.com"
+              "type": "string",
+              "example": "example.host.com"
+            }
           }
         ],
         "requestBody": {
@@ -550,13 +550,43 @@
       }
     },
     "/api/v1/mocks": {
-      "post": {
-        "description": "Creates a new mock for the specified host, HTTP method and URI or updates it if there's already an existing one",
+      "get": {
+        "description": "Returns a list of all configured mocks",
         "tags": [
           "Mock Admin"
         ],
-        "summary": "Saves or updates a mock",
-        "operationId": "addUpdateMock",
+        "summary": "List all mocks",
+        "operationId": "listMocks",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockListResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a new mock for the specified host, HTTP method and URI",
+        "tags": [
+          "Mock Admin"
+        ],
+        "summary": "Create a new mock",
+        "operationId": "createMock",
         "parameters": [
           {
             "description": "Host to be mocked",
@@ -564,7 +594,8 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "example.host.com"
             }
           },
           {
@@ -573,7 +604,8 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "/api/users"
             }
           },
           {
@@ -582,11 +614,13 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "GET"
             }
           }
         ],
         "requestBody": {
+          "description": "The mock response body",
           "content": {
             "text/plain": {
               "examples": {
@@ -603,8 +637,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Success",
+          "201": {
+            "description": "Mock created successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -640,34 +674,37 @@
         "tags": [
           "Mock Admin"
         ],
-        "summary": "Deletes a mock",
+        "summary": "Delete a mock",
         "operationId": "deleteMock",
         "parameters": [
           {
-            "description": "Host to be mocked",
+            "description": "Host of the mock to delete",
             "name": "x-mock-host",
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "example.host.com"
             }
           },
           {
-            "description": "URI (including any query string) to be mocked",
+            "description": "URI of the mock to delete",
             "name": "x-mock-uri",
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "/api/users"
             }
           },
           {
-            "description": "HTTP method to be mocked",
+            "description": "HTTP method of the mock to delete",
             "name": "x-mock-method",
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "GET"
             }
           }
         ],
@@ -698,6 +735,155 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mocks/{id}": {
+      "put": {
+        "description": "Updates an existing mock. The original mock is deleted and a new one is created with the provided data.",
+        "tags": [
+          "Mock Admin"
+        ],
+        "summary": "Update a mock",
+        "operationId": "updateMock",
+        "parameters": [
+          {
+            "description": "The mock ID (base64-encoded identifier)",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "New host for the mock",
+            "name": "x-mock-host",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "example.host.com"
+            }
+          },
+          {
+            "description": "New URI for the mock",
+            "name": "x-mock-uri",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "/api/users"
+            }
+          },
+          {
+            "description": "New HTTP method for the mock",
+            "name": "x-mock-method",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "GET"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The new mock response body",
+          "content": {
+            "text/plain": {
+              "examples": {
+                "json": {
+                  "summary": "JSON response",
+                  "value": "{\"key1\": \"value1\", \"key2\": \"value2\"}"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mock updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/200Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (invalid ID or missing parameters)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mocks/{id}/content": {
+      "get": {
+        "description": "Returns the response body content for a specific mock",
+        "tags": [
+          "Mock Admin"
+        ],
+        "summary": "Get mock content",
+        "operationId": "getMockContent",
+        "parameters": [
+          {
+            "description": "The mock ID (base64-encoded identifier)",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockContentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (invalid mock ID)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Mock not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/404Response"
                 }
               }
             }
@@ -954,17 +1140,12 @@
         "description": "API response for an internal server error",
         "properties": {
           "status": {
-            "$ref": "#/components/schemas/ResponseStatus",
-            "examples": [
-              "error"
-            ]
+            "$ref": "#/components/schemas/ResponseStatus"
           },
           "message": {
             "type": "string",
             "description": "Descriptive message for the response",
-            "examples": [
-              "unable to get hosts config"
-            ]
+            "example": "unable to get hosts config"
           }
         }
       },
@@ -973,17 +1154,12 @@
         "description": "API response for a bad request error",
         "properties": {
           "status": {
-            "$ref": "#/components/schemas/ResponseStatus",
-            "examples": [
-              "error"
-            ]
+            "$ref": "#/components/schemas/ResponseStatus"
           },
           "message": {
             "type": "string",
             "description": "Descriptive message for the response",
-            "examples": [
-              "invalid request: invalid host provided: it should not be empty"
-            ]
+            "example": "invalid request: invalid host provided: it should not be empty"
           }
         }
       },
@@ -992,17 +1168,86 @@
         "description": "API response for an empty success response",
         "properties": {
           "status": {
-            "$ref": "#/components/schemas/ResponseStatus",
-            "examples": [
-              "success"
-            ]
+            "$ref": "#/components/schemas/ResponseStatus"
           },
           "message": {
             "type": "string",
             "description": "Descriptive message for the response",
-            "examples": [
-              "host config deleted with success"
-            ]
+            "example": "host config deleted with success"
+          }
+        }
+      },
+      "404Response": {
+        "type": "object",
+        "description": "API response for a not found error",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus"
+          },
+          "message": {
+            "type": "string",
+            "description": "Descriptive message for the response",
+            "example": "mock not found"
+          }
+        }
+      },
+      "MockListItem": {
+        "type": "object",
+        "description": "A mock definition item",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the mock (base64-encoded)",
+            "example": "ZXhhbXBsZS5ob3N0LmNvbXwvYXBpL3VzZXJzfEdFVA=="
+          },
+          "host": {
+            "type": "string",
+            "description": "The host being mocked",
+            "example": "example.host.com"
+          },
+          "uri": {
+            "type": "string",
+            "description": "The URI being mocked",
+            "example": "/api/users"
+          },
+          "method": {
+            "type": "string",
+            "description": "The HTTP method being mocked",
+            "example": "GET"
+          }
+        }
+      },
+      "MockListResponse": {
+        "type": "object",
+        "description": "API response containing a list of mocks",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MockListItem"
+            }
+          }
+        }
+      },
+      "MockContentResponse": {
+        "type": "object",
+        "description": "API response containing mock content",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "body": {
+                "type": "string",
+                "description": "The mock response body content",
+                "example": "{\"key1\": \"value1\", \"key2\": \"value2\"}"
+              }
+            }
           }
         }
       }

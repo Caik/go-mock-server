@@ -21,20 +21,13 @@ type TrafficResponse struct {
 	LatencyMs   int64  `json:"latency_ms"`
 }
 
-// TrafficMock captures metadata about how the mock was resolved
-type TrafficMock struct {
-	Matched bool   `json:"matched"`
-	Source  string `json:"source,omitempty"` // e.g., "filesystem", "cache" — only set when Matched=true
-	Path    string `json:"path,omitempty"`   // file path, cache key, etc. — only set when Matched=true
-}
-
 // TrafficEntry represents a single traffic log entry
 type TrafficEntry struct {
-	UUID      string          `json:"uuid"`
-	Timestamp time.Time       `json:"timestamp"`
-	Request   TrafficRequest  `json:"request"`
-	Response  TrafficResponse `json:"response"`
-	Mock      TrafficMock     `json:"mock"`
+	UUID      string            `json:"uuid"`
+	Timestamp time.Time         `json:"timestamp"`
+	Request   TrafficRequest    `json:"request"`
+	Response  TrafficResponse   `json:"response"`
+	Metadata  map[string]string `json:"metadata,omitempty"`
 }
 
 // NewTrafficEntry creates a new TrafficEntry with the current timestamp

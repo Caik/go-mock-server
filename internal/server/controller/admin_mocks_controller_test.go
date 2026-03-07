@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bytes"
+	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -670,6 +671,414 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 					t.Errorf("expected status 200 for URI %s, got %d", uri, w.Code)
 				}
 			})
+		}
+	})
+}
+
+func TestAdminMocksController_handleMockContent(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("returns content for valid ID", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		// Generate a valid mock ID
+		id := generateTestMockID("example.com", "/api/users", "GET")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/admin/mocks/"+id+"/content", nil)
+		c.Params = gin.Params{{Key: "id", Value: id}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockContent(c)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+
+		var response map[string]interface{}
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response["status"] != "success" {
+			t.Errorf("expected status 'success', got '%v'", response["status"])
+		}
+	})
+
+	t.Run("returns 400 for invalid mock ID", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/admin/mocks/bad-id/content", nil)
+		c.Params = gin.Params{{Key: "id", Value: "not-valid-base64!!!"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockContent(c)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+
+		var response rest.Response
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+	})
+
+	t.Run("returns 404 when content not found", func(t *testing.T) {
+		contentService := &mockContentService{
+			shouldError: true,
+			errorMsg:    "not found",
+		}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		id := generateTestMockID("example.com", "/api/users", "GET")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/admin/mocks/"+id+"/content", nil)
+		c.Params = gin.Params{{Key: "id", Value: id}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockContent(c)
+
+		if w.Code != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", w.Code)
+		}
+
+		var response rest.Response
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+	})
+}
+
+func TestAdminMocksController_handleMockUpdate(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("updates mock successfully", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		id := generateTestMockID("example.com", "/api/users", "GET")
+
+		requestBody := []byte(`{"message": "updated"}`)
+		req := httptest.NewRequest(http.MethodPut, "/admin/mocks/"+id, bytes.NewBuffer(requestBody))
+		req.Header.Set("x-mock-host", "example.com")
+		req.Header.Set("x-mock-uri", "/api/users")
+		req.Header.Set("x-mock-method", "GET")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Params = gin.Params{{Key: "id", Value: id}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockUpdate(c)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+
+		var response rest.Response
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response.Status != rest.Success {
+			t.Errorf("expected status 'success', got '%s'", response.Status)
+		}
+	})
+
+	t.Run("returns 400 for invalid mock ID", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		requestBody := []byte(`{"message": "updated"}`)
+		req := httptest.NewRequest(http.MethodPut, "/admin/mocks/bad-id", bytes.NewBuffer(requestBody))
+		req.Header.Set("x-mock-host", "example.com")
+		req.Header.Set("x-mock-uri", "/api/users")
+		req.Header.Set("x-mock-method", "GET")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Params = gin.Params{{Key: "id", Value: "not-valid-base64!!!"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockUpdate(c)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+
+		var response rest.Response
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+	})
+
+	t.Run("returns 400 for missing required headers", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		id := generateTestMockID("example.com", "/api/users", "GET")
+
+		requestBody := []byte(`{"message": "updated"}`)
+		req := httptest.NewRequest(http.MethodPut, "/admin/mocks/"+id, bytes.NewBuffer(requestBody))
+		// Missing required headers
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Params = gin.Params{{Key: "id", Value: id}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockUpdate(c)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("returns 400 for empty body", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		id := generateTestMockID("example.com", "/api/users", "GET")
+
+		req := httptest.NewRequest(http.MethodPut, "/admin/mocks/"+id, bytes.NewBuffer([]byte{}))
+		req.Header.Set("x-mock-host", "example.com")
+		req.Header.Set("x-mock-uri", "/api/users")
+		req.Header.Set("x-mock-method", "GET")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Params = gin.Params{{Key: "id", Value: id}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockUpdate(c)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+
+		var response rest.Response
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+	})
+
+	t.Run("returns 500 when add/update service fails", func(t *testing.T) {
+		contentService := &mockContentService{
+			shouldError: true,
+			errorMsg:    "storage error",
+		}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		id := generateTestMockID("example.com", "/api/users", "GET")
+
+		requestBody := []byte(`{"message": "updated"}`)
+		req := httptest.NewRequest(http.MethodPut, "/admin/mocks/"+id, bytes.NewBuffer(requestBody))
+		req.Header.Set("x-mock-host", "example.com")
+		req.Header.Set("x-mock-uri", "/api/users")
+		req.Header.Set("x-mock-method", "GET")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Params = gin.Params{{Key: "id", Value: id}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockUpdate(c)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+
+		var response rest.Response
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response.Status != rest.Error {
+			t.Errorf("expected status 'error', got '%s'", response.Status)
+		}
+	})
+}
+
+func TestAdminMocksController_handleMockCreate(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("creates mock successfully returns 201", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		requestBody := []byte(`{"message": "created"}`)
+		req := httptest.NewRequest(http.MethodPost, "/admin/mocks/create", bytes.NewBuffer(requestBody))
+		req.Header.Set("x-mock-host", "example.com")
+		req.Header.Set("x-mock-uri", "/api/users")
+		req.Header.Set("x-mock-method", "POST")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockCreate(c)
+
+		if w.Code != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", w.Code)
+		}
+
+		var response rest.Response
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response.Status != rest.Success {
+			t.Errorf("expected status 'success', got '%s'", response.Status)
+		}
+	})
+
+	t.Run("returns 500 when service fails", func(t *testing.T) {
+		contentService := &mockContentService{
+			shouldError: true,
+			errorMsg:    "create error",
+		}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		requestBody := []byte(`{"message": "created"}`)
+		req := httptest.NewRequest(http.MethodPost, "/admin/mocks/create", bytes.NewBuffer(requestBody))
+		req.Header.Set("x-mock-host", "example.com")
+		req.Header.Set("x-mock-uri", "/api/users")
+		req.Header.Set("x-mock-method", "POST")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMockCreate(c)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+
+		var response rest.Response
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response.Status != rest.Error {
+			t.Errorf("expected status 'error', got '%s'", response.Status)
+		}
+	})
+}
+
+// generateTestMockID mirrors the admin package's generateMockID encoding.
+func generateTestMockID(host, uri, method string) string {
+	data := host + "|" + uri + "|" + method
+	return b64.URLEncoding.EncodeToString([]byte(data))
+}
+
+func TestAdminMocksController_HandleMocksList(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("lists mocks successfully", func(t *testing.T) {
+		contentService := &mockContentService{}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/mocks", nil)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMocksList(c)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+
+		var response map[string]interface{}
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response["status"] != "success" {
+			t.Errorf("expected status 'success', got '%v'", response["status"])
+		}
+
+		data, ok := response["data"].([]interface{})
+		if !ok {
+			t.Fatal("expected data to be an array")
+		}
+
+		if len(data) != 1 {
+			t.Errorf("expected 1 mock, got %d", len(data))
+		}
+	})
+
+	t.Run("returns error when service fails", func(t *testing.T) {
+		contentService := &mockContentService{
+			shouldError: true,
+			errorMsg:    "service error",
+		}
+		service := admin.NewMockAdminService(contentService)
+		controller := NewAdminMocksController(service)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/mocks", nil)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleMocksList(c)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+
+		var response rest.Response
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
+
+		if response.Status != rest.Error {
+			t.Errorf("expected status 'error', got '%s'", response.Status)
 		}
 	})
 }

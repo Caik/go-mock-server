@@ -218,7 +218,7 @@ func TestMockServiceFactory_DisableCorsFlag(t *testing.T) {
 			}
 
 			for _, header := range corsHeaders {
-				if _, exists := (*responseEnabled.Headers)[header]; !exists {
+				if _, exists := responseEnabled.Headers[header]; !exists {
 					t.Errorf("Expected CORS header %s to be present when CORS is enabled", header)
 				}
 			}
@@ -239,7 +239,7 @@ func TestMockServiceFactory_DisableCorsFlag(t *testing.T) {
 				}
 
 				for _, header := range corsHeaders {
-					if _, exists := (*responseDisabled.Headers)[header]; exists {
+					if _, exists := responseDisabled.Headers[header]; exists {
 						t.Errorf("Expected CORS header %s to NOT be present when CORS is disabled", header)
 					}
 				}
@@ -332,20 +332,20 @@ func TestMockServiceFactory_GetMockResponse(t *testing.T) {
 			t.Fatal("GetMockResponse should return non-nil response")
 		}
 
-		if response.Metadata == nil {
+		if len(response.Metadata) == 0 {
 			t.Fatal("response should have metadata")
 		}
 
-		if !response.Metadata.Matched {
-			t.Error("metadata.Matched should be true")
+		if response.Metadata[MetadataMatched] != "true" {
+			t.Error("Metadata[Matched] should be 'true'")
 		}
 
-		if response.Metadata.Source != "mock" {
-			t.Errorf("expected source 'mock', got '%s'", response.Metadata.Source)
+		if response.Metadata[MetadataSource] != "mock" {
+			t.Errorf("expected source 'mock', got '%s'", response.Metadata[MetadataSource])
 		}
 
-		if response.Metadata.Path == "" {
-			t.Error("metadata.Path should not be empty")
+		if response.Metadata[MetadataPath] == "" {
+			t.Error("Metadata[Path] should not be empty")
 		}
 	})
 
@@ -387,16 +387,16 @@ func TestMockServiceFactory_GetMockResponse(t *testing.T) {
 			t.Errorf("expected status 404, got %d", response.StatusCode)
 		}
 
-		if response.Metadata == nil {
+		if len(response.Metadata) == 0 {
 			t.Fatal("response should have metadata even for 404")
 		}
 
-		if response.Metadata.Matched {
-			t.Error("metadata.Matched should be false for not found")
+		if response.Metadata[MetadataMatched] != "false" {
+			t.Error("Metadata[Matched] should be 'false' for not found")
 		}
 
-		if response.Metadata.Source != "" {
-			t.Errorf("expected empty source for not found, got '%s'", response.Metadata.Source)
+		if response.Metadata[MetadataSource] != "" {
+			t.Errorf("expected empty source for not found, got '%s'", response.Metadata[MetadataSource])
 		}
 	})
 }

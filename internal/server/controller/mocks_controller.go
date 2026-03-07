@@ -44,10 +44,8 @@ func (m *MocksController) handleMockRequest(c *gin.Context) {
 	}
 
 	// Set additional headers if present
-	if mockResponse.Headers != nil {
-		for key, value := range *mockResponse.Headers {
-			c.Header(key, value)
-		}
+	for key, value := range mockResponse.Headers {
+		c.Header(key, value)
 	}
 
 	c.Data(mockResponse.StatusCode, mockResponse.ContentType, *mockResponse.Data)
@@ -109,14 +107,7 @@ func (m *MocksController) captureTraffic(c *gin.Context, mockRequest mock.MockRe
 		},
 	}
 
-	// Set mock metadata
-	if mockResponse.Metadata != nil {
-		entry.Mock = traffic.TrafficMock{
-			Matched: mockResponse.Metadata.Matched,
-			Source:  mockResponse.Metadata.Source,
-			Path:    mockResponse.Metadata.Path,
-		}
-	}
+	entry.Metadata = mockResponse.Metadata
 
 	m.trafficLogService.Capture(entry)
 }

@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const metadataSource = "Source"
+
 func TestNewTrafficEntry(t *testing.T) {
 	t.Run("creates entry with uuid and timestamp", func(t *testing.T) {
 		before := time.Now()
@@ -65,37 +67,35 @@ func TestTrafficEntry_JSONSerialization(t *testing.T) {
 		}
 	})
 
-	t.Run("TrafficMock has correct fields", func(t *testing.T) {
-		mock := TrafficMock{
-			Matched: true,
-			Source:  "filesystem",
-			Path:    "/mocks/example.com/api.get",
+	t.Run("TrafficEntry Metadata stores key-value pairs", func(t *testing.T) {
+		entry := TrafficEntry{
+			Metadata: map[string]string{
+				metadataMatched: "true",
+				metadataSource:  "filesystem",
+				"Path":    "/mocks/example.com/api.get",
+			},
 		}
 
-		if !mock.Matched {
-			t.Error("expected Matched to be true")
+		if entry.Metadata[metadataMatched] != "true" {
+			t.Errorf("expected Matched 'true', got '%s'", entry.Metadata[metadataMatched])
 		}
 
-		if mock.Source != "filesystem" {
-			t.Errorf("expected Source 'filesystem', got '%s'", mock.Source)
+		if entry.Metadata[metadataSource] != "filesystem" {
+			t.Errorf("expected Source 'filesystem', got '%s'", entry.Metadata[metadataSource])
 		}
 	})
 
-	t.Run("TrafficMock with no match has empty source", func(t *testing.T) {
-		mock := TrafficMock{
-			Matched: false,
+	t.Run("TrafficEntry Metadata is nil when not matched", func(t *testing.T) {
+		entry := TrafficEntry{
+			Metadata: map[string]string{metadataMatched: "false"},
 		}
 
-		if mock.Matched {
-			t.Error("expected Matched to be false")
+		if entry.Metadata[metadataMatched] != "false" {
+			t.Errorf("expected Matched 'false', got '%s'", entry.Metadata[metadataMatched])
 		}
 
-		if mock.Source != "" {
-			t.Errorf("expected empty Source, got '%s'", mock.Source)
-		}
-
-		if mock.Path != "" {
-			t.Errorf("expected empty Path, got '%s'", mock.Path)
+		if entry.Metadata[metadataSource] != "" {
+			t.Errorf("expected empty Source, got '%s'", entry.Metadata[metadataSource])
 		}
 	})
 }

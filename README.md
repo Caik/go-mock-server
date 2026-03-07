@@ -117,7 +117,11 @@ Explore these features and more to streamline your API mocking workflow and acce
 The easiest and recommended way to run **Go Mock Server** is via **Docker**: 
 
 ```bash
-docker run --name mock-server --rm -p 8080:8080 -v $(pwd)/sample-mocks:/mocks caik/go-mock-server:latest --mocks-directory /mocks
+docker run --name mock-server --rm \
+  -p 8080:8080 -p 9090:9090 \
+  -v $(pwd)/sample-mocks:/mocks \
+  caik/go-mock-server:latest \
+  --mocks-directory /mocks
 ```
 
 Where `$(pwd)/sample-mocks` is the path in your host machine where you have stored the mocks files. In case you want to start the application without any pre-existing mock files, you can also omit it:
@@ -307,6 +311,8 @@ To customize Go Mock Server's behavior, you can use the following command-line o
 |------------------------|--------------------------------------------------------------------|
 | --mocks-directory      | Specify the directory for mock files.                              |
 | --port                 | Set the port for the mock server. Default is 8080.                 |
+| --admin-port           | Port for the admin API and UI. Default is 9090 (0 to disable).    |
+| --ui-dir               | Path to a web UI directory to serve (optional). Go Mock Server ships with a built-in UI (included in the Docker image at `/app/ui`), but you can provide your own. When set, the UI is served at `http://localhost:{admin-port}/ui/`. |
 | --mocks-config-file    | Specify the path to a config file for additional settings.         |
 | --default-content-type | Set the default content type for responses. Default is text/plain. |
 | --disable-cache        | Disable caching of responses.                                      |
@@ -323,6 +329,15 @@ To customize Go Mock Server's behavior, you can use the following command-line o
 # Run the server with CORS disabled for environments that don't need it
 ./mock-server_mac --mocks-directory ./mocks --disable-cors
 ```
+
+### 6. Admin UI
+
+Go Mock Server ships with a built-in React admin UI that covers all functionality — browsing mocks, managing hosts, and inspecting traffic logs — out of the box.
+
+- **Port 8080** handles mock traffic; **port 9090** serves the admin API and UI.
+- The UI is available at `http://localhost:9090/ui/` when `--ui-dir` is set.
+- The Docker image includes the pre-built UI at `/app/ui`. Pass `--ui-dir /app/ui` to activate it.
+- **Bring Your Own UI:** The `--ui-dir` flag accepts any directory. Build your own custom admin UI and point `--ui-dir` at the output folder — Go Mock Server will serve it with full SPA routing support.
 
 <br />
 

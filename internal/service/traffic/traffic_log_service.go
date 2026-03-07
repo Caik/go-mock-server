@@ -9,6 +9,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const metadataMatched = "Matched"
+
 // TrafficLogService manages traffic logging with an in-memory ring buffer
 // and broadcasts new entries to subscribers for real-time streaming.
 type TrafficLogService struct {
@@ -188,7 +190,7 @@ func (f TrafficFilters) Matches(entry TrafficEntry) bool {
 		return false
 	}
 
-	if f.Matched != nil && entry.Mock.Matched != *f.Matched {
+	if f.Matched != nil && (entry.Metadata[metadataMatched] == "true") != *f.Matched {
 		return false
 	}
 
