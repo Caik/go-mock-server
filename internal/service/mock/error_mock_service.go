@@ -80,7 +80,8 @@ func (e *errorMockService) drawError(errorsConfig *map[string]config.ErrorConfig
 	}
 
 	// randomly selecting a status code based on the percentage drawn
-	draw := rand.Intn(101)
+	// Using 1-100 range so that a 0% error rate truly never fires (0 would satisfy draw <= 0)
+	draw := rand.Intn(100) + 1
 	sumErrorPercentage := 0
 
 	for _, errorWrapper := range errorsWrapper {
