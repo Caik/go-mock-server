@@ -193,13 +193,17 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (s
 
 	finalPath += "." + strings.ToLower(method)
 
-	// Defense-in-depth: ensure the resolved path stays within the mocks directory.
+	// Verify the resolved path is within the mocks directory by computing the
+	// relative path. filepath.Rel + HasPrefix("..") is the pattern CodeQL
+	// recognizes as breaking the taint chain.
 	mocksDir := filepath.Clean(f.mocksDirConfig.Path)
-	if !strings.HasPrefix(filepath.Clean(finalPath), mocksDir+pathSeparator) {
+	rel, err := filepath.Rel(mocksDir, filepath.Clean(finalPath))
+	if err != nil || strings.HasPrefix(rel, "..") {
 		return "", errors.New("invalid path: outside mocks directory")
 	}
 
-	return finalPath, nil
+	// Reconstruct from the clean base so the returned value is not tainted.
+	return filepath.Join(mocksDir, rel), nil
 }
 
 func (f *FilesystemContentService) filePathToContentData(path string) (*ContentData, error) {
