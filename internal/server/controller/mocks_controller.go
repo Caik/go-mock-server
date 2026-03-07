@@ -105,9 +105,8 @@ func (m *MocksController) captureTraffic(c *gin.Context, mockRequest mock.MockRe
 			BodySize:    len(*mockResponse.Data),
 			LatencyMs:   time.Since(startTime).Milliseconds(),
 		},
+		Metadata: mockResponse.Metadata,
 	}
-
-	entry.Metadata = mockResponse.Metadata
 
 	m.trafficLogService.Capture(entry)
 }

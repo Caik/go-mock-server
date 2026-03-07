@@ -27,9 +27,11 @@ type FilesystemContentService struct {
 
 func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*ContentResult, error) {
 	absolutePath, err := f.getFinalFilePath(host, uri, method)
+
 	if err != nil {
 		return nil, err
 	}
+
 	data, err := os.ReadFile(absolutePath)
 
 	if err != nil {
@@ -50,6 +52,7 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*
 
 func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
 	absolutePath, err := f.getFinalFilePath(host, uri, method)
+
 	if err != nil {
 		return err
 	}
@@ -90,6 +93,7 @@ func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, da
 
 func (f *FilesystemContentService) DeleteContent(host, uri, method, uuid string) error {
 	absolutePath, err := f.getFinalFilePath(host, uri, method)
+
 	if err != nil {
 		return err
 	}
@@ -163,6 +167,7 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (s
 	if !util.HostRegex.MatchString(host) {
 		return "", errors.New("invalid host")
 	}
+
 	if !util.HttpMethodRegex.MatchString(strings.ToUpper(method)) {
 		return "", errors.New("invalid method")
 	}
@@ -193,11 +198,10 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (s
 
 	finalPath += "." + strings.ToLower(method)
 
-	// Verify the resolved path is within the mocks directory by computing the
-	// relative path. filepath.Rel + HasPrefix("..") is the pattern CodeQL
-	// recognizes as breaking the taint chain.
+	// Verify the resolved path is within the mocks directory by computing the relative path
 	mocksDir := filepath.Clean(f.mocksDirConfig.Path)
 	rel, err := filepath.Rel(mocksDir, filepath.Clean(finalPath))
+
 	if err != nil || strings.HasPrefix(rel, "..") {
 		return "", errors.New("invalid path: outside mocks directory")
 	}
