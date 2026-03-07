@@ -1,6 +1,6 @@
 // Fixed-width sidebar with always-visible navigation labels
 import { NavLink } from 'react-router';
-import { ScrollText, Layers, Server, Wrench, type LucideIcon } from 'lucide-react';
+import { ScrollText, Layers, Server, type LucideIcon } from 'lucide-react';
 
 interface NavItemProps {
   to: string;
@@ -29,7 +29,7 @@ export function Sidebar() {
     <aside className="sidebar">
       <div className="logo">
         <span className="logo-icon">
-          <Wrench size={24} />
+          <img src="/logo.png" alt="Mock Server" width={160} height={160} style={{ borderRadius: 16 }} />
         </span>
         <span className="logo-text">Mock Server</span>
       </div>
