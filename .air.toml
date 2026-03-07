@@ -6,7 +6,7 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = ["--mocks-directory", "./sample-mocks", "--mocks-config-file", "./config/example-config.json"]
+  args_bin = ["--mocks-directory", "./sample-mocks", "--mocks-config-file", "./config/example-config.json", "--ui-dir", "./web/build/client"]
   bin = "./tmp/main"
   cmd = "go build -o ./tmp/main ./cmd/mock-server/main.go"
   delay = 1000
