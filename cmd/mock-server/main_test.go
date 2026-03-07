@@ -102,14 +102,14 @@ func TestStartServer(t *testing.T) {
 		// Test that the function exists and has the expected signature
 		// We can't call it directly due to server binding, but we can verify structure
 
-		t.Log("startServer function exists and is properly defined")
+		t.Log("startServers function exists and is properly defined")
 
 		// The function should exist and be callable (even if it fails)
 		// This test verifies the function signature and basic structure
 	})
 
 	t.Run("calls ci.Invoke with server.StartServer", func(t *testing.T) {
-		// Test that the startServer function exists and the CI system can invoke it
+		// Test that the startServers function exists and the CI system can invoke it
 		// We test the CI invocation mechanism without actually starting the server
 
 		// Save original args
@@ -128,12 +128,12 @@ func TestStartServer(t *testing.T) {
 		// Set up CI (this might have errors due to duplicates, but that's OK)
 		setupCI()
 
-		// Test that the startServer function exists and can be referenced
+		// Test that the startServers function exists and can be referenced
 		// We don't actually call it to avoid server startup and route conflicts
 
 		// Verify that ci.Invoke can be called with server.StartServer
 		// This tests the function signature compatibility without execution
-		t.Log("startServer function exists and is compatible with CI system")
+		t.Log("startServers function exists and is compatible with CI system")
 	})
 }
 
@@ -298,8 +298,8 @@ func TestErrorScenarios(t *testing.T) {
 		}
 	})
 
-	t.Run("tests startServer error handling", func(t *testing.T) {
-		// Test that startServer function exists and is properly structured for error handling
+	t.Run("tests startServers error handling", func(t *testing.T) {
+		// Test that startServers function exists and is properly structured for error handling
 		// We don't actually call it to avoid server startup issues
 
 		// Save original args
@@ -317,7 +317,7 @@ func TestErrorScenarios(t *testing.T) {
 
 		// Test that the function is designed to return an error (proper error handling)
 		// This verifies the function signature and structure without execution
-		t.Log("startServer function exists and is properly structured for error handling")
+		t.Log("startServers function exists and is properly structured for error handling")
 	})
 }
 
@@ -359,7 +359,7 @@ func TestMainFunctionComponents(t *testing.T) {
 		// The main function should:
 		// 1. Call config.InitLogger()
 		// 2. Call setupCI()
-		// 3. Call startServer()
+		// 3. Call startServers()
 
 		// These functions should all exist and be callable
 		t.Log("main function components are properly structured")

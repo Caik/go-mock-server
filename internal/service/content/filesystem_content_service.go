@@ -22,11 +22,16 @@ const (
 
 type FilesystemContentService struct {
 	mocksDirConfig *config.MocksDirectoryConfig
-	broadcaster    util.Broadcaster[ContentEvent]
+	broadcaster    *util.Broadcaster[ContentEvent]
 }
 
-func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*[]byte, error) {
-	absolutePath := f.getFinalFilePath(host, uri, method)
+func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*ContentResult, error) {
+	absolutePath, err := f.getFinalFilePath(host, uri, method)
+
+	if err != nil {
+		return nil, err
+	}
+
 	data, err := os.ReadFile(absolutePath)
 
 	if err != nil {
@@ -38,15 +43,23 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*
 		return nil, errors.New("mock not found")
 	}
 
-	return &data, err
+	return &ContentResult{
+		Data:   &data,
+		Source: "filesystem",
+		Path:   absolutePath,
+	}, nil
 }
 
 func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
-	absolutePath := f.getFinalFilePath(host, uri, method)
+	absolutePath, err := f.getFinalFilePath(host, uri, method)
+
+	if err != nil {
+		return err
+	}
 
 	// making sure all parent dirs are created
 	parentDir := absolutePath[:strings.LastIndex(absolutePath, pathSeparator)+1]
-	err := os.MkdirAll(parentDir, os.ModePerm)
+	err = os.MkdirAll(parentDir, os.ModePerm)
 
 	if err != nil {
 		msg := fmt.Sprintf("error while creating parent directories: %v", err)
@@ -79,7 +92,11 @@ func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, da
 }
 
 func (f *FilesystemContentService) DeleteContent(host, uri, method, uuid string) error {
-	absolutePath := f.getFinalFilePath(host, uri, method)
+	absolutePath, err := f.getFinalFilePath(host, uri, method)
+
+	if err != nil {
+		return err
+	}
 
 	if err := os.Remove(absolutePath); err != nil {
 		msg := fmt.Sprintf("error while removing file: %v", err)
@@ -143,10 +160,28 @@ func (f *FilesystemContentService) Unsubscribe(subscriberId string) {
 	f.broadcaster.Unsubscribe(subscriberId)
 }
 
-func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) string {
+func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (string, error) {
+	// Validate inputs before using them in a path expression.
+	// The regexes allow only safe characters (no ".." or path separators in host,
+	// no ".." in uri), breaking the taint chain before any path is constructed.
+	if !util.HostRegex.MatchString(host) {
+		return "", errors.New("invalid host")
+	}
+
+	if !util.HttpMethodRegex.MatchString(strings.ToUpper(method)) {
+		return "", errors.New("invalid method")
+	}
+
 	parts := strings.SplitN(uri, "?", 2)
-	isRootPath := strings.HasSuffix(parts[0], "/")
-	uriFixed := strings.ReplaceAll(parts[0], "/", pathSeparator)
+	uriPath := parts[0]
+
+	// Root path "/" is valid but won't match UriRegex, so handle it explicitly.
+	if uriPath != "/" && !util.UriRegex.MatchString(uriPath) {
+		return "", errors.New("invalid uri")
+	}
+
+	isRootPath := strings.HasSuffix(uriPath, "/")
+	uriFixed := strings.ReplaceAll(uriPath, "/", pathSeparator)
 
 	finalPath := strings.Join([]string{
 		strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator),
@@ -163,7 +198,16 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) st
 
 	finalPath += "." + strings.ToLower(method)
 
-	return finalPath
+	// Verify the resolved path is within the mocks directory by computing the relative path
+	mocksDir := filepath.Clean(f.mocksDirConfig.Path)
+	rel, err := filepath.Rel(mocksDir, filepath.Clean(finalPath))
+
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return "", errors.New("invalid path: outside mocks directory")
+	}
+
+	// Reconstruct from the clean base so the returned value is not tainted.
+	return filepath.Join(mocksDir, rel), nil
 }
 
 func (f *FilesystemContentService) filePathToContentData(path string) (*ContentData, error) {
@@ -369,14 +413,12 @@ func (f *FilesystemContentService) handleFilesystemEvent(event fsnotify.Event, w
 }
 
 func NewFilesystemContentService(mocksDirConfig *config.MocksDirectoryConfig) *FilesystemContentService {
-	var broadcaster util.Broadcaster[ContentEvent]
-
-	service := FilesystemContentService{
+	service := &FilesystemContentService{
 		mocksDirConfig: mocksDirConfig,
-		broadcaster:    broadcaster,
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
 	}
 
 	service.startContentWatcher()
 
-	return &service
+	return service
 }

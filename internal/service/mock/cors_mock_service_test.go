@@ -48,7 +48,7 @@ func TestCorsMockService_GetMockResponse(t *testing.T) {
 		}
 
 		for key, expectedValue := range expectedHeaders {
-			if actualValue, exists := (*response.Headers)[key]; !exists {
+			if actualValue, exists := response.Headers[key]; !exists {
 				t.Errorf("expected header %s to be set", key)
 			} else if actualValue != expectedValue {
 				t.Errorf("expected header %s to be %s, got %s", key, expectedValue, actualValue)
@@ -67,16 +67,15 @@ func TestCorsMockService_GetMockResponse(t *testing.T) {
 	t.Run("merges CORS headers with existing headers", func(t *testing.T) {
 		// Create a mock service that returns a response with existing headers
 		testData := []byte("test response")
-		existingHeaders := map[string]string{
-			"X-Custom-Header": "custom-value",
-			"Cache-Control":   "no-cache",
-		}
 		mockNext := &mockMockService{
 			response: &MockResponse{
 				StatusCode:  200,
 				Data:        &testData,
 				ContentType: "application/json",
-				Headers:     &existingHeaders,
+				Headers: map[string]string{
+					"X-Custom-Header": "custom-value",
+					"Cache-Control":   "no-cache",
+				},
 			},
 		}
 
@@ -104,10 +103,10 @@ func TestCorsMockService_GetMockResponse(t *testing.T) {
 		}
 
 		// Check that existing headers are preserved
-		if (*response.Headers)["X-Custom-Header"] != "custom-value" {
+		if response.Headers["X-Custom-Header"] != "custom-value" {
 			t.Error("expected existing custom header to be preserved")
 		}
-		if (*response.Headers)["Cache-Control"] != "no-cache" {
+		if response.Headers["Cache-Control"] != "no-cache" {
 			t.Error("expected existing cache-control header to be preserved")
 		}
 
@@ -120,7 +119,7 @@ func TestCorsMockService_GetMockResponse(t *testing.T) {
 		}
 
 		for key, expectedValue := range expectedCorsHeaders {
-			if actualValue, exists := (*response.Headers)[key]; !exists {
+			if actualValue, exists := response.Headers[key]; !exists {
 				t.Errorf("expected CORS header %s to be set", key)
 			} else if actualValue != expectedValue {
 				t.Errorf("expected CORS header %s to be %s, got %s", key, expectedValue, actualValue)

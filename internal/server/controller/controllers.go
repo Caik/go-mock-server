@@ -1,18 +1,43 @@
 package controller
 
 import (
+	"net/http"
+
+	"github.com/Caik/go-mock-server/internal/rest"
 	"github.com/gin-gonic/gin"
 )
 
-func InitRoutes(r *gin.Engine, adminMocksController *AdminMocksController, adminHostsController *AdminHostsController, mocksController *MocksController) {
-	initAdminMocksController(r.Group("/admin/mocks"), adminMocksController)
-	initAdminHostsController(r.Group("/admin/config/hosts"), adminHostsController)
-
+// InitMockRoutes initializes routes for the mock server
+func InitMockRoutes(r *gin.Engine, mocksController *MocksController) {
 	r.NoRoute(mocksController.handleMockRequest)
 }
 
+// InitAdminRoutes initializes routes for the admin server
+func InitAdminRoutes(r *gin.Engine, adminMocksController *AdminMocksController, adminHostsController *AdminHostsController, trafficController *TrafficController) {
+	// Health check endpoint
+	r.GET("/health", handleHealthCheck)
+
+	// API v1 routes
+	v1 := r.Group("/api/v1")
+	{
+		initAdminMocksController(v1.Group("/mocks"), adminMocksController)
+		initAdminHostsController(v1.Group("/config/hosts"), adminHostsController)
+		initAdminTrafficController(v1.Group("/traffic"), trafficController)
+	}
+}
+
+func handleHealthCheck(c *gin.Context) {
+	c.JSON(http.StatusOK, rest.Response{
+		Status:  rest.Success,
+		Message: "healthy",
+	})
+}
+
 func initAdminMocksController(r *gin.RouterGroup, controller *AdminMocksController) {
-	r.POST("", controller.handleMockAddUpdate)
+	r.GET("", controller.handleMocksList)
+	r.GET("/:id/content", controller.handleMockContent)
+	r.POST("", controller.handleMockCreate)
+	r.PUT("/:id", controller.handleMockUpdate)
 	r.DELETE("", controller.handleMockDelete)
 }
 
@@ -30,4 +55,8 @@ func initAdminHostsController(r *gin.RouterGroup, controller *AdminHostsControll
 	r.DELETE("/:host/errors/:error", controller.handleErrorDelete)
 
 	r.POST("/:host/uris", controller.handleUrisAddUpdate)
+}
+
+func initAdminTrafficController(r *gin.RouterGroup, controller *TrafficController) {
+	r.GET("", controller.handleTrafficStream)
 }

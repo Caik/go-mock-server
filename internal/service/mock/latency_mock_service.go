@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -21,11 +22,12 @@ func (l *latencyMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 	mockResponse := l.nextOrNil(mockRequest)
 
 	// getting default appropriate latency config
-	latencyConfig := l.hostsConfig.GetAppropriateLatencyConfig(mockRequest.Host, mockRequest.URI)
+	latencyConfig, scope := l.hostsConfig.GetAppropriateLatencyConfig(mockRequest.Host, mockRequest.URI)
 
 	// overriding the default latency config, if an error has been drawn
 	if mockResponse.activeErrorConfig != nil && mockResponse.activeErrorConfig.LatencyConfig != nil {
 		latencyConfig = mockResponse.activeErrorConfig.LatencyConfig
+		scope = "Error Override"
 	}
 
 	if latencyConfig == nil {
@@ -44,6 +46,10 @@ func (l *latencyMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 
 	targetLatencyTime := startTime.Add(time.Duration(drawnLatency * int(time.Millisecond)))
 	<-time.NewTimer(time.Until(targetLatencyTime)).C
+
+	mockResponse.AddMetadata(MetadataSimulatedLatency, "true")
+	mockResponse.AddMetadata(MetadataLatencyRuleScope, scope)
+	mockResponse.AddMetadata(MetadataLatencyRange, fmt.Sprintf("%d-%d", *latencyConfig.Min, *latencyConfig.Max))
 
 	return mockResponse
 }

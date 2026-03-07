@@ -677,6 +677,7 @@ func TestParseAppArguments_WithValidArgs(t *testing.T) {
 		"--mocks-directory", "/test/mocks",
 		"--mocks-config-file", "/test/config.json",
 		"--port", "9090",
+		"--traffic-log-buffer-size", "500",
 		"--disable-cache",
 		"--disable-latency",
 		"--disable-error",
@@ -711,6 +712,10 @@ func TestParseAppArguments_WithValidArgs(t *testing.T) {
 
 	if !args.DisableError {
 		t.Error("expected DisableError to be true")
+	}
+
+	if args.TrafficLogBufferSize != 500 {
+		t.Errorf("expected TrafficLogBufferSize to be 500, got %d", args.TrafficLogBufferSize)
 	}
 }
 
@@ -757,6 +762,11 @@ func TestParseAppArguments_WithMinimalArgs(t *testing.T) {
 
 	if args.DisableError {
 		t.Error("expected DisableError to be false by default")
+	}
+
+	// Test default TrafficLogBufferSize
+	if args.TrafficLogBufferSize != 1000 {
+		t.Errorf("expected default TrafficLogBufferSize to be 1000, got %d", args.TrafficLogBufferSize)
 	}
 }
 

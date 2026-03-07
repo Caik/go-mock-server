@@ -39,6 +39,10 @@ func (c *cacheMockService) getMockResponse(mockRequest MockRequest) *MockRespons
 	// background cache refresh
 	go c.refreshCache(mockRequest, cacheKey)
 
+	// Update metadata to indicate this was served from cache
+	mockResponse.AddMetadata(MetadataSource, "cache")
+	mockResponse.AddMetadata(MetadataPath, cacheKey)
+
 	return &mockResponse
 }
 

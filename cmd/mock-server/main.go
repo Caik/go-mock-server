@@ -9,6 +9,7 @@ import (
 	"github.com/Caik/go-mock-server/internal/service/cache"
 	"github.com/Caik/go-mock-server/internal/service/content"
 	"github.com/Caik/go-mock-server/internal/service/mock"
+	"github.com/Caik/go-mock-server/internal/service/traffic"
 	"github.com/rs/zerolog/log"
 	"go.uber.org/dig"
 )
@@ -25,8 +26,8 @@ func main() {
 			Msgf("error while setting up CI config: %v", errs)
 	}
 
-	// starting server
-	if err := startServer(); err != nil {
+	// starting servers
+	if err := startServers(); err != nil {
 		log.Fatal().
 			Err(err).
 			Stack().
@@ -53,8 +54,8 @@ func setupCI() []error {
 		errs = append(errs, err)
 	}
 
-	// server
-	if err := ci.Add(server.NewServer); err != nil {
+	// servers (mock and admin)
+	if err := ci.Add(server.NewServers); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -68,6 +69,10 @@ func setupCI() []error {
 	}
 
 	if err := ci.Add(controller.NewAdminMocksController); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := ci.Add(controller.NewTrafficController); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -86,7 +91,7 @@ func setupCI() []error {
 	}
 
 	// mock services
-	if err := ci.Add(mock.NewMockServiceFactory); err != nil {
+	if err := ci.Add(mock.NewMockServiceFactory, dig.As(new(controller.MockResponseProvider))); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -95,9 +100,14 @@ func setupCI() []error {
 		errs = append(errs, err)
 	}
 
+	// traffic log service
+	if err := ci.Add(traffic.NewTrafficLogService); err != nil {
+		errs = append(errs, err)
+	}
+
 	return errs
 }
 
-func startServer() error {
-	return ci.Invoke(server.StartServer)
+func startServers() error {
+	return ci.Invoke(server.StartServers)
 }

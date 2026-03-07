@@ -20,7 +20,7 @@ type contentMockService struct {
 }
 
 func (c *contentMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
-	data, err := c.readMockFile(mockRequest)
+	result, err := c.contentService.GetContent(mockRequest.Host, mockRequest.URI, mockRequest.Method, mockRequest.Uuid)
 
 	if err != nil {
 		if errors.Is(err, errContentServiceNotFound) {
@@ -30,17 +30,19 @@ func (c *contentMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 		return c.new404Response(err)
 	}
 
-	return &MockResponse{
+	resp := &MockResponse{
 		StatusCode: 200,
-		Data:       data,
+		Data:       result.Data,
 	}
+
+	resp.AddMetadata(MetadataMatched, "true")
+	resp.AddMetadata(MetadataSource, result.Source)
+	resp.AddMetadata(MetadataPath, result.Path)
+
+	return resp
 }
 
 func (c *contentMockService) setNext(next mockService) {}
-
-func (c *contentMockService) readMockFile(mockRequest MockRequest) (*[]byte, error) {
-	return c.contentService.GetContent(mockRequest.Host, mockRequest.URI, mockRequest.Method, mockRequest.Uuid)
-}
 
 func (c *contentMockService) new404Response(err error) *MockResponse {
 	msg := err.Error()
@@ -56,11 +58,15 @@ func (c *contentMockService) new404Response(err error) *MockResponse {
 		data = []byte(fmt.Sprintf("{%q:%q,%q:%q}", "status", res.Status, "message", res.Message))
 	}
 
-	return &MockResponse{
+	resp := &MockResponse{
 		StatusCode:  http.StatusNotFound,
 		Data:        &data,
 		ContentType: gin.MIMEJSON,
 	}
+
+	resp.AddMetadata(MetadataMatched, "false")
+
+	return resp
 }
 
 func (c *contentMockService) new500Response(err error) *MockResponse {
@@ -77,11 +83,15 @@ func (c *contentMockService) new500Response(err error) *MockResponse {
 		data = []byte(fmt.Sprintf("{%q:%q,%q:%q}", "status", res.Status, "message", res.Message))
 	}
 
-	return &MockResponse{
+	resp := &MockResponse{
 		StatusCode:  http.StatusInternalServerError,
 		Data:        &data,
 		ContentType: gin.MIMEJSON,
 	}
+
+	resp.AddMetadata(MetadataMatched, "false")
+
+	return resp
 }
 
 func newContentMockService(contentService content.ContentService) *contentMockService {

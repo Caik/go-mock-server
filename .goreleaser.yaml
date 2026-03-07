@@ -30,6 +30,10 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+    files:
+      - src: web/build/client/**
+        dst: ui
+        strip_parent: true
 
 checksum:
   name_template: 'checksums.txt'

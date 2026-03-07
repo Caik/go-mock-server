@@ -15,14 +15,18 @@ type mockContentService struct {
 	errorMsg    string
 }
 
-func (m *mockContentService) GetContent(host, uri, method, uuid string) (*[]byte, error) {
+func (m *mockContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
 	if m.shouldError {
 		return nil, errors.New(m.errorMsg)
 	}
 
 	key := host + ":" + uri + ":" + method
 	if data, exists := m.contents[key]; exists {
-		return &data, nil
+		return &content.ContentResult{
+			Data:   &data,
+			Source: "mock",
+			Path:   "/mock/" + key,
+		}, nil
 	}
 	return nil, errors.New("not found")
 }
@@ -438,6 +442,373 @@ func TestMockAdminService_DeleteMock(t *testing.T) {
 		_, exists = contentService.contents["example.com:/api/products:GET"]
 		if !exists {
 			t.Error("GET /api/products mock should still exist")
+		}
+	})
+}
+
+func TestMockAdminService_ListMocks(t *testing.T) {
+	t.Run("lists mocks successfully", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: map[string][]byte{
+				"example.com:/api/users:GET":  []byte(`{}`),
+				"example.com:/api/users:POST": []byte(`{}`),
+			},
+			events: make(chan content.ContentEvent),
+		}
+
+		service := NewMockAdminService(contentService)
+		mocks, err := service.ListMocks("test-uuid")
+
+		if err != nil {
+			t.Errorf("expected no error, got %v", err)
+		}
+
+		if len(mocks) != 2 {
+			t.Errorf("expected 2 mocks, got %d", len(mocks))
+		}
+	})
+
+	t.Run("returns empty list when no mocks exist", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: make(map[string][]byte),
+			events:   make(chan content.ContentEvent),
+		}
+
+		service := NewMockAdminService(contentService)
+		mocks, err := service.ListMocks("test-uuid")
+
+		if err != nil {
+			t.Errorf("expected no error, got %v", err)
+		}
+
+		if len(mocks) != 0 {
+			t.Errorf("expected 0 mocks, got %d", len(mocks))
+		}
+	})
+
+	t.Run("returns error when content service fails", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents:    make(map[string][]byte),
+			events:      make(chan content.ContentEvent),
+			shouldError: true,
+			errorMsg:    "content service error",
+		}
+
+		service := NewMockAdminService(contentService)
+		mocks, err := service.ListMocks("test-uuid")
+
+		if err == nil {
+			t.Error("expected error, got nil")
+		}
+
+		if mocks != nil {
+			t.Error("expected nil mocks on error")
+		}
+	})
+
+	t.Run("returns correct mock data", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: map[string][]byte{
+				"api.example.com:/users:GET": []byte(`{}`),
+			},
+			events: make(chan content.ContentEvent),
+		}
+
+		service := NewMockAdminService(contentService)
+		mocks, err := service.ListMocks("test-uuid")
+
+		if err != nil {
+			t.Errorf("expected no error, got %v", err)
+		}
+
+		if len(mocks) != 1 {
+			t.Fatalf("expected 1 mock, got %d", len(mocks))
+		}
+
+		// The mockContentService returns fixed values
+		mock := mocks[0]
+		// ID should be a non-empty base64-encoded string
+		if mock.ID == "" {
+			t.Errorf("expected non-empty id")
+		}
+
+		// Verify it can be decoded back to host|uri|method
+		host, uri, method, err := decodeMockID(mock.ID)
+
+		if err != nil {
+			t.Errorf("failed to decode mock ID: %v", err)
+		}
+
+		if host != "example.com" || uri != "/api/test" || method != "GET" {
+			t.Errorf("decoded values don't match: host=%s, uri=%s, method=%s", host, uri, method)
+		}
+
+		if mock.Host != "example.com" {
+			t.Errorf("expected host 'example.com', got '%s'", mock.Host)
+		}
+
+		if mock.URI != "/api/test" {
+			t.Errorf("expected uri '/api/test', got '%s'", mock.URI)
+		}
+
+		if mock.Method != "GET" {
+			t.Errorf("expected method 'GET', got '%s'", mock.Method)
+		}
+	})
+}
+
+func TestGenerateMockID(t *testing.T) {
+	t.Run("generates valid base64 encoded ID", func(t *testing.T) {
+		id := generateMockID("example.com", "/api/users", "GET")
+		if id == "" {
+			t.Error("expected non-empty id")
+		}
+
+		// Verify it can be decoded
+		host, uri, method, err := decodeMockID(id)
+		if err != nil {
+			t.Errorf("failed to decode: %v", err)
+		}
+
+		if host != "example.com" || uri != "/api/users" || method != "GET" {
+			t.Errorf("decoded values don't match: host=%s, uri=%s, method=%s", host, uri, method)
+		}
+	})
+
+	t.Run("generates consistent IDs for same input", func(t *testing.T) {
+		id1 := generateMockID("example.com", "/api/users", "GET")
+		id2 := generateMockID("example.com", "/api/users", "GET")
+		if id1 != id2 {
+			t.Errorf("expected same ID for same input, got '%s' and '%s'", id1, id2)
+		}
+	})
+
+	t.Run("generates different IDs for different inputs", func(t *testing.T) {
+		id1 := generateMockID("example.com", "/api/users", "GET")
+		id2 := generateMockID("example.com", "/api/users", "POST")
+		id3 := generateMockID("other.com", "/api/users", "GET")
+		if id1 == id2 {
+			t.Error("expected different IDs for different methods")
+		}
+		if id1 == id3 {
+			t.Error("expected different IDs for different hosts")
+		}
+	})
+}
+
+func TestMockAdminService_DeleteMockByID(t *testing.T) {
+	t.Run("deletes mock by valid ID", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: map[string][]byte{
+				"example.com:/api/users:GET": []byte(`{}`),
+			},
+			events: make(chan content.ContentEvent),
+		}
+		service := NewMockAdminService(contentService)
+
+		id := generateMockID("example.com", "/api/users", "GET")
+		err := service.DeleteMockByID(id, "test-uuid")
+
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("returns ErrInvalidMockID for bad base64", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: make(map[string][]byte),
+			events:   make(chan content.ContentEvent),
+		}
+		service := NewMockAdminService(contentService)
+
+		err := service.DeleteMockByID("not-valid-base64!!!", "test-uuid")
+
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+		if !errors.Is(err, ErrInvalidMockID) {
+			t.Errorf("expected ErrInvalidMockID, got %v", err)
+		}
+	})
+
+	t.Run("returns ErrInvalidMockID for invalid format", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: make(map[string][]byte),
+			events:   make(chan content.ContentEvent),
+		}
+		service := NewMockAdminService(contentService)
+
+		// Valid base64 but missing separator
+		err := service.DeleteMockByID("aW52YWxpZA==", "test-uuid")
+
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+		if !errors.Is(err, ErrInvalidMockID) {
+			t.Errorf("expected ErrInvalidMockID, got %v", err)
+		}
+	})
+}
+
+func TestMockAdminService_GetMockContent(t *testing.T) {
+	t.Run("returns content for valid ID", func(t *testing.T) {
+		data := []byte(`{"message":"hello"}`)
+		contentService := &mockContentService{
+			contents: map[string][]byte{
+				"example.com:/api/users:GET": data,
+			},
+			events: make(chan content.ContentEvent),
+		}
+		service := NewMockAdminService(contentService)
+
+		id := generateMockID("example.com", "/api/users", "GET")
+		result, err := service.GetMockContent(id, "test-uuid")
+
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if string(result) != string(data) {
+			t.Errorf("expected %q, got %q", string(data), string(result))
+		}
+	})
+
+	t.Run("returns ErrInvalidMockID for bad ID", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: make(map[string][]byte),
+			events:   make(chan content.ContentEvent),
+		}
+		service := NewMockAdminService(contentService)
+
+		_, err := service.GetMockContent("not-valid!!!", "test-uuid")
+
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+		if !errors.Is(err, ErrInvalidMockID) {
+			t.Errorf("expected ErrInvalidMockID, got %v", err)
+		}
+	})
+
+	t.Run("returns ErrMockNotFound when content not found", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents:    make(map[string][]byte),
+			events:      make(chan content.ContentEvent),
+			shouldError: true,
+			errorMsg:    "not found",
+		}
+		service := NewMockAdminService(contentService)
+
+		id := generateMockID("example.com", "/api/users", "GET")
+		_, err := service.GetMockContent(id, "test-uuid")
+
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+		if !errors.Is(err, ErrMockNotFound) {
+			t.Errorf("expected ErrMockNotFound, got %v", err)
+		}
+	})
+
+	t.Run("returns ErrMockNotFound when result data is nil", func(t *testing.T) {
+		contentService := &nilDataContentService{}
+		service := NewMockAdminService(contentService)
+
+		id := generateMockID("example.com", "/api/users", "GET")
+		_, err := service.GetMockContent(id, "test-uuid")
+
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+		if !errors.Is(err, ErrMockNotFound) {
+			t.Errorf("expected ErrMockNotFound, got %v", err)
+		}
+	})
+}
+
+// nilDataContentService returns a ContentResult with nil Data to test the nil-data branch.
+type nilDataContentService struct{}
+
+func (n *nilDataContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
+	return &content.ContentResult{Data: nil}, nil
+}
+
+func (n *nilDataContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
+	return nil
+}
+
+func (n *nilDataContentService) DeleteContent(host, uri, method, uuid string) error {
+	return nil
+}
+
+func (n *nilDataContentService) ListContents(uuid string) (*[]content.ContentData, error) {
+	return nil, nil
+}
+
+func (n *nilDataContentService) Subscribe(subscriberId string, eventTypes ...content.ContentEventType) <-chan content.ContentEvent {
+	return make(chan content.ContentEvent)
+}
+
+func (n *nilDataContentService) Unsubscribe(subscriberId string) {}
+
+func TestDecodeMockID(t *testing.T) {
+	t.Run("decodes valid ID", func(t *testing.T) {
+		id := generateMockID("example.com", "/api/users", "GET")
+		host, uri, method, err := decodeMockID(id)
+
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
+		if host != "example.com" {
+			t.Errorf("expected host 'example.com', got '%s'", host)
+		}
+
+		if uri != "/api/users" {
+			t.Errorf("expected uri '/api/users', got '%s'", uri)
+		}
+
+		if method != "GET" {
+			t.Errorf("expected method 'GET', got '%s'", method)
+		}
+	})
+
+	t.Run("handles URI with special characters", func(t *testing.T) {
+		id := generateMockID("example.com", "/api/users/:id/posts", "POST")
+		host, uri, method, err := decodeMockID(id)
+
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
+		if uri != "/api/users/:id/posts" {
+			t.Errorf("expected uri '/api/users/:id/posts', got '%s'", uri)
+		}
+
+		if host != "example.com" || method != "POST" {
+			t.Errorf("host or method mismatch")
+		}
+	})
+
+	t.Run("returns error for invalid base64", func(t *testing.T) {
+		_, _, _, err := decodeMockID("not-valid-base64!!!")
+
+		if err == nil {
+			t.Error("expected error for invalid base64")
+		}
+	})
+
+	t.Run("returns error for invalid format", func(t *testing.T) {
+		// Valid base64 but missing separator
+		_, _, _, err := decodeMockID("aW52YWxpZA==") // "invalid" in base64
+
+		if err == nil {
+			t.Error("expected error for invalid format")
 		}
 	})
 }

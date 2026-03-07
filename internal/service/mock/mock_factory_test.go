@@ -218,7 +218,7 @@ func TestMockServiceFactory_DisableCorsFlag(t *testing.T) {
 			}
 
 			for _, header := range corsHeaders {
-				if _, exists := (*responseEnabled.Headers)[header]; !exists {
+				if _, exists := responseEnabled.Headers[header]; !exists {
 					t.Errorf("Expected CORS header %s to be present when CORS is enabled", header)
 				}
 			}
@@ -239,7 +239,7 @@ func TestMockServiceFactory_DisableCorsFlag(t *testing.T) {
 				}
 
 				for _, header := range corsHeaders {
-					if _, exists := (*responseDisabled.Headers)[header]; exists {
+					if _, exists := responseDisabled.Headers[header]; exists {
 						t.Errorf("Expected CORS header %s to NOT be present when CORS is disabled", header)
 					}
 				}
@@ -296,6 +296,109 @@ func TestMockServiceFactory_GetMockResponse(t *testing.T) {
 		}
 	})
 
+	t.Run("returns response with metadata from filesystem", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: map[string][]byte{
+				"example.com:/api/users:GET": []byte(`{"users": []}`),
+			},
+			events: make(chan content.ContentEvent),
+		}
+		cacheService := &mockCacheService{
+			cache: make(map[string][]byte),
+		}
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+		appArgs := &config.AppArguments{
+			DisableLatency: true,
+			DisableError:   true,
+			DisableCache:   true, // Disable cache to test filesystem source
+			DisableCors:    true,
+		}
+
+		factory := NewMockServiceFactory(contentService, cacheService, appArgs, hostsConfig)
+
+		request := MockRequest{
+			Host:   "example.com",
+			Method: "GET",
+			URI:    "/api/users",
+			Accept: "application/json",
+			Uuid:   "test-uuid",
+		}
+
+		response := factory.GetMockResponse(request)
+
+		if response == nil {
+			t.Fatal("GetMockResponse should return non-nil response")
+		}
+
+		if len(response.Metadata) == 0 {
+			t.Fatal("response should have metadata")
+		}
+
+		if response.Metadata[MetadataMatched] != "true" {
+			t.Error("Metadata[Matched] should be 'true'")
+		}
+
+		if response.Metadata[MetadataSource] != "mock" {
+			t.Errorf("expected source 'mock', got '%s'", response.Metadata[MetadataSource])
+		}
+
+		if response.Metadata[MetadataPath] == "" {
+			t.Error("Metadata[Path] should not be empty")
+		}
+	})
+
+	t.Run("returns response with no metadata source when not found", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: make(map[string][]byte), // Empty - no mocks
+			events:   make(chan content.ContentEvent),
+		}
+		cacheService := &mockCacheService{
+			cache: make(map[string][]byte),
+		}
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+		appArgs := &config.AppArguments{
+			DisableLatency: true,
+			DisableError:   true,
+			DisableCache:   true,
+			DisableCors:    true,
+		}
+
+		factory := NewMockServiceFactory(contentService, cacheService, appArgs, hostsConfig)
+
+		request := MockRequest{
+			Host:   "example.com",
+			Method: "GET",
+			URI:    "/api/nonexistent",
+			Accept: "application/json",
+			Uuid:   "test-uuid",
+		}
+
+		response := factory.GetMockResponse(request)
+
+		if response == nil {
+			t.Fatal("GetMockResponse should return non-nil response")
+		}
+
+		if response.StatusCode != 404 {
+			t.Errorf("expected status 404, got %d", response.StatusCode)
+		}
+
+		if len(response.Metadata) == 0 {
+			t.Fatal("response should have metadata even for 404")
+		}
+
+		if response.Metadata[MetadataMatched] != "false" {
+			t.Error("Metadata[Matched] should be 'false' for not found")
+		}
+
+		if response.Metadata[MetadataSource] != "" {
+			t.Errorf("expected empty source for not found, got '%s'", response.Metadata[MetadataSource])
+		}
+	})
 }
 
 func TestMockServiceFactory_initServiceChain(t *testing.T) {

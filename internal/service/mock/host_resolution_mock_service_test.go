@@ -13,10 +13,14 @@ type mockContentService struct {
 	events   chan content.ContentEvent
 }
 
-func (m *mockContentService) GetContent(host, uri, method, uuid string) (*[]byte, error) {
+func (m *mockContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
 	key := host + ":" + uri + ":" + method
 	if data, exists := m.contents[key]; exists {
-		return &data, nil
+		return &content.ContentResult{
+			Data:   &data,
+			Source: "mock",
+			Path:   "/mock/" + key,
+		}, nil
 	}
 	return nil, errors.New("not found")
 }

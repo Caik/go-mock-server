@@ -415,7 +415,7 @@ func TestHostsConfig_GetAppropriateErrorsConfig(t *testing.T) {
 	}
 
 	// Test URI with specific errors config (should override host errors)
-	errorsConfig := hostsConfig.GetAppropriateErrorsConfig("example.com", "/api/v1/users")
+	errorsConfig, _ := hostsConfig.GetAppropriateErrorsConfig("example.com", "/api/v1/users")
 	if errorsConfig == nil {
 		t.Fatal("expected errors config to be non-nil")
 	}
@@ -429,7 +429,7 @@ func TestHostsConfig_GetAppropriateErrorsConfig(t *testing.T) {
 	}
 
 	// Test URI without specific errors config (should use host errors)
-	errorsConfig = hostsConfig.GetAppropriateErrorsConfig("example.com", "/api/v1/orders")
+	errorsConfig, _ = hostsConfig.GetAppropriateErrorsConfig("example.com", "/api/v1/orders")
 	if errorsConfig == nil {
 		t.Fatal("expected errors config to be non-nil")
 	}
@@ -443,7 +443,7 @@ func TestHostsConfig_GetAppropriateErrorsConfig(t *testing.T) {
 	}
 
 	// Test URI that doesn't exist (should use host errors)
-	errorsConfig = hostsConfig.GetAppropriateErrorsConfig("example.com", "/nonexistent")
+	errorsConfig, _ = hostsConfig.GetAppropriateErrorsConfig("example.com", "/nonexistent")
 	if errorsConfig == nil {
 		t.Fatal("expected errors config to be non-nil")
 	}
@@ -453,7 +453,7 @@ func TestHostsConfig_GetAppropriateErrorsConfig(t *testing.T) {
 	}
 
 	// Test non-existent host
-	errorsConfig = hostsConfig.GetAppropriateErrorsConfig("nonexistent.com", "/api/v1/users")
+	errorsConfig, _ = hostsConfig.GetAppropriateErrorsConfig("nonexistent.com", "/api/v1/users")
 	if errorsConfig != nil {
 		t.Error("expected nil errors config for non-existent host")
 	}
@@ -478,7 +478,7 @@ func TestHostsConfig_GetAppropriateErrorsConfig_EmptyConfigs(t *testing.T) {
 	}
 
 	// Test when no errors config exists at any level
-	errorsConfig := hostsConfig.GetAppropriateErrorsConfig("example.com", "/api/v1/users")
+	errorsConfig, _ := hostsConfig.GetAppropriateErrorsConfig("example.com", "/api/v1/users")
 	if errorsConfig != nil {
 		t.Error("expected nil errors config when none exist")
 	}
@@ -512,7 +512,7 @@ func TestHostsConfig_GetAppropriateLatencyConfig(t *testing.T) {
 	}
 
 	// Test URI with specific latency config (should override host latency)
-	latencyConfig := hostsConfig.GetAppropriateLatencyConfig("example.com", "/api/v1/users")
+	latencyConfig, _ := hostsConfig.GetAppropriateLatencyConfig("example.com", "/api/v1/users")
 	if latencyConfig == nil {
 		t.Fatal("expected latency config to be non-nil")
 	}
@@ -522,7 +522,7 @@ func TestHostsConfig_GetAppropriateLatencyConfig(t *testing.T) {
 	}
 
 	// Test URI without specific latency config (should use host latency)
-	latencyConfig = hostsConfig.GetAppropriateLatencyConfig("example.com", "/api/v1/orders")
+	latencyConfig, _ = hostsConfig.GetAppropriateLatencyConfig("example.com", "/api/v1/orders")
 	if latencyConfig == nil {
 		t.Fatal("expected latency config to be non-nil")
 	}
@@ -532,7 +532,7 @@ func TestHostsConfig_GetAppropriateLatencyConfig(t *testing.T) {
 	}
 
 	// Test URI that doesn't exist (should use host latency)
-	latencyConfig = hostsConfig.GetAppropriateLatencyConfig("example.com", "/nonexistent")
+	latencyConfig, _ = hostsConfig.GetAppropriateLatencyConfig("example.com", "/nonexistent")
 	if latencyConfig == nil {
 		t.Fatal("expected latency config to be non-nil")
 	}
@@ -542,7 +542,7 @@ func TestHostsConfig_GetAppropriateLatencyConfig(t *testing.T) {
 	}
 
 	// Test non-existent host
-	latencyConfig = hostsConfig.GetAppropriateLatencyConfig("nonexistent.com", "/api/v1/users")
+	latencyConfig, _ = hostsConfig.GetAppropriateLatencyConfig("nonexistent.com", "/api/v1/users")
 	if latencyConfig != nil {
 		t.Error("expected nil latency config for non-existent host")
 	}
@@ -573,7 +573,7 @@ func TestHostsConfig_GetAppropriateLatencyConfig_NoHostLatency(t *testing.T) {
 	}
 
 	// Test URI with specific latency config
-	latencyConfig := hostsConfig.GetAppropriateLatencyConfig("example.com", "/api/v1/users")
+	latencyConfig, _ := hostsConfig.GetAppropriateLatencyConfig("example.com", "/api/v1/users")
 	if latencyConfig == nil {
 		t.Fatal("expected latency config to be non-nil")
 	}
@@ -583,7 +583,7 @@ func TestHostsConfig_GetAppropriateLatencyConfig_NoHostLatency(t *testing.T) {
 	}
 
 	// Test URI without latency config when host also has none
-	latencyConfig = hostsConfig.GetAppropriateLatencyConfig("example.com", "/api/v1/orders")
+	latencyConfig, _ = hostsConfig.GetAppropriateLatencyConfig("example.com", "/api/v1/orders")
 	if latencyConfig != nil {
 		t.Error("expected nil latency config when none exist")
 	}

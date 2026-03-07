@@ -8,28 +8,40 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func TestInitRoutes(t *testing.T) {
+func TestInitAdminRoutes(t *testing.T) {
 	// Set gin to test mode
 	gin.SetMode(gin.TestMode)
 
-	t.Run("initializes all routes correctly", func(t *testing.T) {
+	t.Run("initializes all admin routes correctly", func(t *testing.T) {
 		router := gin.New()
 
 		// Create mock controllers (they can be nil for route testing)
 		adminMocksController := &AdminMocksController{}
 		adminHostsController := &AdminHostsController{}
-		mocksController := &MocksController{}
+		trafficController := NewTrafficController(nil)
 
-		// Initialize routes
-		InitRoutes(router, adminMocksController, adminHostsController, mocksController)
+		// Initialize admin routes
+		InitAdminRoutes(router, adminMocksController, adminHostsController, trafficController)
+
+		// Test health endpoint
+		t.Run("GET /health", func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/health", nil)
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			if w.Code != http.StatusOK {
+				t.Errorf("health endpoint should return 200, got %d", w.Code)
+			}
+		})
 
 		// Test admin mocks routes
 		adminMocksRoutes := []struct {
 			method string
 			path   string
 		}{
-			{http.MethodPost, "/admin/mocks"},
-			{http.MethodDelete, "/admin/mocks"},
+			{http.MethodPost, "/api/v1/mocks"},
+			{http.MethodDelete, "/api/v1/mocks"},
 		}
 
 		for _, route := range adminMocksRoutes {
@@ -59,15 +71,15 @@ func TestInitRoutes(t *testing.T) {
 			method string
 			path   string
 		}{
-			{http.MethodGet, "/admin/config/hosts"},
-			{http.MethodPost, "/admin/config/hosts"},
-			{http.MethodGet, "/admin/config/hosts/example.com"},
-			{http.MethodDelete, "/admin/config/hosts/example.com"},
-			{http.MethodPost, "/admin/config/hosts/example.com/latencies"},
-			{http.MethodDelete, "/admin/config/hosts/example.com/latencies"},
-			{http.MethodPost, "/admin/config/hosts/example.com/errors"},
-			{http.MethodDelete, "/admin/config/hosts/example.com/errors/500"},
-			{http.MethodPost, "/admin/config/hosts/example.com/uris"},
+			{http.MethodGet, "/api/v1/config/hosts"},
+			{http.MethodPost, "/api/v1/config/hosts"},
+			{http.MethodGet, "/api/v1/config/hosts/example.com"},
+			{http.MethodDelete, "/api/v1/config/hosts/example.com"},
+			{http.MethodPost, "/api/v1/config/hosts/example.com/latencies"},
+			{http.MethodDelete, "/api/v1/config/hosts/example.com/latencies"},
+			{http.MethodPost, "/api/v1/config/hosts/example.com/errors"},
+			{http.MethodDelete, "/api/v1/config/hosts/example.com/errors/500"},
+			{http.MethodPost, "/api/v1/config/hosts/example.com/uris"},
 		}
 
 		for _, route := range adminHostsRoutes {
@@ -93,15 +105,18 @@ func TestInitRoutes(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestInitMockRoutes(t *testing.T) {
+	// Set gin to test mode
+	gin.SetMode(gin.TestMode)
 
 	t.Run("NoRoute handler is set", func(t *testing.T) {
 		router := gin.New()
 
-		adminMocksController := &AdminMocksController{}
-		adminHostsController := &AdminHostsController{}
 		mocksController := &MocksController{}
 
-		InitRoutes(router, adminMocksController, adminHostsController, mocksController)
+		InitMockRoutes(router, mocksController)
 
 		// Test a route that doesn't exist - should be handled by NoRoute (MocksController)
 		req := httptest.NewRequest(http.MethodGet, "/some/random/path", nil)
@@ -124,42 +139,42 @@ func TestInitRoutes(t *testing.T) {
 	})
 }
 
-func TestInitAdminMocksController(t *testing.T) {
+func TestInitAdminMocksControllerRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	t.Run("sets up admin mocks routes", func(t *testing.T) {
 		router := gin.New()
-		group := router.Group("/admin/mocks")
+		group := router.Group("/api/v1/mocks")
 		controller := &AdminMocksController{}
 
 		initAdminMocksController(group, controller)
 
 		// Test POST route
-		req := httptest.NewRequest(http.MethodPost, "/admin/mocks", nil)
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/mocks", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
 		if w.Code == http.StatusNotFound {
-			t.Error("POST /admin/mocks route should exist")
+			t.Error("POST /api/v1/mocks route should exist")
 		}
 
 		// Test DELETE route
-		req = httptest.NewRequest(http.MethodDelete, "/admin/mocks", nil)
+		req = httptest.NewRequest(http.MethodDelete, "/api/v1/mocks", nil)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
 		if w.Code == http.StatusNotFound {
-			t.Error("DELETE /admin/mocks route should exist")
+			t.Error("DELETE /api/v1/mocks route should exist")
 		}
 	})
 }
 
-func TestInitAdminHostsController(t *testing.T) {
+func TestInitAdminHostsControllerRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	t.Run("sets up admin hosts routes", func(t *testing.T) {
 		router := gin.New()
-		group := router.Group("/admin/config/hosts")
+		group := router.Group("/api/v1/config/hosts")
 		controller := &AdminHostsController{}
 
 		initAdminHostsController(group, controller)
@@ -169,8 +184,8 @@ func TestInitAdminHostsController(t *testing.T) {
 			method string
 			path   string
 		}{
-			{http.MethodGet, "/admin/config/hosts"},
-			{http.MethodPost, "/admin/config/hosts"},
+			{http.MethodGet, "/api/v1/config/hosts"},
+			{http.MethodPost, "/api/v1/config/hosts"},
 		}
 
 		for _, route := range baseRoutes {
@@ -188,13 +203,13 @@ func TestInitAdminHostsController(t *testing.T) {
 			method string
 			path   string
 		}{
-			{http.MethodGet, "/admin/config/hosts/testhost"},
-			{http.MethodDelete, "/admin/config/hosts/testhost"},
-			{http.MethodPost, "/admin/config/hosts/testhost/latencies"},
-			{http.MethodDelete, "/admin/config/hosts/testhost/latencies"},
-			{http.MethodPost, "/admin/config/hosts/testhost/errors"},
-			{http.MethodDelete, "/admin/config/hosts/testhost/errors/500"},
-			{http.MethodPost, "/admin/config/hosts/testhost/uris"},
+			{http.MethodGet, "/api/v1/config/hosts/testhost"},
+			{http.MethodDelete, "/api/v1/config/hosts/testhost"},
+			{http.MethodPost, "/api/v1/config/hosts/testhost/latencies"},
+			{http.MethodDelete, "/api/v1/config/hosts/testhost/latencies"},
+			{http.MethodPost, "/api/v1/config/hosts/testhost/errors"},
+			{http.MethodDelete, "/api/v1/config/hosts/testhost/errors/500"},
+			{http.MethodPost, "/api/v1/config/hosts/testhost/uris"},
 		}
 
 		for _, route := range hostRoutes {
@@ -212,19 +227,19 @@ func TestInitAdminHostsController(t *testing.T) {
 func TestRouteGrouping(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	t.Run("admin routes are properly grouped", func(t *testing.T) {
+	t.Run("admin routes are properly grouped under /api/v1", func(t *testing.T) {
 		router := gin.New()
 
 		adminMocksController := &AdminMocksController{}
 		adminHostsController := &AdminHostsController{}
-		mocksController := &MocksController{}
+		trafficController := NewTrafficController(nil)
 
-		InitRoutes(router, adminMocksController, adminHostsController, mocksController)
+		InitAdminRoutes(router, adminMocksController, adminHostsController, trafficController)
 
 		// Test that admin routes are under correct paths
 		adminPaths := []string{
-			"/admin/mocks",
-			"/admin/config/hosts",
+			"/api/v1/mocks",
+			"/api/v1/config/hosts",
 		}
 
 		for _, path := range adminPaths {
@@ -240,24 +255,21 @@ func TestRouteGrouping(t *testing.T) {
 		}
 	})
 
-	t.Run("non-admin routes handled by NoRoute", func(t *testing.T) {
+	t.Run("mock routes handled by NoRoute", func(t *testing.T) {
 		router := gin.New()
 
-		adminMocksController := &AdminMocksController{}
-		adminHostsController := &AdminHostsController{}
 		mocksController := &MocksController{}
 
-		InitRoutes(router, adminMocksController, adminHostsController, mocksController)
+		InitMockRoutes(router, mocksController)
 
-		// Test non-admin paths
-		nonAdminPaths := []string{
+		// Test paths that should be handled by MocksController
+		mockPaths := []string{
 			"/api/users",
-			"/health",
 			"/",
 			"/some/random/path",
 		}
 
-		for _, path := range nonAdminPaths {
+		for _, path := range mockPaths {
 			t.Run("path "+path, func(t *testing.T) {
 				req := httptest.NewRequest(http.MethodGet, path, nil)
 				w := httptest.NewRecorder()
@@ -274,7 +286,7 @@ func TestRouteGrouping(t *testing.T) {
 
 				// If we get here without panic, NoRoute should handle it (not return 404)
 				if w.Code == http.StatusNotFound {
-					t.Errorf("non-admin route %s should be handled by NoRoute", path)
+					t.Errorf("mock route %s should be handled by NoRoute", path)
 				}
 			})
 		}

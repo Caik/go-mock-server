@@ -817,3 +817,450 @@ func TestAdminHostsController_ErrorHandlingEndpoints(t *testing.T) {
 		}
 	})
 }
+
+func TestAdminHostsController_handleLatencyAddUpdate_NotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("returns 404 when host doesn't exist", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request with latency config for non-existent host
+		requestBody := `{"latency": {"min": 100, "max": 500}}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/nonexistent.com/latencies", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: "nonexistent.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleLatencyAddUpdate(c)
+
+		if w.Code != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+
+		if response.Message != "host config not found" {
+			t.Errorf("expected message 'host config not found', got '%s'", response.Message)
+		}
+	})
+
+	t.Run("returns 500 when service returns validation error", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request with invalid latency config (min > max)
+		requestBody := `{"latency": {"min": 500, "max": 100}}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/latencies", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: "example.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleLatencyAddUpdate(c)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Error {
+			t.Errorf("expected status 'error', got '%s'", response.Status)
+		}
+	})
+
+	t.Run("returns 400 when latency config is missing", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request without latency config
+		requestBody := `{}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/latencies", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: "example.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleLatencyAddUpdate(c)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+	})
+}
+
+func TestAdminHostsController_handleLatencyDelete_NotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("returns 404 when host doesn't exist", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create delete request for non-existent host
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Params = gin.Params{{Key: "host", Value: "nonexistent.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleLatencyDelete(c)
+
+		if w.Code != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+
+		if response.Message != "host config not found" {
+			t.Errorf("expected message 'host config not found', got '%s'", response.Message)
+		}
+	})
+}
+
+func TestAdminHostsController_handleErrorsAddUpdate_NotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("returns 404 when host doesn't exist", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request with error config for non-existent host
+		requestBody := `{"errors": {"500": {"percentage": 10}}}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/nonexistent.com/errors", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: "nonexistent.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleErrorsAddUpdate(c)
+
+		if w.Code != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+
+		if response.Message != "host config not found" {
+			t.Errorf("expected message 'host config not found', got '%s'", response.Message)
+		}
+	})
+
+	t.Run("returns 500 when service returns validation error", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request with invalid error config (percentage > 100)
+		requestBody := `{"errors": {"500": {"percentage": 150}}}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/errors", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: "example.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleErrorsAddUpdate(c)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Error {
+			t.Errorf("expected status 'error', got '%s'", response.Status)
+		}
+	})
+
+	t.Run("returns 400 when errors config is missing", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request without errors config
+		requestBody := `{}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/errors", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: "example.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleErrorsAddUpdate(c)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+	})
+}
+
+func TestAdminHostsController_handleErrorDelete_NotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("returns 404 when host doesn't exist", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create delete request for non-existent host
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Params = gin.Params{
+			{Key: "host", Value: "nonexistent.com"},
+			{Key: "error", Value: "500"},
+		}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleErrorDelete(c)
+
+		if w.Code != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+
+		if response.Message != "host config not found" {
+			t.Errorf("expected message 'host config not found', got '%s'", response.Message)
+		}
+	})
+
+	t.Run("returns 400 when error code parameter is missing", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {
+					ErrorsConfig: map[string]config.ErrorConfig{
+						"500": {Percentage: intPtr(10)},
+					},
+				},
+			},
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create delete request without error code
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Params = gin.Params{
+			{Key: "host", Value: "example.com"},
+			{Key: "error", Value: ""},
+		}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleErrorDelete(c)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+	})
+}
+
+func TestAdminHostsController_handleUrisAddUpdate_NotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("returns 404 when host doesn't exist", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: make(map[string]config.HostConfig),
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request with uris config for non-existent host
+		requestBody := `{"uris": {"/api/test": {"latency": {"min": 50, "max": 100}}}}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/nonexistent.com/uris", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: "nonexistent.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleUrisAddUpdate(c)
+
+		if w.Code != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+
+		if response.Message != "host config not found" {
+			t.Errorf("expected message 'host config not found', got '%s'", response.Message)
+		}
+	})
+
+	t.Run("returns 500 when service returns validation error", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request with invalid uri config (latency min > max)
+		requestBody := `{"uris": {"/api/test": {"latency": {"min": 500, "max": 100}}}}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/uris", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: "example.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleUrisAddUpdate(c)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Error {
+			t.Errorf("expected status 'error', got '%s'", response.Status)
+		}
+	})
+
+	t.Run("returns 400 when uris request has invalid JSON", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request with invalid JSON
+		requestBody := `invalid json`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/uris", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: "example.com"}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleUrisAddUpdate(c)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+	})
+
+	t.Run("returns 400 when uris request has invalid host parameter", func(t *testing.T) {
+		hostsConfig := &config.HostsConfig{
+			Hosts: map[string]config.HostConfig{
+				"example.com": {},
+			},
+		}
+		service := admin.NewHostsConfigAdminService(hostsConfig)
+		controller := NewAdminHostsController(hostsConfig, service)
+
+		// Create request with empty host
+		requestBody := `{"uris": {"/api/test": {"latency": {"min": 50, "max": 100}}}}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts//uris", strings.NewReader(requestBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Params = gin.Params{{Key: "host", Value: ""}}
+		c.Set(util.UuidKey, "test-uuid")
+
+		controller.handleUrisAddUpdate(c)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+
+		var response rest.Response
+		json.Unmarshal(w.Body.Bytes(), &response)
+
+		if response.Status != rest.Fail {
+			t.Errorf("expected status 'fail', got '%s'", response.Status)
+		}
+	})
+}

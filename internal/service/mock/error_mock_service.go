@@ -20,7 +20,7 @@ type errorPercentageWrapper struct {
 }
 
 func (e *errorMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
-	errorsConfig := e.hostsConfig.GetAppropriateErrorsConfig(mockRequest.Host, mockRequest.URI)
+	errorsConfig, scope := e.hostsConfig.GetAppropriateErrorsConfig(mockRequest.Host, mockRequest.URI)
 
 	if errorsConfig == nil {
 		return e.nextOrNil(mockRequest)
@@ -40,11 +40,16 @@ func (e *errorMockService) getMockResponse(mockRequest MockRequest) *MockRespons
 
 	emptyResponse := []byte("")
 
-	return &MockResponse{
+	resp := &MockResponse{
 		StatusCode:        drawnErrorWrapper.statusCode,
 		Data:              &emptyResponse,
 		activeErrorConfig: &drawnErrorWrapper.originalErrorConfig,
 	}
+
+	resp.AddMetadata(MetadataSimulatedError, "true")
+	resp.AddMetadata(MetadataErrorRuleScope, scope)
+
+	return resp
 }
 
 func (e *errorMockService) setNext(next mockService) {
@@ -75,7 +80,8 @@ func (e *errorMockService) drawError(errorsConfig *map[string]config.ErrorConfig
 	}
 
 	// randomly selecting a status code based on the percentage drawn
-	draw := rand.Intn(101)
+	// Using 1-100 range so that a 0% error rate truly never fires (0 would satisfy draw <= 0)
+	draw := rand.Intn(100) + 1
 	sumErrorPercentage := 0
 
 	for _, errorWrapper := range errorsWrapper {
