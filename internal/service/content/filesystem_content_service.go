@@ -157,9 +157,26 @@ func (f *FilesystemContentService) Unsubscribe(subscriberId string) {
 }
 
 func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (string, error) {
+	// Validate inputs before using them in a path expression.
+	// The regexes allow only safe characters (no ".." or path separators in host,
+	// no ".." in uri), breaking the taint chain before any path is constructed.
+	if !util.HostRegex.MatchString(host) {
+		return "", errors.New("invalid host")
+	}
+	if !util.HttpMethodRegex.MatchString(strings.ToUpper(method)) {
+		return "", errors.New("invalid method")
+	}
+
 	parts := strings.SplitN(uri, "?", 2)
-	isRootPath := strings.HasSuffix(parts[0], "/")
-	uriFixed := strings.ReplaceAll(parts[0], "/", pathSeparator)
+	uriPath := parts[0]
+
+	// Root path "/" is valid but won't match UriRegex, so handle it explicitly.
+	if uriPath != "/" && !util.UriRegex.MatchString(uriPath) {
+		return "", errors.New("invalid uri")
+	}
+
+	isRootPath := strings.HasSuffix(uriPath, "/")
+	uriFixed := strings.ReplaceAll(uriPath, "/", pathSeparator)
 
 	finalPath := strings.Join([]string{
 		strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator),
@@ -176,7 +193,7 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (s
 
 	finalPath += "." + strings.ToLower(method)
 
-	// Prevent path traversal: ensure the resolved path stays within the mocks directory
+	// Defense-in-depth: ensure the resolved path stays within the mocks directory.
 	mocksDir := filepath.Clean(f.mocksDirConfig.Path)
 	if !strings.HasPrefix(filepath.Clean(finalPath), mocksDir+pathSeparator) {
 		return "", errors.New("invalid path: outside mocks directory")
