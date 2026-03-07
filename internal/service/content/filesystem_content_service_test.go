@@ -30,7 +30,10 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 	}
 
 	t.Run("generates correct path for simple URI", func(t *testing.T) {
-		path := service.getFinalFilePath("example.com", "/api/users", "GET")
+		path, err := service.getFinalFilePath("example.com", "/api/users", "GET")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
 		expected := filepath.Join(tempDir, "example.com", "api", "users.get")
 		if path != expected {
@@ -39,7 +42,10 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 	})
 
 	t.Run("handles root path correctly", func(t *testing.T) {
-		path := service.getFinalFilePath("example.com", "/", "GET")
+		path, err := service.getFinalFilePath("example.com", "/", "GET")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
 		expected := filepath.Join(tempDir, "example.com", "root.get")
 		if path != expected {
@@ -51,7 +57,10 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 		// URI with query parameter that contains a question mark
 		uri := "/api/search?query=what?is?this"
 
-		path := service.getFinalFilePath("example.com", uri, "GET")
+		path, err := service.getFinalFilePath("example.com", uri, "GET")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
 		t.Logf("Testing URI with multiple '?' characters: %s", uri)
 		t.Logf("Generated path: %s", path)
@@ -80,7 +89,10 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 	})
 
 	t.Run("handles query parameters", func(t *testing.T) {
-		path := service.getFinalFilePath("example.com", "/api/users?id=123", "GET")
+		path, err := service.getFinalFilePath("example.com", "/api/users?id=123", "GET")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
 		expected := filepath.Join(tempDir, "example.com", "api", "users?id=123.get")
 		if path != expected {
@@ -89,7 +101,10 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 	})
 
 	t.Run("handles nested paths", func(t *testing.T) {
-		path := service.getFinalFilePath("api.example.com", "/v1/users/profile", "POST")
+		path, err := service.getFinalFilePath("api.example.com", "/v1/users/profile", "POST")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
 		expected := filepath.Join(tempDir, "api.example.com", "v1", "users", "profile.post")
 		if path != expected {
@@ -101,12 +116,29 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 		methods := []string{"GET", "POST", "PUT", "DELETE", "PATCH"}
 
 		for _, method := range methods {
-			path := service.getFinalFilePath("example.com", "/api/test", method)
+			path, err := service.getFinalFilePath("example.com", "/api/test", method)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
 			expectedSuffix := "." + strings.ToLower(method)
 			if !strings.HasSuffix(path, expectedSuffix) {
 				t.Errorf("path should end with '%s', got '%s'", expectedSuffix, path)
 			}
+		}
+	})
+
+	t.Run("rejects path traversal in host", func(t *testing.T) {
+		_, err := service.getFinalFilePath("../../etc", "/passwd", "GET")
+		if err == nil {
+			t.Error("expected error for path traversal, got nil")
+		}
+	})
+
+	t.Run("rejects path traversal in uri", func(t *testing.T) {
+		_, err := service.getFinalFilePath("example.com", "/../../etc/passwd", "GET")
+		if err == nil {
+			t.Error("expected error for path traversal, got nil")
 		}
 	})
 }

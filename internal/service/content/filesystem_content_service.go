@@ -26,7 +26,10 @@ type FilesystemContentService struct {
 }
 
 func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*ContentResult, error) {
-	absolutePath := f.getFinalFilePath(host, uri, method)
+	absolutePath, err := f.getFinalFilePath(host, uri, method)
+	if err != nil {
+		return nil, err
+	}
 	data, err := os.ReadFile(absolutePath)
 
 	if err != nil {
@@ -46,11 +49,14 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*
 }
 
 func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
-	absolutePath := f.getFinalFilePath(host, uri, method)
+	absolutePath, err := f.getFinalFilePath(host, uri, method)
+	if err != nil {
+		return err
+	}
 
 	// making sure all parent dirs are created
 	parentDir := absolutePath[:strings.LastIndex(absolutePath, pathSeparator)+1]
-	err := os.MkdirAll(parentDir, os.ModePerm)
+	err = os.MkdirAll(parentDir, os.ModePerm)
 
 	if err != nil {
 		msg := fmt.Sprintf("error while creating parent directories: %v", err)
@@ -83,7 +89,10 @@ func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, da
 }
 
 func (f *FilesystemContentService) DeleteContent(host, uri, method, uuid string) error {
-	absolutePath := f.getFinalFilePath(host, uri, method)
+	absolutePath, err := f.getFinalFilePath(host, uri, method)
+	if err != nil {
+		return err
+	}
 
 	if err := os.Remove(absolutePath); err != nil {
 		msg := fmt.Sprintf("error while removing file: %v", err)
@@ -147,7 +156,7 @@ func (f *FilesystemContentService) Unsubscribe(subscriberId string) {
 	f.broadcaster.Unsubscribe(subscriberId)
 }
 
-func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) string {
+func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (string, error) {
 	parts := strings.SplitN(uri, "?", 2)
 	isRootPath := strings.HasSuffix(parts[0], "/")
 	uriFixed := strings.ReplaceAll(parts[0], "/", pathSeparator)
@@ -167,7 +176,13 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) st
 
 	finalPath += "." + strings.ToLower(method)
 
-	return finalPath
+	// Prevent path traversal: ensure the resolved path stays within the mocks directory
+	mocksDir := filepath.Clean(f.mocksDirConfig.Path)
+	if !strings.HasPrefix(filepath.Clean(finalPath), mocksDir+pathSeparator) {
+		return "", errors.New("invalid path: outside mocks directory")
+	}
+
+	return finalPath, nil
 }
 
 func (f *FilesystemContentService) filePathToContentData(path string) (*ContentData, error) {
