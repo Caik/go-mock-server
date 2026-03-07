@@ -72,7 +72,7 @@ func TestTrafficEntry_JSONSerialization(t *testing.T) {
 			Metadata: map[string]string{
 				metadataMatched: "true",
 				metadataSource:  "filesystem",
-				"Path":    "/mocks/example.com/api.get",
+				"Path":          "/mocks/example.com/api.get",
 			},
 		}
 

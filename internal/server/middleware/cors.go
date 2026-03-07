@@ -19,4 +19,3 @@ func Cors(c *gin.Context) {
 
 	c.Next()
 }
-

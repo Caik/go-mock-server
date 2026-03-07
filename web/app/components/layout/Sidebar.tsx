@@ -1,4 +1,4 @@
-// Auto-collapsible sidebar component (60px → 200px on hover)
+// Fixed-width sidebar with always-visible navigation labels
 import { NavLink } from 'react-router';
 import { ScrollText, Layers, Server, Wrench, type LucideIcon } from 'lucide-react';
 
