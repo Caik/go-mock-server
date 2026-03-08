@@ -29,7 +29,7 @@ export function Sidebar() {
     <aside className="sidebar">
       <div className="logo">
         <span className="logo-icon">
-          <img src="/logo.png" alt="Mock Server" width={160} height={160} style={{ borderRadius: 16 }} />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Mock Server" width={148} height={148} style={{ borderRadius: 16 }} />
         </span>
         <span className="logo-text">Mock Server</span>
       </div>
