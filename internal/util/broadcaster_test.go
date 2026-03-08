@@ -28,10 +28,6 @@ func TestBroadcaster_Subscribe(t *testing.T) {
 			t.Error("subscribers map should be initialized")
 		}
 
-		if broadcaster.subscribersAcceptFn == nil {
-			t.Error("subscribersAcceptFn map should be initialized")
-		}
-
 		if len(broadcaster.subscribers) != 1 {
 			t.Errorf("expected 1 subscriber, got %d", len(broadcaster.subscribers))
 		}
@@ -96,10 +92,6 @@ func TestBroadcaster_Unsubscribe(t *testing.T) {
 		// Verify subscription is removed
 		if len(broadcaster.subscribers) != 0 {
 			t.Errorf("expected 0 subscribers after unsubscribe, got %d", len(broadcaster.subscribers))
-		}
-
-		if len(broadcaster.subscribersAcceptFn) != 0 {
-			t.Errorf("expected 0 accept functions after unsubscribe, got %d", len(broadcaster.subscribersAcceptFn))
 		}
 
 		// Verify channel is closed
@@ -329,41 +321,34 @@ func TestBroadcaster_Publish(t *testing.T) {
 		}
 	})
 
-	t.Run("publish with missing accept function", func(t *testing.T) {
+	t.Run("publish with nil accept function sends event", func(t *testing.T) {
 		broadcaster := &Broadcaster[TestEvent]{}
 
-		// Manually create a subscriber without accept function to test the warning case
-		broadcaster.subscribers = make(map[string]chan TestEvent)
-		broadcaster.subscribersAcceptFn = make(map[string]func(event TestEvent) bool)
-
-		channel := make(chan TestEvent, 1) // Buffered channel to prevent blocking
-		broadcaster.subscribers["subscriber1"] = channel
-		// Intentionally not setting subscribersAcceptFn["subscriber1"]
+		// Subscribe with nil acceptFn - should default to sending
+		channel := broadcaster.Subscribe("subscriber1", nil)
 
 		event := TestEvent{ID: 1, Message: "test"}
 
-		// This should log a warning but still send the event (since acceptFn doesn't exist, it defaults to sending)
 		done := make(chan bool)
 		go func() {
 			broadcaster.Publish(event, "test-uuid")
 			done <- true
 		}()
 
-		// The event should still be sent despite missing accept function
 		select {
 		case receivedEvent := <-channel:
 			if receivedEvent.ID != event.ID {
 				t.Errorf("expected event %+v, got %+v", event, receivedEvent)
 			}
 		case <-time.After(500 * time.Millisecond):
-			t.Error("should receive event even with missing accept function")
+			t.Error("should receive event even with nil accept function")
 		}
 
 		select {
 		case <-done:
-			// Expected - should complete despite missing accept function
+			// Expected
 		case <-time.After(1 * time.Second):
-			t.Error("publish should complete even with missing accept function")
+			t.Error("publish should complete even with nil accept function")
 		}
 	})
 }
