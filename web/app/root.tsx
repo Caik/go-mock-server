@@ -12,6 +12,7 @@ import { Sidebar } from "~/components/layout";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
+  { rel: "icon", href: `${import.meta.env.BASE_URL}favicon.ico` },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -58,6 +59,14 @@ export default function App() {
       <main className="main-content">
         <Outlet />
       </main>
+    </div>
+  );
+}
+
+export function HydrateFallback() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div className="spinner" />
     </div>
   );
 }

@@ -18,9 +18,16 @@ builds:
     goarm:
       - 6
       - 7
+    ignore:
+      - goos: windows
+        goarch: arm
+        goarm: 6
+      - goos: windows
+        goarch: arm
+        goarm: 7
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     name_template: >-
       {{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
@@ -29,7 +36,7 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
     files:
       - src: web/build/client/**
         dst: ui
