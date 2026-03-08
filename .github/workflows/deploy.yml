@@ -36,11 +36,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-
-      - name: Upgrade npm
-        run: npm install -g npm@11
 
       - name: Build UI
         working-directory: web
