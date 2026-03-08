@@ -34,7 +34,7 @@ jobs:
 
       - name: Build UI
         working-directory: web
-        run: NODE_ENV=development npm ci && npm run build
+        run: NODE_ENV=development npm ci --no-audit --no-fund && npm run build
 
       - name: Upload UI build
         uses: actions/upload-artifact@v4
