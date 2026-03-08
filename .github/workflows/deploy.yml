@@ -41,9 +41,7 @@ jobs:
 
       - name: Build UI
         working-directory: web
-        env:
-          NODE_ENV: development
-        run: npm ci && npm run build
+        run: NODE_ENV=development npm ci && npm run build
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
