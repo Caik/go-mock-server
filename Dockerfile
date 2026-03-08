@@ -2,7 +2,11 @@
 FROM node:20-alpine AS web-builder
 WORKDIR /app/web
 COPY web/package*.json ./
-RUN npm ci --include=dev
+# node:20-alpine defaults NODE_ENV=production; override it so npm installs
+# devDependencies needed for the build (Vite, @react-router/dev, TypeScript).
+# The final image only receives the compiled static files from this stage.
+ENV NODE_ENV=development
+RUN npm ci
 COPY web/ ./
 RUN npm run build
 
