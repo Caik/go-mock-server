@@ -1,11 +1,11 @@
 ## Install all dependencies (including dev) ##
-FROM node:20-alpine AS web-deps
+FROM --platform=$BUILDPLATFORM node:20-alpine AS web-deps
 WORKDIR /app/web
 COPY web/package*.json ./
 RUN npm ci
 
 ## Build frontend ##
-FROM node:20-alpine AS web-builder
+FROM --platform=$BUILDPLATFORM node:20-alpine AS web-builder
 WORKDIR /app/web
 COPY web/ ./
 COPY --from=web-deps /app/web/node_modules ./node_modules
