@@ -25,7 +25,7 @@ Contents
   - [Simulate Errors and Latencies](#3-simulate-errors-and-latencies)
   - [Integrate with Your Application](#4-integrate-with-your-application)
   - [Explore the Command-Line Options](#5-explore-the-command-line-options)
-- [Admin UI](#-admin-ui)
+- [Admin UI](#%EF%B8%8F-admin-ui)
 - [Want to Contribute?](#-want-to-contribute)
 - [License](#%EF%B8%8F-license)
 
