@@ -39,9 +39,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
+      - name: Upgrade npm
+        run: npm install -g npm@11
+
       - name: Build UI
         working-directory: web
-        run: NODE_ENV=development npm ci && npm run build
+        run: npm ci && npm run build
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
