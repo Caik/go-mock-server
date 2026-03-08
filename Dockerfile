@@ -1,3 +1,11 @@
+## Build frontend ##
+FROM node:20-alpine AS web-builder
+WORKDIR /app/web
+COPY web/package*.json ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
+
 ## Building binaries ##
 FROM golang:1.25-alpine AS builder
 RUN apk add --no-cache git make
@@ -9,10 +17,8 @@ RUN go mod download \
     && CGO_ENABLED=0 go build -a -installsuffix cgo -o dist/mock-server -ldflags "$LDFLAGS" cmd/mock-server/main.go
 
 ## Creating final image ##
-## Note: the UI must be pre-built before running docker build.
-## Run `make build-ui` (or `cd web && npm ci && npm run build`) first.
 FROM alpine:latest
 RUN apk add ca-certificates
 COPY --from=builder /tmp/go-mock-server/dist/mock-server /app/mock-server
-COPY web/build/client /app/ui
+COPY --from=web-builder /app/web/build/client /app/ui
 ENTRYPOINT ["/app/mock-server"]

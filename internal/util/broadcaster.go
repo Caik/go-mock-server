@@ -6,16 +6,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type broadcasterSub[T any] struct {
+type Broadcaster[T any] struct {
+	mu          sync.RWMutex
+	subscribers map[string]*subscriber[T]
+}
+
+type subscriber[T any] struct {
 	ch       chan T
 	done     chan struct{}
 	wg       sync.WaitGroup
 	acceptFn func(event T) bool
-}
-
-type Broadcaster[T any] struct {
-	mu          sync.RWMutex
-	subscribers map[string]*broadcasterSub[T]
 }
 
 func (b *Broadcaster[T]) Subscribe(subscriberId string, acceptFn func(event T) bool) <-chan T {
@@ -23,14 +23,14 @@ func (b *Broadcaster[T]) Subscribe(subscriberId string, acceptFn func(event T) b
 	defer b.mu.Unlock()
 
 	if b.subscribers == nil {
-		b.subscribers = make(map[string]*broadcasterSub[T])
+		b.subscribers = make(map[string]*subscriber[T])
 	}
 
 	if sub, exists := b.subscribers[subscriberId]; exists {
 		return sub.ch
 	}
 
-	sub := &broadcasterSub[T]{
+	sub := &subscriber[T]{
 		ch:       make(chan T),
 		done:     make(chan struct{}),
 		acceptFn: acceptFn,
@@ -44,6 +44,7 @@ func (b *Broadcaster[T]) Unsubscribe(subscriberId string) {
 	b.mu.Lock()
 
 	sub, exists := b.subscribers[subscriberId]
+
 	if !exists {
 		b.mu.Unlock()
 		return

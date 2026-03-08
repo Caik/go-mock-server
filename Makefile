@@ -1,6 +1,6 @@
 # Usage:
 # make test          # run Go tests
-# make build-ui      # build the React frontend (required before docker build)
+# make build-ui      # build the React frontend
 # make run_docker    # run docker environment
 
 .PHONY: run_docker test build-ui

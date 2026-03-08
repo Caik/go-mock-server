@@ -17,36 +17,9 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
 
-  build-ui:
-    name: Build UI
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-
-      - name: Build UI
-        working-directory: web
-        run: NODE_ENV=development npm ci --no-audit --no-fund && npm run build
-
-      - name: Upload UI build
-        uses: actions/upload-artifact@v4
-        with:
-          name: ui-build
-          path: web/build/client/
-          if-no-files-found: error
-          retention-days: 1
-
   github-release:
     name: Create Github Release
-    needs: [build, build-ui]
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -59,11 +32,16 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Download UI build
-        uses: actions/download-artifact@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          name: ui-build
-          path: web/build/client/
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build UI
+        working-directory: web
+        run: npm ci && npm run build
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -78,7 +56,7 @@ jobs:
 
   docker-build:
     name: Build Docker Image
-    needs: [build, build-ui]
+    needs: build
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -93,15 +71,6 @@ jobs:
         run: |
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download UI build
-        uses: actions/download-artifact@v4
-        with:
-          name: ui-build
-          path: web/build/client/
 
       - name: Docker Meta
         id: meta
@@ -126,7 +95,6 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: .
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,"name=${{ env.DOCKERHUB_REPO }}",push-by-digest=true,name-canonical=true,push=true
@@ -177,7 +145,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}.{{minor}}            
 
       - name: Create Manifest List and Push
         working-directory: /tmp/digests
