@@ -1,3 +1,5 @@
+![go-mock-server](.github/banner.png)
+
 # Go Mock Server
 
 Go Mock Server is a versatile tool crafted in Go to simplify the process of mocking HTTP requests, with a primary focus on being **user-friendly**, **powerful**, and **flexible**.
@@ -23,6 +25,7 @@ Contents
   - [Simulate Errors and Latencies](#3-simulate-errors-and-latencies)
   - [Integrate with Your Application](#4-integrate-with-your-application)
   - [Explore the Command-Line Options](#5-explore-the-command-line-options)
+- [Admin UI](#-admin-ui)
 - [Want to Contribute?](#-want-to-contribute)
 - [License](#%EF%B8%8F-license)
 
@@ -338,6 +341,22 @@ Go Mock Server ships with a built-in React admin UI that covers all functionalit
 - The UI is available at `http://localhost:9090/ui/` when `--ui-dir` is set.
 - The Docker image includes the pre-built UI at `/app/ui`. Pass `--ui-dir /app/ui` to activate it.
 - **Bring Your Own UI:** The `--ui-dir` flag accepts any directory. Build your own custom admin UI and point `--ui-dir` at the output folder — Go Mock Server will serve it with full SPA routing support.
+
+<br />
+
+## 🖥️ Admin UI
+
+![Admin UI demo](.github/demo.gif)
+
+No more digging through config files or firing off curl commands just to check what's happening inside your mock server. **Go Mock Server ships with a fully-featured Admin UI out of the box** — zero setup, zero extra tools, just open your browser and you're in control.
+
+From the moment you start the server, head to `http://localhost:9090` and get instant visibility into everything:
+
+- 🔁 **Manage mocks visually** — create, edit, and delete mock definitions in seconds. No file editing, no restarts. Changes take effect immediately.
+- 🌐 **Control host behaviour** — dial in per-host latency ranges and error injection rates to stress-test your app against real-world failure scenarios, directly from the UI.
+- 📡 **Watch live traffic in real time** — the Logs page streams every request as it hits your mock server. Filter by method, status code, host, or path to zero in on exactly what you need. Spot unexpected calls, debug mismatched routes, and validate your integration — all without leaving the browser.
+
+Whether you're onboarding a new teammate, demoing an integration, or hunting down a subtle routing bug, the Admin UI turns your mock server from a black box into a transparent, interactive development companion.
 
 <br />
 

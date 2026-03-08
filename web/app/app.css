@@ -683,7 +683,7 @@ body {
   cursor: pointer;
 }
 
-.table tbody tr:hover {
+.table tbody tr:not(.expanded-content):hover {
   background: var(--bg-tertiary);
 }
 

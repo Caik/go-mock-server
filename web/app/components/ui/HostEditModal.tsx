@@ -451,11 +451,21 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
   };
 
   const removeErrorRow = (index: number) => {
-    setErrorRows((prev) => prev.filter((_, i) => i !== index));
-    setErrors((prev) => ({
-      ...prev,
-      globalErrorRows: prev.globalErrorRows?.filter((_, i) => i !== index),
-    }));
+    let remainingRows: ErrorRow[] = [];
+    setErrorRows((prev) => {
+      remainingRows = prev.filter((_, i) => i !== index);
+      return remainingRows;
+    });
+    setErrors((prev) => {
+      const total = remainingRows
+        .filter((r) => r.code.trim() && r.percentage.trim())
+        .reduce((sum, r) => sum + parseInt(r.percentage, 10), 0);
+      return {
+        ...prev,
+        globalErrorRows: prev.globalErrorRows?.filter((_, i) => i !== index),
+        ...(prev.globalErrorSum && total <= 100 && { globalErrorSum: undefined }),
+      };
+    });
   };
 
   // ---------------------------------------------------------------------------
@@ -549,14 +559,24 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
   };
 
   const removeUriErrorRow = (uriIndex: number, rowIndex: number) => {
-    setUris((prev) => prev.map((u, i) =>
-      i === uriIndex ? { ...u, errorRows: u.errorRows.filter((_, j) => j !== rowIndex) } : u
-    ));
+    let remainingRows: ErrorRow[] = [];
+    setUris((prev) => prev.map((u, i) => {
+      if (i !== uriIndex) return u;
+      remainingRows = u.errorRows.filter((_, j) => j !== rowIndex);
+      return { ...u, errorRows: remainingRows };
+    }));
     setErrors((prev) => {
       if (!prev.uris?.[uriIndex]?.errorRows) return prev;
-      const newUriErrors = prev.uris.map((u, i) => {
+      const total = remainingRows
+        .filter((r) => r.code.trim() && r.percentage.trim())
+        .reduce((sum, r) => sum + parseInt(r.percentage, 10), 0);
+      const newUriErrors = prev.uris!.map((u, i) => {
         if (i !== uriIndex) return u;
-        return { ...u, errorRows: u.errorRows?.filter((_, j) => j !== rowIndex) };
+        return {
+          ...u,
+          errorRows: u.errorRows?.filter((_, j) => j !== rowIndex),
+          ...(u.errorSum && total <= 100 && { errorSum: undefined }),
+        };
       });
       return { ...prev, uris: newUriErrors };
     });
