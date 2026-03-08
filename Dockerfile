@@ -2,11 +2,12 @@
 FROM node:20-alpine AS web-builder
 WORKDIR /app/web
 COPY web/package*.json ./
-# NODE_ENV=development prefix applies only to npm ci, ensuring devDependencies
+# Upgrade npm to 11.x (node:20-alpine ships 10.x which has a known bug
+# where it silently fails and exits 0 without installing packages).
+# NODE_ENV=development prefix applies only to npm ci so devDependencies
 # (build tools like Vite, @react-router/dev) are installed.
-# npm run build runs as a separate layer and inherits NODE_ENV=production
-# (set by the base image), so the output is a production-optimised bundle.
-RUN NODE_ENV=development npm ci
+# npm run build runs as a separate layer and inherits NODE_ENV=production.
+RUN npm install -g npm@latest && NODE_ENV=development npm ci
 COPY web/ ./
 RUN npm run build
 
