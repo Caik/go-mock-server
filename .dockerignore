@@ -7,3 +7,7 @@ sample-mocks/
 .gitignore
 *.md
 LICENSE
+web/
+!web/build/
+!web/build/client/
+!web/build/client/**
