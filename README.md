@@ -65,3 +65,56 @@ Open **http://localhost:9090/ui/** to browse and manage your mocks visually.
 > ```bash
 > ./mock-server --mocks-directory ./my-mocks
 > ```
+
+<br />
+
+## 🔍 How It Works
+
+Go Mock Server runs two servers simultaneously:
+
+- **Port 8080** — the mock server. Your application points here instead of the real API.
+- **Port 9090** — the admin server. Hosts the REST API and the web UI.
+
+### Request Routing
+
+When a request arrives at port 8080, Go Mock Server resolves it to a file on disk using this pattern:
+
+```
+{mocks-directory}/{host}/{uri}.{method}.{status-code}
+```
+
+**Example:** A `GET` request to `http://localhost:8080/api/v1/hello` with `Host: example.host.com` resolves to:
+
+```
+my-mocks/example.host.com/api/v1/hello.get.200
+```
+
+The file's contents become the response body, and the status code in the filename is returned as the HTTP status.
+
+### Filename Anatomy
+
+| Part | Example | Description |
+|------|---------|-------------|
+| Host directory | `example.host.com/` | Matches the `Host` request header |
+| URI path | `api/v1/hello` | Maps directly to the request path |
+| Method | `.get` | HTTP method, lowercase |
+| Status code | `.200` | The HTTP status code returned |
+
+More examples:
+
+```
+my-mocks/
+└── example.host.com/
+    ├── api/v1/users.get.200       # GET /api/v1/users → 200
+    ├── api/v1/users.post.201      # POST /api/v1/users → 201
+    ├── api/v1/users.get.404       # GET /api/v1/users → 404 (used by status simulation)
+    └── _default.get.200           # fallback for any unmatched GET → 200
+```
+
+### Fallback: `_default`
+
+Place a `_default.{method}.{status-code}` file in any host directory to catch requests that don't match a specific URI. The status code is part of the filename — `_default.get.200` only fires for unmatched GETs when a 200 is expected. If you're using status simulation that injects 404s, you'd also want a `_default.get.404` to provide the response body for those injected errors. Useful during early development when you want the server to always respond rather than return an error.
+
+### Hot Reload
+
+Mock files are watched automatically. Create, update, or delete a file and Go Mock Server picks up the change immediately — no restart required.
