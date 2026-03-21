@@ -13,7 +13,6 @@ Contents
 ========
 - [Why Use Go Mock Server?](#-why-use-go-mock-server)
 - [Key Features](#-key-features)
-- [Breaking Changes](#breaking-changes)
 - [Installation](#-installation)
   - [Docker](#1-docker)
   - [Pre-compiled Binaries](#2-pre-compiled-binaries)
@@ -114,29 +113,6 @@ Explore these features and more to streamline your API mocking workflow and acce
 
 <br />
 
-## Breaking Changes
-
-### Mock file naming
-
-Mock files now require an explicit HTTP status code suffix.
-
-**Before:** `example.com/api/users.get`
-**After:** `example.com/api/users.get.200`
-
-To migrate existing mock files, run:
-```bash
-find ./mocks -type f | grep -v '\.[0-9]\{3\}$' | while read f; do
-  mv "$f" "${f}.200"
-done
-```
-
-### API routes
-
-The status simulation configuration endpoint has been renamed:
-- Before: `POST /admin/config/hosts/{host}/errors`
-- After: `POST /admin/config/hosts/{host}/statuses`
-
-<br />
 
 ## 💿 Installation
 
