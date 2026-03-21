@@ -1008,8 +1008,9 @@ func TestAdminMocksController_handleMockCreate(t *testing.T) {
 }
 
 // generateTestMockID mirrors the admin package's generateMockID encoding.
+// Defaults to status code 200 which matches the controller default.
 func generateTestMockID(host, uri, method string) string {
-	data := host + "|" + uri + "|" + method
+	data := host + "|" + uri + "|" + method + "|200"
 	return b64.URLEncoding.EncodeToString([]byte(data))
 }
 

@@ -51,8 +51,8 @@ func initAdminHostsController(r *gin.RouterGroup, controller *AdminHostsControll
 	r.POST("/:host/latencies", controller.handleLatencyAddUpdate)
 	r.DELETE("/:host/latencies", controller.handleLatencyDelete)
 
-	r.POST("/:host/errors", controller.handleErrorsAddUpdate)
-	r.DELETE("/:host/errors/:error", controller.handleErrorDelete)
+	r.POST("/:host/statuses", controller.handleStatusesAddUpdate)
+	r.DELETE("/:host/statuses/:status", controller.handleStatusDelete)
 
 	r.POST("/:host/uris", controller.handleUrisAddUpdate)
 }

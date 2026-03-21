@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Caik/go-mock-server/internal/rest"
@@ -15,9 +16,11 @@ import (
 )
 
 type AddDeleteMockRequest struct {
-	Host   string `header:"x-mock-host" binding:"required"`
-	Uri    string `header:"x-mock-uri" binding:"required"`
-	Method string `header:"x-mock-method" binding:"required"`
+	Host          string `header:"x-mock-host" binding:"required"`
+	Uri           string `header:"x-mock-uri" binding:"required"`
+	Method        string `header:"x-mock-method" binding:"required"`
+	StatusCode    string `header:"x-mock-status"`
+	statusCodeInt int    // populated by validate()
 }
 
 type AdminMocksController struct {
@@ -150,10 +153,11 @@ func (a *AdminMocksController) handleMockAddUpdate(c *gin.Context) {
 		Msg("adding/updating mock")
 
 	err = a.service.AddUpdateMock(admin.MockAddDeleteRequest{
-		Host:   req.Host,
-		URI:    req.Uri,
-		Method: req.Method,
-		Data:   &data,
+		Host:       req.Host,
+		URI:        req.Uri,
+		Method:     req.Method,
+		StatusCode: req.statusCodeInt,
+		Data:       &data,
 	}, uuid)
 
 	if err != nil {
@@ -229,10 +233,11 @@ func (a *AdminMocksController) handleMockCreate(c *gin.Context) {
 		Msg("creating mock")
 
 	err = a.service.AddUpdateMock(admin.MockAddDeleteRequest{
-		Host:   req.Host,
-		URI:    req.Uri,
-		Method: req.Method,
-		Data:   &data,
+		Host:       req.Host,
+		URI:        req.Uri,
+		Method:     req.Method,
+		StatusCode: req.statusCodeInt,
+		Data:       &data,
 	}, uuid)
 
 	if err != nil {
@@ -339,10 +344,11 @@ func (a *AdminMocksController) handleMockUpdate(c *gin.Context) {
 
 	// Create the new mock
 	err = a.service.AddUpdateMock(admin.MockAddDeleteRequest{
-		Host:   req.Host,
-		URI:    req.Uri,
-		Method: req.Method,
-		Data:   &data,
+		Host:       req.Host,
+		URI:        req.Uri,
+		Method:     req.Method,
+		StatusCode: req.statusCodeInt,
+		Data:       &data,
 	}, uuid)
 
 	if err != nil {
@@ -399,9 +405,10 @@ func (a *AdminMocksController) handleMockDelete(c *gin.Context) {
 		Msg("deleting mock")
 
 	err := a.service.DeleteMock(admin.MockAddDeleteRequest{
-		Host:   addReq.Host,
-		URI:    addReq.Uri,
-		Method: addReq.Method,
+		Host:       addReq.Host,
+		URI:        addReq.Uri,
+		Method:     addReq.Method,
+		StatusCode: addReq.statusCodeInt,
 	}, uuid)
 
 	if err != nil {
@@ -461,6 +468,15 @@ func (a *AddDeleteMockRequest) validate() error {
 		return errors.New("invalid method provided: it should be a valid HTTP method")
 	}
 
+	// Default to 200 if not provided
+	if a.StatusCode == "" {
+		a.StatusCode = "200"
+	}
+	sc, err := strconv.Atoi(a.StatusCode)
+	if err != nil || sc < 100 || sc > 599 {
+		return errors.New("invalid status code provided: must be between 100 and 599")
+	}
+	a.statusCodeInt = sc
 	return nil
 }
 

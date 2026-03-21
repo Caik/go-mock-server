@@ -77,8 +77,8 @@ func TestInitAdminRoutes(t *testing.T) {
 			{http.MethodDelete, "/api/v1/config/hosts/example.com"},
 			{http.MethodPost, "/api/v1/config/hosts/example.com/latencies"},
 			{http.MethodDelete, "/api/v1/config/hosts/example.com/latencies"},
-			{http.MethodPost, "/api/v1/config/hosts/example.com/errors"},
-			{http.MethodDelete, "/api/v1/config/hosts/example.com/errors/500"},
+			{http.MethodPost, "/api/v1/config/hosts/example.com/statuses"},
+			{http.MethodDelete, "/api/v1/config/hosts/example.com/statuses/500"},
 			{http.MethodPost, "/api/v1/config/hosts/example.com/uris"},
 		}
 
@@ -207,8 +207,8 @@ func TestInitAdminHostsControllerRoutes(t *testing.T) {
 			{http.MethodDelete, "/api/v1/config/hosts/testhost"},
 			{http.MethodPost, "/api/v1/config/hosts/testhost/latencies"},
 			{http.MethodDelete, "/api/v1/config/hosts/testhost/latencies"},
-			{http.MethodPost, "/api/v1/config/hosts/testhost/errors"},
-			{http.MethodDelete, "/api/v1/config/hosts/testhost/errors/500"},
+			{http.MethodPost, "/api/v1/config/hosts/testhost/statuses"},
+			{http.MethodDelete, "/api/v1/config/hosts/testhost/statuses/500"},
 			{http.MethodPost, "/api/v1/config/hosts/testhost/uris"},
 		}
 
