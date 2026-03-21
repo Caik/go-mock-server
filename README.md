@@ -11,6 +11,8 @@
 
 Ever found yourself waiting for a backend that isn't ready? Dealing with flaky third-party services in CI? Trying to reproduce a rate-limit or 503 error that only happens in production? Go Mock Server solves all of that: define your mock responses as plain files, start the server, and your app has a fully controllable API to talk to — complete with a web UI for managing everything in real time.
 
+![Admin UI demo](.github/demo.gif)
+
 ## Contents
 
 - [Quick Start](#-quick-start)
@@ -299,8 +301,6 @@ curl -H "Host: example.host.com" http://localhost:8080/api/v1/users
 <br />
 
 ## 🖥️ Admin UI
-
-![Admin UI demo](.github/demo.gif)
 
 Go Mock Server ships with a fully-featured web UI, available at **http://localhost:9090/ui/** (requires `--ui-dir /app/ui` when using Docker, or `--ui-dir ./web/build/client` when running from source).
 
