@@ -8,9 +8,10 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   width?: string;
+  isDanger?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, width = '500px' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, width = '500px', isDanger = false }: ModalProps) {
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -33,7 +34,7 @@ export function Modal({ isOpen, onClose, title, children, width = '500px' }: Mod
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal-content"
+        className={`modal-content${isDanger ? ' modal-danger' : ''}`}
         style={{ width, maxWidth: '90vw' }}
         onClick={(e) => e.stopPropagation()}
       >

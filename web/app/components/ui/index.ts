@@ -1,4 +1,5 @@
 export { FilterChipGroup } from './FilterChipGroup';
+export { EmptyState } from './EmptyState';
 export { ExpandableTable } from './ExpandableTable';
 export type { Column } from './ExpandableTable';
 export { Modal } from './Modal';

@@ -1,7 +1,8 @@
 // Hosts page - Host configuration management
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Server } from 'lucide-react';
 import { PageLayout } from '~/components/layout';
-import { FilterChipGroup, ExpandableTable, ConfirmModal, ToastContainer, HostEditModal, MockEditModal, type Column, type MockFormData } from '~/components/ui';
+import { FilterChipGroup, ExpandableTable, ConfirmModal, ToastContainer, HostEditModal, MockEditModal, EmptyState, type Column, type MockFormData } from '~/components/ui';
 import { HostDetail } from '~/components/details';
 import { getHosts, saveHost, deleteHost, getDefaultMocks, createMock, updateMock, deleteMock, type HostSaveData } from '~/services';
 import { useUrlHash, useToast } from '~/hooks';
@@ -227,7 +228,7 @@ export default function HostsPage() {
   ];
 
   return (
-    <PageLayout title="Hosts Configuration">
+    <PageLayout title="Hosts Configuration" pageAccent="var(--page-accent-hosts)">
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div className="filter-bar">
           <input
@@ -277,7 +278,20 @@ export default function HostsPage() {
                   onDeleteDefaultMock={handleDeleteDefaultMock}
                 />
               )}
-              emptyMessage="No hosts found"
+              emptyContent={
+                <EmptyState
+                  icon={Server}
+                  title={hosts.length === 0 ? 'No hosts configured' : 'No hosts match your search'}
+                  description={
+                    hosts.length === 0
+                      ? 'Add a host to configure latency simulation, error injection, and URI-level overrides.'
+                      : 'Try adjusting your search or config filters.'
+                  }
+                  action={hosts.length === 0 ? (
+                    <button className="btn btn-primary btn-sm" onClick={handleNewHost}>+ New Host</button>
+                  ) : undefined}
+                />
+              }
             />
           )}
         </div>

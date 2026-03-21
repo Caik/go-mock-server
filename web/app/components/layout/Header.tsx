@@ -1,5 +1,5 @@
 // Header component with page title, optional status, action buttons, and theme toggle
-import type { ReactNode } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
@@ -9,11 +9,13 @@ interface HeaderProps {
   subtitle?: ReactNode;
   /** Optional action buttons slot */
   actions?: ReactNode;
+  /** CSS color value for the page-level left-border accent */
+  pageAccent?: string;
 }
 
-export function Header({ title, subtitle, actions }: HeaderProps) {
+export function Header({ title, subtitle, actions, pageAccent }: HeaderProps) {
   return (
-    <header className="header">
+    <header className="header" style={pageAccent ? { '--page-accent': pageAccent } as CSSProperties : undefined}>
       <div className="flex items-center gap-3">
         <h1 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>
           {title}

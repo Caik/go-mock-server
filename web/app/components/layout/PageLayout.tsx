@@ -7,12 +7,13 @@ interface PageLayoutProps {
   subtitle?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
+  pageAccent?: string;
 }
 
-export function PageLayout({ title, subtitle, actions, children }: PageLayoutProps) {
+export function PageLayout({ title, subtitle, actions, children, pageAccent }: PageLayoutProps) {
   return (
     <>
-      <Header title={title} subtitle={subtitle} actions={actions} />
+      <Header title={title} subtitle={subtitle} actions={actions} pageAccent={pageAccent} />
       <div className="content" style={{ flex: 1, overflow: 'hidden', padding: '24px' }}>
         {children}
       </div>

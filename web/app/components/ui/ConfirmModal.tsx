@@ -20,7 +20,7 @@ export function ConfirmModal({
   isDanger = false,
 }: ConfirmModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title={title} width="420px">
+    <Modal isOpen={isOpen} onClose={onCancel} title={title} width="420px" isDanger={isDanger}>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>{message}</p>
       <div className="form-actions">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

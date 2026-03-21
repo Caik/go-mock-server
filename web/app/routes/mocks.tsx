@@ -1,7 +1,8 @@
 // Mocks page - Mock endpoint management
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Layers } from 'lucide-react';
 import { PageLayout } from '~/components/layout';
-import { FilterChipGroup, MockEditModal, ToastContainer, ConfirmModal, type MockFormData } from '~/components/ui';
+import { FilterChipGroup, MockEditModal, ToastContainer, ConfirmModal, EmptyState, type MockFormData } from '~/components/ui';
 import { MockDetail } from '~/components/details';
 import { getMocks, createMock, updateMock, deleteMock } from '~/services';
 import { useToast } from '~/hooks';
@@ -176,7 +177,7 @@ export default function MocksPage() {
   const totalMocks = filteredGroups.reduce((sum, g) => sum + g.mocks.length, 0);
 
   return (
-    <PageLayout title="Mocks">
+    <PageLayout title="Mocks" pageAccent="var(--page-accent-mocks)">
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div className="filter-bar">
           <FilterChipGroup
@@ -228,7 +229,20 @@ export default function MocksPage() {
               <tbody>
                 {filteredGroups.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="empty-state">No mocks found</td>
+                    <td colSpan={4} style={{ padding: 0, border: 'none' }}>
+                      <EmptyState
+                        icon={Layers}
+                        title={mocks.length === 0 ? 'No mocks configured' : 'No mocks match your filters'}
+                        description={
+                          mocks.length === 0
+                            ? 'Create your first mock to start intercepting requests on the mock server.'
+                            : 'Try adjusting your method, host, or endpoint filters.'
+                        }
+                        action={mocks.length === 0 ? (
+                          <button className="btn btn-primary btn-sm" onClick={handleNewMock}>+ New Mock</button>
+                        ) : undefined}
+                      />
+                    </td>
                   </tr>
                 )}
                 {filteredGroups.map((group) => {
