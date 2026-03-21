@@ -33,7 +33,18 @@ function toMockDefinition(item: ApiMock): MockDefinition {
  * Get all mock definitions from the API
  */
 export async function getMocks(): Promise<MockDefinition[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/mocks`);
+  return fetchMocks('');
+}
+
+/**
+ * Get only default mock definitions (_default mocks) from the API
+ */
+export async function getDefaultMocks(): Promise<MockDefinition[]> {
+  return fetchMocks('?default=true');
+}
+
+async function fetchMocks(query: string): Promise<MockDefinition[]> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/mocks${query}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch mocks: ${response.statusText}`);

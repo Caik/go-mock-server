@@ -78,6 +78,32 @@ func (m *MockAdminService) GetMockContent(id, uuid string) ([]byte, error) {
 	return *result.Data, nil
 }
 
+func (m *MockAdminService) ListDefaultMocks(uuid string) ([]MockListItem, error) {
+	contents, err := m.contentService.ListDefaultContents(uuid)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if contents == nil {
+		return []MockListItem{}, nil
+	}
+
+	mocks := make([]MockListItem, len(*contents))
+
+	for i, c := range *contents {
+		mocks[i] = MockListItem{
+			ID:         generateMockID(c.Host, c.Uri, c.Method, c.StatusCode),
+			Host:       c.Host,
+			URI:        c.Uri,
+			Method:     c.Method,
+			StatusCode: c.StatusCode,
+		}
+	}
+
+	return mocks, nil
+}
+
 func (m *MockAdminService) ListMocks(uuid string) ([]MockListItem, error) {
 	contents, err := m.contentService.ListContents(uuid)
 

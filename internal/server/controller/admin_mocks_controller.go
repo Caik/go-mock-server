@@ -27,12 +27,23 @@ type AdminMocksController struct {
 
 func (a *AdminMocksController) handleMocksList(c *gin.Context) {
 	uuid := c.GetString(util.UuidKey)
+	onlyDefaults := c.Query("default") == "true"
 
 	log.Info().
 		Str("uuid", uuid).
+		Bool("only_defaults", onlyDefaults).
 		Msg("listing mocks")
 
-	mocks, err := a.service.ListMocks(uuid)
+	var (
+		mocks []admin.MockListItem
+		err   error
+	)
+
+	if onlyDefaults {
+		mocks, err = a.service.ListDefaultMocks(uuid)
+	} else {
+		mocks, err = a.service.ListMocks(uuid)
+	}
 
 	if err != nil {
 		msg := fmt.Sprintf("error while listing mocks: %v", err)

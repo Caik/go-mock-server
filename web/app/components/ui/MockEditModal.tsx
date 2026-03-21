@@ -10,6 +10,8 @@ interface MockEditModalProps {
   onClose: () => void;
   onSave: (data: MockFormData) => void;
   mock?: MockDefinition | null;
+  initialValues?: Partial<MockFormData>;
+  readonlyEndpoint?: boolean;
   isLoading?: boolean;
 }
 
@@ -58,7 +60,7 @@ function buildEndpoint(path: string, params: QueryParam[]): string {
   return `${path}?${qs}`;
 }
 
-export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: MockEditModalProps) {
+export function MockEditModal({ isOpen, onClose, onSave, mock, initialValues, readonlyEndpoint, isLoading }: MockEditModalProps) {
   const [formData, setFormData] = useState<MockFormData>({
     host: '',
     endpoint: '',
@@ -102,7 +104,7 @@ export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: Mock
     } else if (isOpen) {
       setErrors({});
       setQueryParamErrors([]);
-      setFormData({ host: '', endpoint: '', method: 'GET', statusCode: 200, responseBody: '' });
+      setFormData({ host: '', endpoint: '', method: 'GET', statusCode: 200, responseBody: '', ...initialValues });
       setQueryParams([]);
     }
   }, [isOpen, mock]);
@@ -229,6 +231,7 @@ export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: Mock
               placeholder="/api/users"
               value={formData.endpoint}
               onChange={(e) => handleChange('endpoint', e.target.value)}
+              disabled={readonlyEndpoint}
               style={{ flex: 1 }}
             />
           </div>
@@ -236,7 +239,7 @@ export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: Mock
         </div>
 
         {/* Query Parameters */}
-        <div className="form-group">
+        {!readonlyEndpoint && <div className="form-group">
           <label>Query Parameters</label>
           {queryParams.length > 0 && (
             <div className="query-params-list">
@@ -285,7 +288,7 @@ export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: Mock
           >
             + Add Parameter
           </button>
-        </div>
+        </div>}
 
         {/* Status Code */}
         <div className="form-group">

@@ -170,6 +170,32 @@ func (f *FilesystemContentService) ListContents(uuid string) (*[]ContentData, er
 	return &contents, nil
 }
 
+func (f *FilesystemContentService) ListDefaultContents(uuid string) (*[]ContentData, error) {
+	contents := make([]ContentData, 0)
+
+	if err := f.retrieveContents(f.mocksDirConfig.Path, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		data, err := f.defaultFilePathToContentData(path)
+		if err != nil {
+			return nil
+		}
+
+		contents = append(contents, *data)
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("error while listing default contents: %v", err)
+	}
+
+	return &contents, nil
+}
+
 func (f *FilesystemContentService) Subscribe(subscriberId string, eventTypes ...ContentEventType) <-chan ContentEvent {
 	return f.broadcaster.Subscribe(subscriberId, func(event ContentEvent) bool {
 		// if there's no filter being passed, allows all event types
@@ -307,6 +333,55 @@ func (f *FilesystemContentService) filePathToContentData(path string) (*ContentD
 	return &ContentData{
 		Host:       host,
 		Uri:        uri,
+		Method:     method,
+		StatusCode: statusCode,
+	}, nil
+}
+
+// defaultFilePathToContentData parses a _default.method.status filename into ContentData.
+// Expected format: <mocksDir>/<host>/_default.<method>.<status>
+func (f *FilesystemContentService) defaultFilePathToContentData(path string) (*ContentData, error) {
+	rootPath := strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator) + pathSeparator
+	relativePath := strings.TrimPrefix(path, rootPath)
+
+	firstSlashIndex := strings.Index(relativePath, pathSeparator)
+	if firstSlashIndex == -1 {
+		return nil, fmt.Errorf("not a default file: %s", path)
+	}
+
+	fileName := relativePath[firstSlashIndex+1:]
+	if !strings.HasPrefix(fileName, "_default.") {
+		return nil, fmt.Errorf("not a default file: %s", path)
+	}
+
+	host := relativePath[:firstSlashIndex]
+
+	// Parse _default.<method>.<status>
+	rest := strings.TrimPrefix(fileName, "_default.")
+	lastDotIndex := strings.LastIndex(rest, ".")
+	if lastDotIndex == -1 {
+		return nil, fmt.Errorf("invalid default filename: %s", path)
+	}
+
+	method := strings.ToUpper(rest[:lastDotIndex])
+	statusStr := rest[lastDotIndex+1:]
+
+	statusCode, err := strconv.Atoi(statusStr)
+	if err != nil || statusCode < 100 || statusCode > 599 {
+		return nil, fmt.Errorf("invalid status code in default filename: %s", path)
+	}
+
+	if !util.HostRegex.MatchString(host) {
+		return nil, fmt.Errorf("invalid host in default filename: %s", host)
+	}
+
+	if !util.HttpMethodRegex.MatchString(method) {
+		return nil, fmt.Errorf("invalid method in default filename: %s", method)
+	}
+
+	return &ContentData{
+		Host:       host,
+		Uri:        "/_default",
 		Method:     method,
 		StatusCode: statusCode,
 	}, nil

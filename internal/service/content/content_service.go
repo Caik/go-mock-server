@@ -5,6 +5,7 @@ type ContentService interface {
 	SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error
 	DeleteContent(host, uri, method, uuid string, statusCode int) error
 	ListContents(uuid string) (*[]ContentData, error)
+	ListDefaultContents(uuid string) (*[]ContentData, error)
 	Subscribe(subscriberId string, eventTypes ...ContentEventType) <-chan ContentEvent
 	Unsubscribe(subscriberId string)
 }

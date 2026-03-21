@@ -49,6 +49,10 @@ func (m *mockContentService) ListContents(uuid string) (*[]content.ContentData, 
 	return &contents, nil
 }
 
+func (m *mockContentService) ListDefaultContents(uuid string) (*[]content.ContentData, error) {
+	return &[]content.ContentData{}, nil
+}
+
 func (m *mockContentService) Subscribe(subscriberId string, eventTypes ...content.ContentEventType) <-chan content.ContentEvent {
 	return m.events
 }

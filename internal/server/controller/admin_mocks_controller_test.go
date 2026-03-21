@@ -60,6 +60,16 @@ func (m *mockContentService) ListContents(uuid string) (*[]content.ContentData, 
 	return &contents, nil
 }
 
+func (m *mockContentService) ListDefaultContents(uuid string) (*[]content.ContentData, error) {
+	if m.shouldError {
+		return nil, errors.New(m.errorMsg)
+	}
+	contents := []content.ContentData{
+		{Host: "example.com", Uri: "/_default", Method: "GET", StatusCode: 200},
+	}
+	return &contents, nil
+}
+
 func (m *mockContentService) Subscribe(subscriberId string, eventTypes ...content.ContentEventType) <-chan content.ContentEvent {
 	ch := make(chan content.ContentEvent)
 	return ch

@@ -73,6 +73,13 @@ func (m *mockContentService) ListContents(uuid string) (*[]content.ContentData, 
 	return &contents, nil
 }
 
+func (m *mockContentService) ListDefaultContents(uuid string) (*[]content.ContentData, error) {
+	if m.shouldError {
+		return nil, errors.New(m.errorMsg)
+	}
+	return &[]content.ContentData{}, nil
+}
+
 func (m *mockContentService) Subscribe(subscriberId string, eventTypes ...content.ContentEventType) <-chan content.ContentEvent {
 	return m.events
 }
@@ -767,6 +774,10 @@ func (n *nilDataContentService) DeleteContent(host, uri, method, uuid string, st
 }
 
 func (n *nilDataContentService) ListContents(uuid string) (*[]content.ContentData, error) {
+	return nil, nil
+}
+
+func (n *nilDataContentService) ListDefaultContents(uuid string) (*[]content.ContentData, error) {
 	return nil, nil
 }
 
