@@ -132,8 +132,7 @@ func (m *MockAdminService) ListMocks(uuid string) ([]MockListItem, error) {
 
 // generateMockID creates a unique identifier for a mock based on its host, uri, method, and statusCode.
 func generateMockID(host, uri, method string, statusCode int) string {
-	data := fmt.Sprintf("%s%s%s%s%s%s%d",
-		host, mockIDSeparator, uri, mockIDSeparator, method, mockIDSeparator, statusCode)
+	data := fmt.Sprintf("%s%s%s%s%s%s%d", host, mockIDSeparator, uri, mockIDSeparator, method, mockIDSeparator, statusCode)
 	return base64.URLEncoding.EncodeToString([]byte(data))
 }
 
@@ -152,6 +151,7 @@ func decodeMockID(id string) (host, uri, method string, statusCode int, err erro
 	}
 
 	sc, err := strconv.Atoi(parts[3])
+	
 	if err != nil {
 		return "", "", "", 0, fmt.Errorf("invalid status code in mock ID: %v", err)
 	}

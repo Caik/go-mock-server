@@ -343,13 +343,14 @@ func (f *FilesystemContentService) filePathToContentData(path string) (*ContentD
 func (f *FilesystemContentService) defaultFilePathToContentData(path string) (*ContentData, error) {
 	rootPath := strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator) + pathSeparator
 	relativePath := strings.TrimPrefix(path, rootPath)
-
 	firstSlashIndex := strings.Index(relativePath, pathSeparator)
+
 	if firstSlashIndex == -1 {
 		return nil, fmt.Errorf("not a default file: %s", path)
 	}
 
 	fileName := relativePath[firstSlashIndex+1:]
+
 	if !strings.HasPrefix(fileName, "_default.") {
 		return nil, fmt.Errorf("not a default file: %s", path)
 	}
@@ -359,14 +360,15 @@ func (f *FilesystemContentService) defaultFilePathToContentData(path string) (*C
 	// Parse _default.<method>.<status>
 	rest := strings.TrimPrefix(fileName, "_default.")
 	lastDotIndex := strings.LastIndex(rest, ".")
+
 	if lastDotIndex == -1 {
 		return nil, fmt.Errorf("invalid default filename: %s", path)
 	}
 
 	method := strings.ToUpper(rest[:lastDotIndex])
 	statusStr := rest[lastDotIndex+1:]
-
 	statusCode, err := strconv.Atoi(statusStr)
+
 	if err != nil || statusCode < 100 || statusCode > 599 {
 		return nil, fmt.Errorf("invalid status code in default filename: %s", path)
 	}
