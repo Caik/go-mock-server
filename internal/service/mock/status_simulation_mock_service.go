@@ -27,6 +27,7 @@ func (e *statusSimulationMockService) getMockResponse(mockRequest MockRequest) *
 
 	if statusesConfig != nil {
 		drawnWrapper = e.drawStatus(statusesConfig)
+
 		if drawnWrapper != nil {
 			statusCode = drawnWrapper.statusCode
 		}
@@ -43,11 +44,7 @@ func (e *statusSimulationMockService) getMockResponse(mockRequest MockRequest) *
 
 	resp := e.nextOrNil(mockRequest)
 
-	if drawnWrapper != nil {
-		if resp == nil {
-			emptyResponse := []byte("")
-			resp = &MockResponse{Data: &emptyResponse}
-		}
+	if drawnWrapper != nil && resp != nil {
 		resp.StatusCode = statusCode
 		resp.activeStatusConfig = &drawnWrapper.originalStatusConfig
 		resp.AddMetadata(MetadataSimulatedStatus, "true")
