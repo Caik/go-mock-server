@@ -26,4 +26,6 @@ FROM alpine:latest
 RUN apk add ca-certificates
 COPY --from=builder /tmp/go-mock-server/dist/mock-server /app/mock-server
 COPY --from=web-builder /app/web/build/client /app/ui
-ENTRYPOINT ["/app/mock-server"]
+ENV UI_DIR=/app/ui
+ENV MOCKS_DIR=/mocks
+ENTRYPOINT ["/bin/sh", "-c", "exec /app/mock-server --ui-dir \"$UI_DIR\" --mocks-directory \"$MOCKS_DIR\" \"$@\"", "--"]
