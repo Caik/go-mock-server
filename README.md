@@ -295,3 +295,19 @@ curl http://localhost:8080/api/v1/users
 curl -H "Host: example.host.com" http://localhost:8080/api/v1/users
 # → looks in: my-mocks/example.host.com/api/v1/users.get.200
 ```
+
+<br />
+
+## 🖥️ Admin UI
+
+![Admin UI demo](.github/demo.gif)
+
+Go Mock Server ships with a fully-featured web UI, available at **http://localhost:9090/ui/** (requires `--ui-dir /app/ui` when using Docker, or `--ui-dir ./web/build/client` when running from source).
+
+From the UI you can:
+
+- **Manage mocks** — create, edit, and delete mock definitions. Changes take effect immediately, no restart required.
+- **Control host behaviour** — configure per-host latency ranges and error injection rates without writing a single curl command.
+- **Watch live traffic** — the Logs page streams every request in real time. Filter by method, status code, host, or path to debug routing issues and validate your integration.
+
+**Bring your own UI:** The `--ui-dir` flag accepts any directory. Build a custom admin interface and point `--ui-dir` at its output folder — Go Mock Server will serve it with full SPA routing support.
