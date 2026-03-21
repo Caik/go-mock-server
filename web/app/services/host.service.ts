@@ -1,4 +1,4 @@
-import type { HostConfig, LatencyConfig, ErrorConfig, UriConfig } from '~/types/host';
+import type { HostConfig, LatencyConfig, StatusConfig, UriConfig } from '~/types/host';
 
 const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:9090' : '';
 
@@ -11,19 +11,19 @@ interface ApiLatencyConfig {
   p99?: number | null;
 }
 
-interface ApiErrorConfig {
+interface ApiStatusConfig {
   percentage: number;
   latency?: ApiLatencyConfig | null;
 }
 
 interface ApiUriConfig {
   latency?: ApiLatencyConfig | null;
-  errors?: Record<string, ApiErrorConfig> | null;
+  statuses?: Record<string, ApiStatusConfig> | null;
 }
 
 interface ApiHostConfig {
   latency?: ApiLatencyConfig | null;
-  errors?: Record<string, ApiErrorConfig> | null;
+  statuses?: Record<string, ApiStatusConfig> | null;
   uris?: Record<string, ApiUriConfig> | null;
 }
 
@@ -47,8 +47,8 @@ function toLatencyConfig(api: ApiLatencyConfig): LatencyConfig {
   };
 }
 
-function toErrorsConfig(api: Record<string, ApiErrorConfig>): Record<string, ErrorConfig> {
-  const result: Record<string, ErrorConfig> = {};
+function toStatusesConfig(api: Record<string, ApiStatusConfig>): Record<string, StatusConfig> {
+  const result: Record<string, StatusConfig> = {};
   for (const [code, cfg] of Object.entries(api)) {
     result[code] = {
       percentage: cfg.percentage,
@@ -61,7 +61,7 @@ function toErrorsConfig(api: Record<string, ApiErrorConfig>): Record<string, Err
 function toUriConfig(api: ApiUriConfig): UriConfig {
   return {
     ...(api.latency && { latency: toLatencyConfig(api.latency) }),
-    ...(api.errors && Object.keys(api.errors).length > 0 && { errors: toErrorsConfig(api.errors) }),
+    ...(api.statuses && Object.keys(api.statuses).length > 0 && { statuses: toStatusesConfig(api.statuses) }),
   };
 }
 
@@ -69,7 +69,7 @@ function toHostConfig(hostname: string, api: ApiHostConfig): HostConfig {
   return {
     hostname,
     ...(api.latency && { latency: toLatencyConfig(api.latency) }),
-    ...(api.errors && Object.keys(api.errors).length > 0 && { errors: toErrorsConfig(api.errors) }),
+    ...(api.statuses && Object.keys(api.statuses).length > 0 && { statuses: toStatusesConfig(api.statuses) }),
     ...(api.uris && Object.keys(api.uris).length > 0 && {
       uris: Object.fromEntries(
         Object.entries(api.uris).map(([pattern, cfg]) => [pattern, toUriConfig(cfg)])
@@ -105,13 +105,13 @@ interface ErrorPayload {
 
 interface UriPayload {
   latency?: LatencyPayload;
-  errors?: Record<string, ErrorPayload>;
+  statuses?: Record<string, ErrorPayload>;
 }
 
 export interface HostSaveData {
   host: string;
   latency?: LatencyPayload;
-  errors?: Record<string, ErrorPayload>;
+  statuses?: Record<string, ErrorPayload>;
   uris?: Record<string, UriPayload>;
 }
 

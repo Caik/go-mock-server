@@ -272,8 +272,8 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
         p95: host.latency.p95 != null ? String(host.latency.p95) : '',
         p99: host.latency.p99 != null ? String(host.latency.p99) : '',
       } : emptyLatency());
-      setErrorRows(host.errors
-        ? Object.entries(host.errors).map(([code, cfg]) => ({ code, percentage: String(cfg.percentage) }))
+      setErrorRows(host.statuses
+        ? Object.entries(host.statuses).map(([code, cfg]) => ({ code, percentage: String(cfg.percentage) }))
         : []);
       setUris(host.uris
         ? Object.entries(host.uris).map(([pattern, uri]) => ({
@@ -284,8 +284,8 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
               p95: uri.latency.p95 != null ? String(uri.latency.p95) : '',
               p99: uri.latency.p99 != null ? String(uri.latency.p99) : '',
             } : emptyLatency(),
-            errorRows: uri.errors
-              ? Object.entries(uri.errors).map(([code, cfg]) => ({ code, percentage: String(cfg.percentage) }))
+            errorRows: uri.statuses
+              ? Object.entries(uri.statuses).map(([code, cfg]) => ({ code, percentage: String(cfg.percentage) }))
               : [],
           }))
         : []);
@@ -366,14 +366,14 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
     const latencyPayload = buildLatencyPayload(latency);
     if (latencyPayload) payload.latency = latencyPayload;
     const errorsPayload = buildErrorsPayload(errorRows);
-    if (errorsPayload) payload.errors = errorsPayload;
+    if (errorsPayload) payload.statuses = errorsPayload;
 
     if (uris.length > 0) {
       payload.uris = {};
       for (const uri of uris) {
         payload.uris[uri.pattern.trim()] = {
           ...(buildLatencyPayload(uri.latency) && { latency: buildLatencyPayload(uri.latency)! }),
-          ...(buildErrorsPayload(uri.errorRows) && { errors: buildErrorsPayload(uri.errorRows)! }),
+          ...(buildErrorsPayload(uri.errorRows) && { statuses: buildErrorsPayload(uri.errorRows)! }),
         };
       }
     }

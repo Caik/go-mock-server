@@ -71,7 +71,7 @@ export default function HostsPage() {
       if (configFilters.length > 0) {
         for (const filter of configFilters) {
           if (filter === 'latency' && !host.latency) return false;
-          if (filter === 'errors' && (!host.errors || Object.keys(host.errors).length === 0)) return false;
+          if (filter === 'errors' && (!host.statuses || Object.keys(host.statuses).length === 0)) return false;
           if (filter === 'uris' && (!host.uris || Object.keys(host.uris).length === 0)) return false;
         }
       }
@@ -146,8 +146,8 @@ export default function HostsPage() {
     {
       header: 'Error Rate',
       accessor: (host) =>
-        host.errors && Object.keys(host.errors).length > 0 ? (
-          <span className="tag">{totalErrorPct(host.errors)}%</span>
+        host.statuses && Object.keys(host.statuses).length > 0 ? (
+          <span className="tag">{totalErrorPct(host.statuses)}%</span>
         ) : (
           <span className="cell-secondary">—</span>
         ),

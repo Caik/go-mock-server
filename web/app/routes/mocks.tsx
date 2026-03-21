@@ -121,6 +121,7 @@ export default function MocksPage() {
         host: data.host,
         uri: data.endpoint,
         method: data.method,
+        statusCode: data.statusCode,
         body: data.responseBody,
       };
 
@@ -145,6 +146,12 @@ export default function MocksPage() {
       header: 'Method',
       accessor: (mock) => (
         <span className={`method-badge ${mock.method}`}>{mock.method}</span>
+      ),
+    },
+    {
+      header: 'Status',
+      accessor: (mock) => (
+        <span className="badge">{mock.statusCode}</span>
       ),
     },
     {

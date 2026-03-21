@@ -17,6 +17,7 @@ export interface MockFormData {
   host: string;
   endpoint: string;
   method: HttpMethod;
+  statusCode: number;
   responseBody: string;
 }
 
@@ -61,6 +62,7 @@ export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: Mock
     host: '',
     endpoint: '',
     method: 'GET',
+    statusCode: 200,
     responseBody: '',
   });
   const [queryParams, setQueryParams] = useState<QueryParam[]>([]);
@@ -80,6 +82,7 @@ export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: Mock
         host: mock.host,
         endpoint: path,
         method: mock.method as HttpMethod,
+        statusCode: mock.statusCode,
         responseBody: '',
       });
       setQueryParams(params);
@@ -98,7 +101,7 @@ export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: Mock
     } else if (isOpen) {
       setErrors({});
       setQueryParamErrors([]);
-      setFormData({ host: '', endpoint: '', method: 'GET', responseBody: '' });
+      setFormData({ host: '', endpoint: '', method: 'GET', statusCode: 200, responseBody: '' });
       setQueryParams([]);
     }
   }, [isOpen, mock]);

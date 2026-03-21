@@ -10,7 +10,7 @@ interface HostDetailProps {
 }
 
 export function HostDetail({ host, onEdit, onDelete }: HostDetailProps) {
-  const errorEntries = host.errors ? Object.entries(host.errors) : [];
+  const errorEntries = host.statuses ? Object.entries(host.statuses) : [];
   const uriEntries = host.uris ? Object.entries(host.uris) : [];
   const hasConfig = host.latency || errorEntries.length > 0 || uriEntries.length > 0;
 
@@ -88,8 +88,8 @@ export function HostDetail({ host, onEdit, onDelete }: HostDetailProps) {
                   {uri.latency && (
                     <span>Latency: {uri.latency.min}–{uri.latency.max}ms</span>
                   )}
-                  {uri.latency && uri.errors && Object.keys(uri.errors).length > 0 && ' · '}
-                  {uri.errors && Object.entries(uri.errors).map(([code, cfg]) => (
+                  {uri.latency && uri.statuses && Object.keys(uri.statuses).length > 0 && ' · '}
+                  {uri.statuses && Object.entries(uri.statuses).map(([code, cfg]) => (
                     <span key={code}>
                       <span className={`status-badge ${getStatusClass(parseInt(code, 10))}`}>{code}</span>
                       {' '}@ {cfg.percentage}%

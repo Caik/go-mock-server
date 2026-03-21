@@ -3,7 +3,7 @@
 export interface HostConfig {
   hostname: string; // injected from map key by service layer
   latency?: LatencyConfig;
-  errors?: Record<string, ErrorConfig>;
+  statuses?: Record<string, StatusConfig>;
   uris?: Record<string, UriConfig>;
 }
 
@@ -14,12 +14,12 @@ export interface LatencyConfig {
   p99?: number;
 }
 
-export interface ErrorConfig {
+export interface StatusConfig {
   percentage: number;
   latency?: LatencyConfig;
 }
 
 export interface UriConfig {
   latency?: LatencyConfig;
-  errors?: Record<string, ErrorConfig>;
+  statuses?: Record<string, StatusConfig>;
 }

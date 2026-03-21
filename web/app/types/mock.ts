@@ -4,5 +4,6 @@ export interface MockDefinition {
   endpoint: string;
   method: string;
   host: string;
+  statusCode: number;
 }
 

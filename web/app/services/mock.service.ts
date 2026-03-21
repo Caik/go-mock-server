@@ -8,6 +8,7 @@ interface ApiMock {
   host: string;
   uri: string;
   method: string;
+  status_code: number;
 }
 
 interface ApiResponse<T> {
@@ -24,6 +25,7 @@ function toMockDefinition(item: ApiMock): MockDefinition {
     endpoint: item.uri,
     method: item.method,
     host: item.host,
+    statusCode: item.status_code,
   };
 }
 
@@ -72,6 +74,7 @@ export interface MockData {
   host: string;
   uri: string;
   method: string;
+  statusCode: number;
   body: string;
 }
 
@@ -86,6 +89,7 @@ export async function createMock(mock: MockData): Promise<void> {
       'x-mock-host': mock.host,
       'x-mock-uri': mock.uri,
       'x-mock-method': mock.method,
+      'x-mock-status': String(mock.statusCode),
     },
     body: mock.body,
   });
@@ -106,6 +110,7 @@ export async function deleteMock(mock: MockDefinition): Promise<void> {
       'x-mock-host': mock.host,
       'x-mock-uri': mock.endpoint,
       'x-mock-method': mock.method,
+      'x-mock-status': String(mock.statusCode),
     },
   });
 
@@ -126,6 +131,7 @@ export async function updateMock(id: string, mock: MockData): Promise<void> {
       'x-mock-host': mock.host,
       'x-mock-uri': mock.uri,
       'x-mock-method': mock.method,
+      'x-mock-status': String(mock.statusCode),
     },
     body: mock.body,
   });
@@ -135,4 +141,3 @@ export async function updateMock(id: string, mock: MockData): Promise<void> {
     throw new Error(errorData.message || `Failed to update mock: ${response.statusText}`);
   }
 }
-
