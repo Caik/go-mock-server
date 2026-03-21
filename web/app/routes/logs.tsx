@@ -1,8 +1,8 @@
 // Logs page - Traffic log viewer with SSE streaming
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Pause, Play, Trash2 } from 'lucide-react';
+import { Pause, Play, Trash2, ScrollText } from 'lucide-react';
 import { PageLayout } from '~/components/layout';
-import { FilterChipGroup, ExpandableTable, type Column } from '~/components/ui';
+import { FilterChipGroup, ExpandableTable, EmptyState, type Column } from '~/components/ui';
 import { LogDetail } from '~/components/details';
 import { subscribeToTraffic } from '~/services';
 import { formatTime, getStatusClass } from '~/lib/formatters';
@@ -44,6 +44,7 @@ export default function LogsPage() {
   const [bufferedEntries, setBufferedEntries] = useState<TrafficEntry[]>([]);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [newEntryIds, setNewEntryIds] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<Filters>({
     methods: [],
     statuses: [],
@@ -73,6 +74,14 @@ export default function LogsPage() {
           setBufferedEntries((prev) => [newEntry, ...prev]);
         } else {
           setEntries((prev) => [newEntry, ...prev]);
+          setNewEntryIds((prev) => new Set([...prev, newEntry.uuid]));
+          setTimeout(() => {
+            setNewEntryIds((prev) => {
+              const next = new Set(prev);
+              next.delete(newEntry.uuid);
+              return next;
+            });
+          }, 600);
         }
       }
     });
@@ -119,6 +128,7 @@ export default function LogsPage() {
   return (
     <PageLayout
       title="Logs"
+      pageAccent="var(--page-accent-logs)"
       subtitle={
         <>
           <span className={`status-dot ${isPaused ? 'paused' : 'live'}`} />
@@ -184,7 +194,14 @@ export default function LogsPage() {
             selectedKey={selectedEntryId}
             onRowClick={handleRowClick}
             renderExpandedContent={(entry) => <LogDetail entry={entry} />}
-            emptyMessage="No log entries found"
+            rowClassName={(entry) => newEntryIds.has(entry.uuid) ? 'log-row-new' : undefined}
+            emptyContent={
+              <EmptyState
+                icon={ScrollText}
+                title="No traffic yet"
+                description="Make a request to your mock server and it will appear here in real time."
+              />
+            }
           />
         </div>
       </div>
