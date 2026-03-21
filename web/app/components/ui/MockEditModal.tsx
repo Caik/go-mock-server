@@ -24,6 +24,7 @@ export interface MockFormData {
 interface FormErrors {
   host?: string;
   endpoint?: string;
+  statusCode?: string;
   responseBody?: string;
 }
 
@@ -126,6 +127,10 @@ export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: Mock
       newErrors.endpoint = 'Endpoint is required';
     } else if (!formData.endpoint.startsWith('/')) {
       newErrors.endpoint = 'Endpoint must start with /';
+    }
+    const sc = Number(formData.statusCode);
+    if (isNaN(sc) || sc < 100 || sc > 599) {
+      newErrors.statusCode = 'Status code must be between 100 and 599';
     }
     if (!formData.responseBody.trim()) {
       newErrors.responseBody = 'Response body is required';
@@ -280,6 +285,22 @@ export function MockEditModal({ isOpen, onClose, onSave, mock, isLoading }: Mock
           >
             + Add Parameter
           </button>
+        </div>
+
+        {/* Status Code */}
+        <div className="form-group">
+          <label htmlFor="statusCode">Status Code</label>
+          <input
+            id="statusCode"
+            type="number"
+            className="form-input"
+            min={100}
+            max={599}
+            value={formData.statusCode}
+            onChange={(e) => setFormData(prev => ({ ...prev, statusCode: parseInt(e.target.value, 10) || 200 }))}
+            style={{ width: '120px' }}
+          />
+          {errors.statusCode && <p className="form-error">{errors.statusCode}</p>}
         </div>
 
         {/* Response Body */}

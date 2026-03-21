@@ -10,9 +10,9 @@ interface HostDetailProps {
 }
 
 export function HostDetail({ host, onEdit, onDelete }: HostDetailProps) {
-  const errorEntries = host.statuses ? Object.entries(host.statuses) : [];
+  const statusEntries = host.statuses ? Object.entries(host.statuses) : [];
   const uriEntries = host.uris ? Object.entries(host.uris) : [];
-  const hasConfig = host.latency || errorEntries.length > 0 || uriEntries.length > 0;
+  const hasConfig = host.latency || statusEntries.length > 0 || uriEntries.length > 0;
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -60,11 +60,11 @@ export function HostDetail({ host, onEdit, onDelete }: HostDetailProps) {
           </div>
         )}
 
-        {/* Global Errors */}
-        {errorEntries.length > 0 && (
+        {/* Status Simulation */}
+        {statusEntries.length > 0 && (
           <div className="detail-section">
-            <h4>Global Errors</h4>
-            {errorEntries.map(([code, cfg]) => (
+            <h4>Status Simulation</h4>
+            {statusEntries.map(([code, cfg]) => (
               <div key={code} className="detail-row">
                 <span className="detail-label">
                   <span className={`status-badge ${getStatusClass(parseInt(code, 10))}`}>{code}</span>
