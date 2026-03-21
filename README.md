@@ -49,8 +49,8 @@ docker run --name mock-server --rm \
 
 **2. Create your first mock:**
 ```bash
-mkdir -p my-mocks/example.host.com/api/v1
-echo '{"message": "hello from mock"}' > my-mocks/example.host.com/api/v1/hello.get.200
+mkdir -p my-mocks/localhost:8080/api/v1
+echo '{"message": "hello from mock"}' > my-mocks/localhost:8080/api/v1/hello.get.200
 ```
 
 **3. Call it:**
