@@ -242,25 +242,7 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string, st
 }
 
 func (f *FilesystemContentService) getDefaultFilePath(host, method string, statusCode int) (string, error) {
-	if !util.HostRegex.MatchString(host) {
-		return "", errors.New("invalid host")
-	}
-
-	path := filepath.Join(
-		strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator),
-		host,
-		"_default."+strings.ToLower(method)+"."+strconv.Itoa(statusCode),
-	)
-
-	mocksDir := filepath.Clean(f.mocksDirConfig.Path)
-	rel, err := filepath.Rel(mocksDir, filepath.Clean(path))
-
-	if err != nil || strings.HasPrefix(rel, "..") {
-		return "", errors.New("invalid path")
-
-	}
-
-	return filepath.Join(mocksDir, rel), nil
+	return f.getFinalFilePath(host, "/_default", method, statusCode)
 }
 
 func (f *FilesystemContentService) filePathToContentData(path string) (*ContentData, error) {
