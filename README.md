@@ -311,3 +311,33 @@ From the UI you can:
 - **Watch live traffic** — the Logs page streams every request in real time. Filter by method, status code, host, or path to debug routing issues and validate your integration.
 
 **Bring your own UI:** The `--ui-dir` flag accepts any directory. Build a custom admin interface and point `--ui-dir` at its output folder — Go Mock Server will serve it with full SPA routing support.
+
+<br />
+
+## 🛠️ Command-Line Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--mocks-directory` | *(required)* | Path to the directory containing mock files |
+| `--port` | `8080` | Port for the mock server |
+| `--admin-port` | `9090` | Port for the admin API and UI (set to `0` to disable) |
+| `--ui-dir` | *(none)* | Path to the web UI directory to serve at `/ui/`. The Docker image ships with the UI at `/app/ui`. |
+| `--mocks-config-file` | *(none)* | Path to an additional config file |
+| `--default-content-type` | `text/plain` | Default `Content-Type` for responses when none is specified |
+| `--traffic-log-buffer-size` | `1000` | Number of recent requests to keep in the in-memory traffic log (set to `0` to disable) |
+| `--disable-cache` | `false` | Disable in-memory response caching |
+| `--disable-latency` | `false` | Disable latency simulation |
+| `--disable-cors` | `false` | Disable automatic CORS headers |
+
+**Examples:**
+
+```bash
+# Run on a custom port with caching disabled
+./mock-server --mocks-directory ./my-mocks --port 9080 --disable-cache
+
+# Run with the admin UI enabled (binary build)
+./mock-server --mocks-directory ./my-mocks --ui-dir ./web/build/client
+
+# Run with CORS disabled (e.g. server-to-server testing)
+./mock-server --mocks-directory ./my-mocks --disable-cors
+```
