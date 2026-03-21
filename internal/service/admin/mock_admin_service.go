@@ -151,7 +151,7 @@ func decodeMockID(id string) (host, uri, method string, statusCode int, err erro
 	}
 
 	sc, err := strconv.Atoi(parts[3])
-	
+
 	if err != nil {
 		return "", "", "", 0, fmt.Errorf("invalid status code in mock ID: %v", err)
 	}
