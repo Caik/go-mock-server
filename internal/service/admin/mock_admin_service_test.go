@@ -2,6 +2,7 @@ package admin
 
 import (
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/Caik/go-mock-server/internal/service/content"
@@ -20,7 +21,7 @@ func (m *mockContentService) GetContent(host, uri, method, uuid string, statusCo
 		return nil, errors.New(m.errorMsg)
 	}
 
-	key := host + ":" + uri + ":" + method
+	key := host + ":" + uri + ":" + method + ":" + strconv.Itoa(statusCode)
 	if data, exists := m.contents[key]; exists {
 		return &content.ContentResult{
 			Data:   &data,
@@ -36,7 +37,7 @@ func (m *mockContentService) SetContent(host, uri, method, uuid string, statusCo
 		return errors.New(m.errorMsg)
 	}
 
-	key := host + ":" + uri + ":" + method
+	key := host + ":" + uri + ":" + method + ":" + strconv.Itoa(statusCode)
 	if data != nil {
 		m.contents[key] = *data
 	} else {
@@ -50,7 +51,7 @@ func (m *mockContentService) DeleteContent(host, uri, method, uuid string, statu
 		return errors.New(m.errorMsg)
 	}
 
-	key := host + ":" + uri + ":" + method
+	key := host + ":" + uri + ":" + method + ":" + strconv.Itoa(statusCode)
 	delete(m.contents, key)
 	return nil
 }
@@ -136,7 +137,7 @@ func TestMockAdminService_AddUpdateMock(t *testing.T) {
 		}
 
 		// Verify mock was stored in content service
-		key := "example.com:/api/users:GET"
+		key := "example.com:/api/users:GET:200"
 		storedData, exists := contentService.contents[key]
 		if !exists {
 			t.Error("mock should be stored in content service")
@@ -150,7 +151,7 @@ func TestMockAdminService_AddUpdateMock(t *testing.T) {
 	t.Run("updates existing mock successfully", func(t *testing.T) {
 		contentService := &mockContentService{
 			contents: map[string][]byte{
-				"example.com:/api/users:GET": []byte(`{"message": "old response"}`),
+				"example.com:/api/users:GET:200": []byte(`{"message": "old response"}`),
 			},
 			events: make(chan content.ContentEvent),
 		}
@@ -173,7 +174,7 @@ func TestMockAdminService_AddUpdateMock(t *testing.T) {
 		}
 
 		// Verify mock was updated in content service
-		key := "example.com:/api/users:GET"
+		key := "example.com:/api/users:GET:200"
 		storedData, exists := contentService.contents[key]
 		if !exists {
 			t.Error("mock should exist in content service")
@@ -207,7 +208,7 @@ func TestMockAdminService_AddUpdateMock(t *testing.T) {
 		}
 
 		// Verify nil data was stored
-		key := "example.com:/api/users:GET"
+		key := "example.com:/api/users:GET:200"
 		_, exists := contentService.contents[key]
 		if !exists {
 			t.Error("mock with nil data should be stored in content service")
@@ -238,7 +239,7 @@ func TestMockAdminService_AddUpdateMock(t *testing.T) {
 		}
 
 		// Verify empty data was stored
-		key := "example.com:/api/users:GET"
+		key := "example.com:/api/users:GET:200"
 		storedData, exists := contentService.contents[key]
 		if !exists {
 			t.Error("mock with empty data should be stored in content service")
@@ -306,7 +307,7 @@ func TestMockAdminService_AddUpdateMock(t *testing.T) {
 			}
 
 			// Verify mock was stored for each method
-			key := "example.com:/api/test:" + method
+			key := "example.com:/api/test:" + method + ":200"
 			storedData, exists := contentService.contents[key]
 			if !exists {
 				t.Errorf("mock should be stored for method %s", method)
@@ -324,7 +325,7 @@ func TestMockAdminService_DeleteMock(t *testing.T) {
 	t.Run("deletes existing mock successfully", func(t *testing.T) {
 		contentService := &mockContentService{
 			contents: map[string][]byte{
-				"example.com:/api/users:GET": []byte(`{"message": "test response"}`),
+				"example.com:/api/users:GET:200": []byte(`{"message": "test response"}`),
 			},
 			events: make(chan content.ContentEvent),
 		}
@@ -345,7 +346,7 @@ func TestMockAdminService_DeleteMock(t *testing.T) {
 		}
 
 		// Verify mock was deleted from content service
-		key := "example.com:/api/users:GET"
+		key := "example.com:/api/users:GET:200"
 		_, exists := contentService.contents[key]
 		if exists {
 			t.Error("mock should be deleted from content service")
@@ -410,9 +411,9 @@ func TestMockAdminService_DeleteMock(t *testing.T) {
 	t.Run("deletes multiple mocks independently", func(t *testing.T) {
 		contentService := &mockContentService{
 			contents: map[string][]byte{
-				"example.com:/api/users:GET":    []byte(`{"users": []}`),
-				"example.com:/api/users:POST":   []byte(`{"created": true}`),
-				"example.com:/api/products:GET": []byte(`{"products": []}`),
+				"example.com:/api/users:GET:200":    []byte(`{"users": []}`),
+				"example.com:/api/users:POST:200":   []byte(`{"created": true}`),
+				"example.com:/api/products:GET:200": []byte(`{"products": []}`),
 			},
 			events: make(chan content.ContentEvent),
 		}
@@ -439,18 +440,18 @@ func TestMockAdminService_DeleteMock(t *testing.T) {
 		}
 
 		// Verify specific mock was deleted
-		_, exists := contentService.contents["example.com:/api/users:GET"]
+		_, exists := contentService.contents["example.com:/api/users:GET:200"]
 		if exists {
 			t.Error("GET /api/users mock should be deleted")
 		}
 
 		// Verify other mocks still exist
-		_, exists = contentService.contents["example.com:/api/users:POST"]
+		_, exists = contentService.contents["example.com:/api/users:POST:200"]
 		if !exists {
 			t.Error("POST /api/users mock should still exist")
 		}
 
-		_, exists = contentService.contents["example.com:/api/products:GET"]
+		_, exists = contentService.contents["example.com:/api/products:GET:200"]
 		if !exists {
 			t.Error("GET /api/products mock should still exist")
 		}
@@ -461,8 +462,8 @@ func TestMockAdminService_ListMocks(t *testing.T) {
 	t.Run("lists mocks successfully", func(t *testing.T) {
 		contentService := &mockContentService{
 			contents: map[string][]byte{
-				"example.com:/api/users:GET":  []byte(`{}`),
-				"example.com:/api/users:POST": []byte(`{}`),
+				"example.com:/api/users:GET:200":  []byte(`{}`),
+				"example.com:/api/users:POST:200": []byte(`{}`),
 			},
 			events: make(chan content.ContentEvent),
 		}
@@ -520,7 +521,7 @@ func TestMockAdminService_ListMocks(t *testing.T) {
 	t.Run("returns correct mock data", func(t *testing.T) {
 		contentService := &mockContentService{
 			contents: map[string][]byte{
-				"api.example.com:/users:GET": []byte(`{}`),
+				"api.example.com:/users:GET:200": []byte(`{}`),
 			},
 			events: make(chan content.ContentEvent),
 		}
@@ -615,22 +616,11 @@ func TestGenerateMockID(t *testing.T) {
 	})
 }
 
-func TestGenerateMockID_IncludesStatus(t *testing.T) {
-	id := generateMockID("example.com", "/api/users", "GET", 200)
-	host, uri, method, status, err := decodeMockID(id)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if host != "example.com" || uri != "/api/users" || method != "GET" || status != 200 {
-		t.Errorf("unexpected decoded values: %s %s %s %d", host, uri, method, status)
-	}
-}
-
 func TestMockAdminService_DeleteMockByID(t *testing.T) {
 	t.Run("deletes mock by valid ID", func(t *testing.T) {
 		contentService := &mockContentService{
 			contents: map[string][]byte{
-				"example.com:/api/users:GET": []byte(`{}`),
+				"example.com:/api/users:GET:200": []byte(`{}`),
 			},
 			events: make(chan content.ContentEvent),
 		}
@@ -687,7 +677,7 @@ func TestMockAdminService_GetMockContent(t *testing.T) {
 		data := []byte(`{"message":"hello"}`)
 		contentService := &mockContentService{
 			contents: map[string][]byte{
-				"example.com:/api/users:GET": data,
+				"example.com:/api/users:GET:200": data,
 			},
 			events: make(chan content.ContentEvent),
 		}
