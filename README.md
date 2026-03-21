@@ -269,3 +269,29 @@ curl -X DELETE http://localhost:9090/api/v1/config/hosts/example.host.com/status
 ```
 
 For the full API reference, see the [Swagger documentation](https://github.com/Caik/go-mock-server/blob/main/docs/swagger.json).
+
+<br />
+
+## 🔗 Integrate with Your Application
+
+Point your application's API base URL at the mock server instead of the real API:
+
+```
+Before: https://example.host.com/api/v1/users
+After:  http://localhost:8080/api/v1/users
+```
+
+Go Mock Server uses the `Host` header to determine which host directory to look in. When you change the base URL, the `Host` header automatically becomes `localhost:8080`, so Go Mock Server looks for mocks under a `localhost:8080/` directory.
+
+**To keep your host directory name meaningful** (e.g. `example.host.com/`), pass the original hostname as a `Host` header in your requests, or configure your application to send it explicitly.
+
+Alternatively, just name your mock directory `localhost:8080/` — it works exactly the same way.
+
+```bash
+# These two are equivalent:
+curl http://localhost:8080/api/v1/users
+# → looks in: my-mocks/localhost:8080/api/v1/users.get.200
+
+curl -H "Host: example.host.com" http://localhost:8080/api/v1/users
+# → looks in: my-mocks/example.host.com/api/v1/users.get.200
+```
