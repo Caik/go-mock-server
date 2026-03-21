@@ -1,7 +1,6 @@
 package mock
 
 import (
-	"math/rand"
 	"testing"
 
 	"github.com/Caik/go-mock-server/internal/config"
@@ -151,8 +150,7 @@ func TestStatusSimulationMockService_getMockResponse(t *testing.T) {
 }
 
 func TestStatusSimulationMockService_drawStatus(t *testing.T) {
-	// Set a fixed seed for deterministic random behavior in tests
-	rand.Seed(12345)
+	// Go 1.20+ seeds automatically; no need for explicit rand.Seed
 
 	service := &statusSimulationMockService{}
 
@@ -189,8 +187,8 @@ func TestStatusSimulationMockService_drawStatus(t *testing.T) {
 			},
 		}
 
-		// With 0% status rate, statuses should be very rare but can still occur
-		// when rand.Intn(101) returns 0, since 0 <= 0 is true
+		// With 0% status rate, statuses should never occur
+		// when rand.Intn(100) + 1 returns 1-100, since draw <= 0 is always false
 		var statusCount int
 		var totalRuns int = 100
 
@@ -203,8 +201,8 @@ func TestStatusSimulationMockService_drawStatus(t *testing.T) {
 
 		statusRate := float64(statusCount) / float64(totalRuns) * 100
 
-		// With 0% configured, we expect very low actual status rate (around 1%)
-		// since rand.Intn(101) returns 0 about 1% of the time
+		// With 0% configured, we expect 0% actual status rate (rand.Intn(100) + 1 ranges 1-100)
+		// since draw > 0 means condition (draw <= 0) is always false
 		// Allow generous tolerance for test stability across different runs
 		if statusRate > 10.0 { // Increased tolerance for race/shuffle testing
 			t.Errorf("expected low status rate with 0%% config, got %.1f%%", statusRate)
@@ -258,7 +256,7 @@ func TestStatusSimulationMockService_drawStatus(t *testing.T) {
 		statusRate := float64(statusCount) / float64(totalDraws) * 100
 
 		t.Logf("with 100%% configured status rate, got %.1f%% actual status rate", statusRate)
-		t.Logf("random range: rand.Intn(101) generates 0-100, condition: draw <= totalPercentage")
+		t.Logf("random range: rand.Intn(100) + 1 generates 1-100, condition: draw <= totalPercentage")
 
 		// With 100% status rate, we should get close to 100% statuses (allowing for randomness)
 		if statusRate >= 99.0 { // Allow 1% tolerance for randomness
