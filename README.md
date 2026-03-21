@@ -30,3 +30,38 @@ Ever found yourself waiting for a backend that isn't ready? Dealing with flaky t
 - [Command-Line Options](#-command-line-options)
 - [Want to Contribute?](#-want-to-contribute)
 - [License](#%EF%B8%8F-license)
+
+<br />
+
+## ⚡ Quick Start
+
+Get a mock server running in under a minute:
+
+**1. Start the server:**
+```bash
+docker run --name mock-server --rm \
+  -p 8080:8080 -p 9090:9090 \
+  -v $(pwd)/my-mocks:/mocks \
+  caik/go-mock-server:latest \
+  --mocks-directory /mocks \
+  --ui-dir /app/ui
+```
+
+**2. Create your first mock:**
+```bash
+mkdir -p my-mocks/example.host.com/api/v1
+echo '{"message": "hello from mock"}' > my-mocks/example.host.com/api/v1/hello.get.200
+```
+
+**3. Call it:**
+```bash
+curl http://localhost:8080/api/v1/hello
+# {"message": "hello from mock"}
+```
+
+Open **http://localhost:9090/ui/** to browse and manage your mocks visually.
+
+> **No Docker?** Download a [pre-compiled binary](https://github.com/Caik/go-mock-server/releases) and run:
+> ```bash
+> ./mock-server --mocks-directory ./my-mocks
+> ```
