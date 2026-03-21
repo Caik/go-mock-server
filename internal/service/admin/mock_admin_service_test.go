@@ -15,7 +15,7 @@ type mockContentService struct {
 	errorMsg    string
 }
 
-func (m *mockContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
+func (m *mockContentService) GetContent(host, uri, method, uuid string, statusCode int) (*content.ContentResult, error) {
 	if m.shouldError {
 		return nil, errors.New(m.errorMsg)
 	}
@@ -31,7 +31,7 @@ func (m *mockContentService) GetContent(host, uri, method, uuid string) (*conten
 	return nil, errors.New("not found")
 }
 
-func (m *mockContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
+func (m *mockContentService) SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error {
 	if m.shouldError {
 		return errors.New(m.errorMsg)
 	}
@@ -45,7 +45,7 @@ func (m *mockContentService) SetContent(host, uri, method, uuid string, data *[]
 	return nil
 }
 
-func (m *mockContentService) DeleteContent(host, uri, method, uuid string) error {
+func (m *mockContentService) DeleteContent(host, uri, method, uuid string, statusCode int) error {
 	if m.shouldError {
 		return errors.New(m.errorMsg)
 	}
@@ -734,15 +734,15 @@ func TestMockAdminService_GetMockContent(t *testing.T) {
 // nilDataContentService returns a ContentResult with nil Data to test the nil-data branch.
 type nilDataContentService struct{}
 
-func (n *nilDataContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
+func (n *nilDataContentService) GetContent(host, uri, method, uuid string, statusCode int) (*content.ContentResult, error) {
 	return &content.ContentResult{Data: nil}, nil
 }
 
-func (n *nilDataContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
+func (n *nilDataContentService) SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error {
 	return nil
 }
 
-func (n *nilDataContentService) DeleteContent(host, uri, method, uuid string) error {
+func (n *nilDataContentService) DeleteContent(host, uri, method, uuid string, statusCode int) error {
 	return nil
 }
 

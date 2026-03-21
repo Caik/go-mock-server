@@ -1,9 +1,9 @@
 package content
 
 type ContentService interface {
-	GetContent(host, uri, method, uuid string) (*ContentResult, error)
-	SetContent(host, uri, method, uuid string, data *[]byte) error
-	DeleteContent(host, uri, method, uuid string) error
+	GetContent(host, uri, method, uuid string, statusCode int) (*ContentResult, error)
+	SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error
+	DeleteContent(host, uri, method, uuid string, statusCode int) error
 	ListContents(uuid string) (*[]ContentData, error)
 	Subscribe(subscriberId string, eventTypes ...ContentEventType) <-chan ContentEvent
 	Unsubscribe(subscriberId string)
@@ -22,9 +22,10 @@ type ContentEvent struct {
 }
 
 type ContentData struct {
-	Host   string
-	Uri    string
-	Method string
+	Host       string
+	Uri        string
+	Method     string
+	StatusCode int
 }
 
 type ContentEventType int

@@ -36,11 +36,13 @@ type MockAdminService struct {
 }
 
 func (m *MockAdminService) AddUpdateMock(addRequest MockAddDeleteRequest, uuid string) error {
-	return m.contentService.SetContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid, addRequest.Data)
+	// placeholder 0; replaced in Task 4
+	return m.contentService.SetContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid, 0, addRequest.Data)
 }
 
 func (m *MockAdminService) DeleteMock(addRequest MockAddDeleteRequest, uuid string) error {
-	return m.contentService.DeleteContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid)
+	// placeholder 0; replaced in Task 4
+	return m.contentService.DeleteContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid, 0)
 }
 
 func (m *MockAdminService) DeleteMockByID(id, uuid string) error {
@@ -50,7 +52,8 @@ func (m *MockAdminService) DeleteMockByID(id, uuid string) error {
 		return fmt.Errorf("%w: %v", ErrInvalidMockID, err)
 	}
 
-	return m.contentService.DeleteContent(host, uri, method, uuid)
+	// placeholder 0; replaced in Task 4
+	return m.contentService.DeleteContent(host, uri, method, uuid, 0)
 }
 
 func (m *MockAdminService) GetMockContent(id, uuid string) ([]byte, error) {
@@ -61,8 +64,8 @@ func (m *MockAdminService) GetMockContent(id, uuid string) ([]byte, error) {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidMockID, err)
 	}
 
-	// Get the content
-	result, err := m.contentService.GetContent(host, uri, method, uuid)
+	// Get the content — placeholder 0; replaced in Task 4
+	result, err := m.contentService.GetContent(host, uri, method, uuid, 0)
 
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMockNotFound, err)

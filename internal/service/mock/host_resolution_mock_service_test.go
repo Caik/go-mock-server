@@ -13,7 +13,7 @@ type mockContentService struct {
 	events   chan content.ContentEvent
 }
 
-func (m *mockContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
+func (m *mockContentService) GetContent(host, uri, method, uuid string, statusCode int) (*content.ContentResult, error) {
 	key := host + ":" + uri + ":" + method
 	if data, exists := m.contents[key]; exists {
 		return &content.ContentResult{
@@ -25,13 +25,13 @@ func (m *mockContentService) GetContent(host, uri, method, uuid string) (*conten
 	return nil, errors.New("not found")
 }
 
-func (m *mockContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
+func (m *mockContentService) SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error {
 	key := host + ":" + uri + ":" + method
 	m.contents[key] = *data
 	return nil
 }
 
-func (m *mockContentService) DeleteContent(host, uri, method, uuid string) error {
+func (m *mockContentService) DeleteContent(host, uri, method, uuid string, statusCode int) error {
 	key := host + ":" + uri + ":" + method
 	delete(m.contents, key)
 	return nil

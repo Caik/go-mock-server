@@ -24,14 +24,14 @@ type mockContentService struct {
 	errorMsg    string
 }
 
-func (m *mockContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
+func (m *mockContentService) SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error {
 	if m.shouldError {
 		return errors.New(m.errorMsg)
 	}
 	return nil
 }
 
-func (m *mockContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
+func (m *mockContentService) GetContent(host, uri, method, uuid string, statusCode int) (*content.ContentResult, error) {
 	if m.shouldError {
 		return nil, errors.New(m.errorMsg)
 	}
@@ -43,7 +43,7 @@ func (m *mockContentService) GetContent(host, uri, method, uuid string) (*conten
 	}, nil
 }
 
-func (m *mockContentService) DeleteContent(host, uri, method, uuid string) error {
+func (m *mockContentService) DeleteContent(host, uri, method, uuid string, statusCode int) error {
 	if m.shouldError {
 		return errors.New(m.errorMsg)
 	}
