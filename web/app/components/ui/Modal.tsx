@@ -34,12 +34,15 @@ export function Modal({ isOpen, onClose, title, children, width = '500px', isDan
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
         className={`modal-content${isDanger ? ' modal-danger' : ''}`}
         style={{ width, maxWidth: '90vw' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h2>{title}</h2>
+          <h2 id="modal-title">{title}</h2>
           <button className="modal-close" onClick={onClose} aria-label="Close">
             <X size={20} />
           </button>
@@ -51,4 +54,3 @@ export function Modal({ isOpen, onClose, title, children, width = '500px', isDan
     </div>
   );
 }
-
