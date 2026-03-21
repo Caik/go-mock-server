@@ -160,3 +160,49 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 \
   -o ./mock-server-darwin-amd64 \
   cmd/mock-server/main.go
 ```
+
+<br />
+
+## 📝 Creating Mocks
+
+### a) Mock Files
+
+Create a file inside `--mocks-directory` following the naming convention described in [How It Works](#-how-it-works). The file contents become the response body.
+
+```bash
+# GET example.host.com/api/v1/users → 200 with JSON body
+mkdir -p my-mocks/example.host.com/api/v1
+echo '[{"id": 1, "name": "Alice"}]' > my-mocks/example.host.com/api/v1/users.get.200
+
+# POST example.host.com/api/v1/users → 201
+echo '{"id": 2, "name": "Bob"}' > my-mocks/example.host.com/api/v1/users.post.201
+```
+
+Changes are picked up automatically — no restart needed.
+
+### b) Dynamic Creation via API
+
+Use the admin API to create, update, or delete mocks at runtime. Useful in CI pipelines or when you want to automate mock setup.
+
+**Create a mock:**
+```bash
+curl -X POST \
+  -H "x-mock-host: example.host.com" \
+  -H "x-mock-uri: /api/v1/users" \
+  -H "x-mock-method: GET" \
+  -H "x-mock-status: 200" \
+  --data-raw '[{"id": 1, "name": "Alice"}]' \
+  http://localhost:9090/api/v1/mocks
+```
+
+**Delete a mock:**
+```bash
+curl -X DELETE \
+  -H "x-mock-host: example.host.com" \
+  -H "x-mock-uri: /api/v1/users" \
+  -H "x-mock-method: GET" \
+  -H "x-mock-status: 200" \
+  http://localhost:9090/api/v1/mocks
+```
+
+For the full list of API endpoints, see the [Swagger documentation](https://github.com/Caik/go-mock-server/blob/main/docs/swagger.json).
