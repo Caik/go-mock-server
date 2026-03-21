@@ -155,22 +155,22 @@ func TestLatencyConfig_Validate_Invalid(t *testing.T) {
 	}
 }
 
-// Test ErrorConfig validation
+// Test StatusConfig validation
 
-func TestErrorConfig_Validate_Valid(t *testing.T) {
+func TestStatusConfig_Validate_Valid(t *testing.T) {
 	tests := []struct {
 		name   string
-		config ErrorConfig
+		config StatusConfig
 	}{
 		{
 			name: "percentage only",
-			config: ErrorConfig{
+			config: StatusConfig{
 				Percentage: intPtr(50),
 			},
 		},
 		{
 			name: "with latency config",
-			config: ErrorConfig{
+			config: StatusConfig{
 				Percentage: intPtr(25),
 				LatencyConfig: &LatencyConfig{
 					Min: intPtr(100),
@@ -180,13 +180,13 @@ func TestErrorConfig_Validate_Valid(t *testing.T) {
 		},
 		{
 			name: "minimum percentage",
-			config: ErrorConfig{
+			config: StatusConfig{
 				Percentage: intPtr(1),
 			},
 		},
 		{
 			name: "maximum percentage",
-			config: ErrorConfig{
+			config: StatusConfig{
 				Percentage: intPtr(100),
 			},
 		},
@@ -202,41 +202,41 @@ func TestErrorConfig_Validate_Valid(t *testing.T) {
 	}
 }
 
-func TestErrorConfig_Validate_Invalid(t *testing.T) {
+func TestStatusConfig_Validate_Invalid(t *testing.T) {
 	tests := []struct {
 		name        string
-		config      ErrorConfig
+		config      StatusConfig
 		expectedErr string
 	}{
 		{
 			name:        "nil percentage",
-			config:      ErrorConfig{},
+			config:      StatusConfig{},
 			expectedErr: "percentage should be greater than 0 and lesser than 100",
 		},
 		{
 			name: "zero percentage",
-			config: ErrorConfig{
+			config: StatusConfig{
 				Percentage: intPtr(0),
 			},
 			expectedErr: "percentage should be greater than 0 and lesser than 100",
 		},
 		{
 			name: "negative percentage",
-			config: ErrorConfig{
+			config: StatusConfig{
 				Percentage: intPtr(-10),
 			},
 			expectedErr: "percentage should be greater than 0 and lesser than 100",
 		},
 		{
 			name: "percentage over 100",
-			config: ErrorConfig{
+			config: StatusConfig{
 				Percentage: intPtr(150),
 			},
 			expectedErr: "percentage should be greater than 0 and lesser than 100",
 		},
 		{
 			name: "invalid latency config",
-			config: ErrorConfig{
+			config: StatusConfig{
 				Percentage: intPtr(50),
 				LatencyConfig: &LatencyConfig{
 					Min: intPtr(200),
@@ -278,7 +278,7 @@ func TestUriConfig_Validate_Valid(t *testing.T) {
 		{
 			name: "errors config only",
 			config: UriConfig{
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"404": {
 						Percentage: intPtr(25),
 					},
@@ -292,7 +292,7 @@ func TestUriConfig_Validate_Valid(t *testing.T) {
 					Min: intPtr(100),
 					Max: intPtr(200),
 				},
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"404": {
 						Percentage: intPtr(25),
 					},
@@ -320,7 +320,7 @@ func TestUriConfig_Validate_Invalid(t *testing.T) {
 		{
 			name:        "both configs nil",
 			config:      UriConfig{},
-			expectedErr: "latency or errors should not be both null",
+			expectedErr: "latency or statuses should not be both null",
 		},
 		{
 			name: "invalid latency config",
@@ -335,18 +335,18 @@ func TestUriConfig_Validate_Invalid(t *testing.T) {
 		{
 			name: "invalid status code",
 			config: UriConfig{
-				ErrorsConfig: map[string]ErrorConfig{
-					"200": { // 2xx codes not allowed
+				StatusesConfig: map[string]StatusConfig{
+					"600": { // 6xx codes not allowed
 						Percentage: intPtr(25),
 					},
 				},
 			},
-			expectedErr: "error status code should be between 400 and 599",
+			expectedErr: "status code must be between 100 and 599",
 		},
 		{
 			name: "percentage sum over 100",
 			config: UriConfig{
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"404": {
 						Percentage: intPtr(60),
 					},
@@ -394,7 +394,7 @@ func TestHostConfig_Validate_Valid(t *testing.T) {
 		{
 			name: "errors config only",
 			config: HostConfig{
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"500": {
 						Percentage: intPtr(25),
 					},
@@ -421,7 +421,7 @@ func TestHostConfig_Validate_Valid(t *testing.T) {
 					Min: intPtr(100),
 					Max: intPtr(200),
 				},
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"500": {
 						Percentage: intPtr(25),
 					},
@@ -467,7 +467,7 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 		{
 			name: "invalid error code - not numeric",
 			config: HostConfig{
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"abc": {
 						Percentage: intPtr(25),
 					},
@@ -476,42 +476,31 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 			expectedErr: "invalid error code",
 		},
 		{
-			name: "invalid error code - 2xx",
+			name: "invalid error code - below 1xx",
 			config: HostConfig{
-				ErrorsConfig: map[string]ErrorConfig{
-					"200": {
+				StatusesConfig: map[string]StatusConfig{
+					"99": {
 						Percentage: intPtr(25),
 					},
 				},
 			},
-			expectedErr: "error should belong to either 4xx or 5xx classes",
-		},
-		{
-			name: "invalid error code - 3xx",
-			config: HostConfig{
-				ErrorsConfig: map[string]ErrorConfig{
-					"301": {
-						Percentage: intPtr(25),
-					},
-				},
-			},
-			expectedErr: "error should belong to either 4xx or 5xx classes",
+			expectedErr: "status code must be between 100 and 599",
 		},
 		{
 			name: "invalid error code - 6xx",
 			config: HostConfig{
-				ErrorsConfig: map[string]ErrorConfig{
-					"600": {
+				StatusesConfig: map[string]StatusConfig{
+					"601": {
 						Percentage: intPtr(25),
 					},
 				},
 			},
-			expectedErr: "error should belong to either 4xx or 5xx classes",
+			expectedErr: "status code must be between 100 and 599",
 		},
 		{
 			name: "invalid error config",
 			config: HostConfig{
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"500": {
 						Percentage: intPtr(150), // > 100
 					},
@@ -522,7 +511,7 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 		{
 			name: "percentage sum over 100",
 			config: HostConfig{
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"500": {
 						Percentage: intPtr(60),
 					},
@@ -556,7 +545,7 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "latency or errors should not be both null",
+			expectedErr: "latency or statuses should not be both null",
 		},
 	}
 

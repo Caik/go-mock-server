@@ -328,7 +328,7 @@ func TestNewHostsConfig_InvalidErrorConfig(t *testing.T) {
 	invalidConfig := HostsConfig{
 		Hosts: map[string]HostConfig{
 			"example.com": {
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"500": {
 						Percentage: intPtr(150), // > 100 should fail validation
 					},
@@ -405,7 +405,7 @@ func TestNewHostsConfig_ComplexValidConfig(t *testing.T) {
 					P99: intPtr(180),
 					Max: intPtr(200),
 				},
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"500": {
 						Percentage: intPtr(10),
 						LatencyConfig: &LatencyConfig{
@@ -423,7 +423,7 @@ func TestNewHostsConfig_ComplexValidConfig(t *testing.T) {
 							Min: intPtr(25),
 							Max: intPtr(100),
 						},
-						ErrorsConfig: map[string]ErrorConfig{
+						StatusesConfig: map[string]StatusConfig{
 							"404": {
 								Percentage: intPtr(20),
 							},
@@ -472,8 +472,8 @@ func TestNewHostsConfig_ComplexValidConfig(t *testing.T) {
 		t.Errorf("expected min latency to be 50, got %d", *hostConfig.LatencyConfig.Min)
 	}
 
-	if len(hostConfig.ErrorsConfig) != 2 {
-		t.Errorf("expected 2 error configs, got %d", len(hostConfig.ErrorsConfig))
+	if len(hostConfig.StatusesConfig) != 2 {
+		t.Errorf("expected 2 error configs, got %d", len(hostConfig.StatusesConfig))
 	}
 
 	if len(hostConfig.UrisConfig) != 1 {
@@ -555,8 +555,8 @@ func TestNewHostsConfig_InvalidErrorCode(t *testing.T) {
 	invalidConfig := HostsConfig{
 		Hosts: map[string]HostConfig{
 			"example.com": {
-				ErrorsConfig: map[string]ErrorConfig{
-					"200": { // 2xx codes are not allowed for errors
+				StatusesConfig: map[string]StatusConfig{
+					"600": { // 6xx codes are not allowed
 						Percentage: intPtr(10),
 					},
 				},
@@ -680,7 +680,7 @@ func TestParseAppArguments_WithValidArgs(t *testing.T) {
 		"--traffic-log-buffer-size", "500",
 		"--disable-cache",
 		"--disable-latency",
-		"--disable-error",
+		"--disable-status-simulation",
 	}
 
 	// Test ParseAppArguments
@@ -710,8 +710,8 @@ func TestParseAppArguments_WithValidArgs(t *testing.T) {
 		t.Error("expected DisableLatency to be true")
 	}
 
-	if !args.DisableError {
-		t.Error("expected DisableError to be true")
+	if !args.DisableStatusSimulation {
+		t.Error("expected DisableStatusSimulation to be true")
 	}
 
 	if args.TrafficLogBufferSize != 500 {
@@ -760,8 +760,8 @@ func TestParseAppArguments_WithMinimalArgs(t *testing.T) {
 		t.Error("expected DisableLatency to be false by default")
 	}
 
-	if args.DisableError {
-		t.Error("expected DisableError to be false by default")
+	if args.DisableStatusSimulation {
+		t.Error("expected DisableStatusSimulation to be false by default")
 	}
 
 	// Test default TrafficLogBufferSize

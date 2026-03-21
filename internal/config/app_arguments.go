@@ -9,7 +9,7 @@ type AppArguments struct {
 	TrafficLogBufferSize int    `default:"1000" arg:"--traffic-log-buffer-size" help:"size of in-memory traffic log buffer (0 to disable traffic logging)"`
 	DisableCache         bool   `arg:"--disable-cache" help:"disable the caching"`
 	DisableLatency       bool   `arg:"--disable-latency" help:"disable latency simulation"`
-	DisableError         bool   `arg:"--disable-error" help:"disable error simulation"`
+	DisableStatusSimulation bool `arg:"--disable-status-simulation" help:"disable status simulation"`
 	DisableCors          bool   `arg:"--disable-cors" help:"disable CORS headers"`
 	UIDirectory          string `arg:"--ui-dir" help:"path to the web UI directory to serve"`
 }

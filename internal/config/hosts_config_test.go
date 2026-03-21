@@ -180,7 +180,7 @@ func TestHostsConfig_DeleteHostLatencyConfig(t *testing.T) {
 					Min: intPtr(100),
 					Max: intPtr(200),
 				},
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"500": {
 						Percentage: intPtr(10),
 					},
@@ -205,7 +205,7 @@ func TestHostsConfig_DeleteHostLatencyConfig(t *testing.T) {
 	}
 
 	// Verify other configs remain
-	if len(updatedConfig.ErrorsConfig) != 1 {
+	if len(updatedConfig.StatusesConfig) != 1 {
 		t.Error("expected errors config to remain")
 	}
 
@@ -221,7 +221,7 @@ func TestHostsConfig_DeleteHostLatencyConfig(t *testing.T) {
 	}
 }
 
-func TestHostsConfig_UpdateHostErrorsConfig(t *testing.T) {
+func TestHostsConfig_UpdateHostStatusesConfig(t *testing.T) {
 	hostsConfig := &HostsConfig{
 		Hosts: map[string]HostConfig{
 			"example.com": {
@@ -234,7 +234,7 @@ func TestHostsConfig_UpdateHostErrorsConfig(t *testing.T) {
 	}
 
 	// Update errors config
-	newErrorsConfig := map[string]ErrorConfig{
+	newStatusesConfig := map[string]StatusConfig{
 		"500": {
 			Percentage: intPtr(20),
 		},
@@ -243,7 +243,7 @@ func TestHostsConfig_UpdateHostErrorsConfig(t *testing.T) {
 		},
 	}
 
-	updatedConfig, err := hostsConfig.UpdateHostErrorsConfig("example.com", newErrorsConfig)
+	updatedConfig, err := hostsConfig.UpdateHostStatusesConfig("example.com", newStatusesConfig)
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -253,16 +253,16 @@ func TestHostsConfig_UpdateHostErrorsConfig(t *testing.T) {
 		t.Fatal("expected updated config to be non-nil")
 	}
 
-	if len(updatedConfig.ErrorsConfig) != 2 {
-		t.Errorf("expected 2 error configs, got %d", len(updatedConfig.ErrorsConfig))
+	if len(updatedConfig.StatusesConfig) != 2 {
+		t.Errorf("expected 2 error configs, got %d", len(updatedConfig.StatusesConfig))
 	}
 
-	if *updatedConfig.ErrorsConfig["500"].Percentage != 20 {
-		t.Errorf("expected 500 error percentage to be 20, got %d", *updatedConfig.ErrorsConfig["500"].Percentage)
+	if *updatedConfig.StatusesConfig["500"].Percentage != 20 {
+		t.Errorf("expected 500 error percentage to be 20, got %d", *updatedConfig.StatusesConfig["500"].Percentage)
 	}
 
 	// Update non-existent host
-	updatedConfig, err = hostsConfig.UpdateHostErrorsConfig("nonexistent.com", newErrorsConfig)
+	updatedConfig, err = hostsConfig.UpdateHostStatusesConfig("nonexistent.com", newStatusesConfig)
 
 	if err != nil {
 		t.Errorf("expected no error for non-existent host, got %v", err)
@@ -273,11 +273,11 @@ func TestHostsConfig_UpdateHostErrorsConfig(t *testing.T) {
 	}
 }
 
-func TestHostsConfig_DeleteHostErrorConfig(t *testing.T) {
+func TestHostsConfig_DeleteHostStatusConfig(t *testing.T) {
 	hostsConfig := &HostsConfig{
 		Hosts: map[string]HostConfig{
 			"example.com": {
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"500": {
 						Percentage: intPtr(20),
 					},
@@ -290,7 +290,7 @@ func TestHostsConfig_DeleteHostErrorConfig(t *testing.T) {
 	}
 
 	// Delete specific error config
-	updatedConfig, err := hostsConfig.DeleteHostErrorConfig("example.com", "500")
+	updatedConfig, err := hostsConfig.DeleteHostStatusConfig("example.com", "500")
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -300,20 +300,20 @@ func TestHostsConfig_DeleteHostErrorConfig(t *testing.T) {
 		t.Fatal("expected updated config to be non-nil")
 	}
 
-	if len(updatedConfig.ErrorsConfig) != 1 {
-		t.Errorf("expected 1 error config after deletion, got %d", len(updatedConfig.ErrorsConfig))
+	if len(updatedConfig.StatusesConfig) != 1 {
+		t.Errorf("expected 1 error config after deletion, got %d", len(updatedConfig.StatusesConfig))
 	}
 
-	if _, exists := updatedConfig.ErrorsConfig["500"]; exists {
+	if _, exists := updatedConfig.StatusesConfig["500"]; exists {
 		t.Error("expected 500 error config to be deleted")
 	}
 
-	if _, exists := updatedConfig.ErrorsConfig["503"]; !exists {
+	if _, exists := updatedConfig.StatusesConfig["503"]; !exists {
 		t.Error("expected 503 error config to remain")
 	}
 
 	// Delete from non-existent host
-	updatedConfig, err = hostsConfig.DeleteHostErrorConfig("nonexistent.com", "500")
+	updatedConfig, err = hostsConfig.DeleteHostStatusConfig("nonexistent.com", "500")
 
 	if err != nil {
 		t.Errorf("expected no error for non-existent host, got %v", err)
@@ -345,7 +345,7 @@ func TestHostsConfig_UpdateHostUrisConfig(t *testing.T) {
 			},
 		},
 		"/api/v1/orders": {
-			ErrorsConfig: map[string]ErrorConfig{
+			StatusesConfig: map[string]StatusConfig{
 				"404": {
 					Percentage: intPtr(15),
 				},
@@ -386,18 +386,18 @@ func TestHostsConfig_UpdateHostUrisConfig(t *testing.T) {
 	}
 }
 
-func TestHostsConfig_GetAppropriateErrorsConfig(t *testing.T) {
+func TestHostsConfig_GetAppropriateStatusesConfig(t *testing.T) {
 	hostsConfig := &HostsConfig{
 		Hosts: map[string]HostConfig{
 			"example.com": {
-				ErrorsConfig: map[string]ErrorConfig{
+				StatusesConfig: map[string]StatusConfig{
 					"500": {
 						Percentage: intPtr(20),
 					},
 				},
 				UrisConfig: map[string]UriConfig{
 					"/api/v1/users": {
-						ErrorsConfig: map[string]ErrorConfig{
+						StatusesConfig: map[string]StatusConfig{
 							"404": {
 								Percentage: intPtr(15),
 							},
@@ -415,7 +415,7 @@ func TestHostsConfig_GetAppropriateErrorsConfig(t *testing.T) {
 	}
 
 	// Test URI with specific errors config (should override host errors)
-	errorsConfig, _ := hostsConfig.GetAppropriateErrorsConfig("example.com", "/api/v1/users")
+	errorsConfig, _ := hostsConfig.GetAppropriateStatusesConfig("example.com", "/api/v1/users")
 	if errorsConfig == nil {
 		t.Fatal("expected errors config to be non-nil")
 	}
@@ -429,7 +429,7 @@ func TestHostsConfig_GetAppropriateErrorsConfig(t *testing.T) {
 	}
 
 	// Test URI without specific errors config (should use host errors)
-	errorsConfig, _ = hostsConfig.GetAppropriateErrorsConfig("example.com", "/api/v1/orders")
+	errorsConfig, _ = hostsConfig.GetAppropriateStatusesConfig("example.com", "/api/v1/orders")
 	if errorsConfig == nil {
 		t.Fatal("expected errors config to be non-nil")
 	}
@@ -443,7 +443,7 @@ func TestHostsConfig_GetAppropriateErrorsConfig(t *testing.T) {
 	}
 
 	// Test URI that doesn't exist (should use host errors)
-	errorsConfig, _ = hostsConfig.GetAppropriateErrorsConfig("example.com", "/nonexistent")
+	errorsConfig, _ = hostsConfig.GetAppropriateStatusesConfig("example.com", "/nonexistent")
 	if errorsConfig == nil {
 		t.Fatal("expected errors config to be non-nil")
 	}
@@ -453,13 +453,13 @@ func TestHostsConfig_GetAppropriateErrorsConfig(t *testing.T) {
 	}
 
 	// Test non-existent host
-	errorsConfig, _ = hostsConfig.GetAppropriateErrorsConfig("nonexistent.com", "/api/v1/users")
+	errorsConfig, _ = hostsConfig.GetAppropriateStatusesConfig("nonexistent.com", "/api/v1/users")
 	if errorsConfig != nil {
 		t.Error("expected nil errors config for non-existent host")
 	}
 }
 
-func TestHostsConfig_GetAppropriateErrorsConfig_EmptyConfigs(t *testing.T) {
+func TestHostsConfig_GetAppropriateStatusesConfig_EmptyConfigs(t *testing.T) {
 	hostsConfig := &HostsConfig{
 		Hosts: map[string]HostConfig{
 			"example.com": {
@@ -478,7 +478,7 @@ func TestHostsConfig_GetAppropriateErrorsConfig_EmptyConfigs(t *testing.T) {
 	}
 
 	// Test when no errors config exists at any level
-	errorsConfig, _ := hostsConfig.GetAppropriateErrorsConfig("example.com", "/api/v1/users")
+	errorsConfig, _ := hostsConfig.GetAppropriateStatusesConfig("example.com", "/api/v1/users")
 	if errorsConfig != nil {
 		t.Error("expected nil errors config when none exist")
 	}
@@ -500,7 +500,7 @@ func TestHostsConfig_GetAppropriateLatencyConfig(t *testing.T) {
 						},
 					},
 					"/api/v1/orders": {
-						ErrorsConfig: map[string]ErrorConfig{
+						StatusesConfig: map[string]StatusConfig{
 							"404": {
 								Percentage: intPtr(15),
 							},
@@ -548,6 +548,18 @@ func TestHostsConfig_GetAppropriateLatencyConfig(t *testing.T) {
 	}
 }
 
+func TestHostConfig_StatusesConfig(t *testing.T) {
+	p := 50
+	cfg := HostConfig{
+		StatusesConfig: map[string]StatusConfig{
+			"500": {Percentage: &p},
+		},
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestHostsConfig_GetAppropriateLatencyConfig_NoHostLatency(t *testing.T) {
 	hostsConfig := &HostsConfig{
 		Hosts: map[string]HostConfig{
@@ -561,7 +573,7 @@ func TestHostsConfig_GetAppropriateLatencyConfig_NoHostLatency(t *testing.T) {
 						},
 					},
 					"/api/v1/orders": {
-						ErrorsConfig: map[string]ErrorConfig{
+						StatusesConfig: map[string]StatusConfig{
 							"404": {
 								Percentage: intPtr(15),
 							},
