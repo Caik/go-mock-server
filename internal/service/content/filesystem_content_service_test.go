@@ -1524,11 +1524,11 @@ func TestFilesystemContentService_GetContent_StatusSuffix(t *testing.T) {
 		}
 	})
 
-	t.Run("falls back to _default.{status} file for non-200 status", func(t *testing.T) {
+	t.Run("falls back to _default.{method}.{status} file for non-200 status", func(t *testing.T) {
 		dir := t.TempDir()
 		hostDir := filepath.Join(dir, "example.com")
 		os.MkdirAll(hostDir, 0755)
-		os.WriteFile(filepath.Join(hostDir, "_default.500"), []byte("default 500"), 0644)
+		os.WriteFile(filepath.Join(hostDir, "_default.get.500"), []byte("default 500"), 0644)
 
 		svc := NewFilesystemContentService(&config.MocksDirectoryConfig{Path: dir})
 		result, err := svc.GetContent("example.com", "/api/users", "GET", "test", 500)

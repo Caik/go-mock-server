@@ -214,7 +214,7 @@ Here's a breakdown of the components in the file name:
 - `{http-method}`: The HTTP method for which the mock is intended.
 - `{status-code}`: The HTTP status code the mock will return (e.g. `200`, `201`, `404`).
 
-You can also create a `_default.{status-code}` file (e.g. `_default.200`) in a host directory to serve as a fallback response for any unmatched request to that host.
+You can also create a `_default.{http-method}.{status-code}` file (e.g. `_default.get.200`) in a host directory to serve as a fallback response for any unmatched request to that host with that method and status code.
 
 This convention allows for easy identification and management of specific mocks.
 

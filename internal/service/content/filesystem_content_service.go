@@ -47,8 +47,8 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string, st
 		}, nil
 	}
 
-	// file not found — try _default.<statusCode> fallback
-	defaultPath, defErr := f.getDefaultFilePath(host, statusCode)
+	// file not found — try _default.<method>.<statusCode> fallback
+	defaultPath, defErr := f.getDefaultFilePath(host, method, statusCode)
 
 	if defErr == nil {
 		defaultData, defReadErr := os.ReadFile(defaultPath)
@@ -240,19 +240,23 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string, st
 	return filepath.Join(mocksDir, rel), nil
 }
 
-func (f *FilesystemContentService) getDefaultFilePath(host string, statusCode int) (string, error) {
+func (f *FilesystemContentService) getDefaultFilePath(host, method string, statusCode int) (string, error) {
 	if !util.HostRegex.MatchString(host) {
 		return "", errors.New("invalid host")
 	}
+
 	path := filepath.Join(
 		strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator),
 		host,
-		"_default."+strconv.Itoa(statusCode),
+		"_default."+strings.ToLower(method)+"."+strconv.Itoa(statusCode),
 	)
+
 	mocksDir := filepath.Clean(f.mocksDirConfig.Path)
 	rel, err := filepath.Rel(mocksDir, filepath.Clean(path))
+
 	if err != nil || strings.HasPrefix(rel, "..") {
 		return "", errors.New("invalid path")
+
 	}
 	return filepath.Join(mocksDir, rel), nil
 }
