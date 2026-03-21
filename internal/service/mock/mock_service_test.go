@@ -128,6 +128,14 @@ func TestMockResponse_AddHeaders(t *testing.T) {
 	})
 }
 
+func TestGenerateCacheKey_IncludesStatusCode(t *testing.T) {
+	req200 := MockRequest{Host: "example.com", Method: "GET", URI: "/api/users", StatusCode: 200}
+	req500 := MockRequest{Host: "example.com", Method: "GET", URI: "/api/users", StatusCode: 500}
+	if GenerateCacheKey(req200) == GenerateCacheKey(req500) {
+		t.Error("cache keys for different status codes must differ")
+	}
+}
+
 func TestGenerateCacheKey(t *testing.T) {
 	t.Run("generates correct cache key", func(t *testing.T) {
 		request := MockRequest{
@@ -139,7 +147,7 @@ func TestGenerateCacheKey(t *testing.T) {
 		}
 
 		key := GenerateCacheKey(request)
-		expected := "example.com:GET:/api/test"
+		expected := "example.com:GET:/api/test:0"
 
 		if key != expected {
 			t.Errorf("expected cache key %s, got %s", expected, key)
@@ -154,7 +162,7 @@ func TestGenerateCacheKey(t *testing.T) {
 		}
 
 		key := GenerateCacheKey(request)
-		expected := "::"
+		expected := ":::0"
 
 		if key != expected {
 			t.Errorf("expected cache key %s, got %s", expected, key)

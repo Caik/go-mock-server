@@ -12,21 +12,21 @@ func intPtr(i int) *int {
 	return &i
 }
 
-func TestErrorMockService_getMockResponse(t *testing.T) {
-	t.Run("returns error response when error is drawn", func(t *testing.T) {
+func TestStatusSimulationMockService_getMockResponse(t *testing.T) {
+	t.Run("returns status response and calls downstream when status is drawn", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: map[string]config.HostConfig{
 				"example.com": {
-					ErrorsConfig: map[string]config.ErrorConfig{
+					StatusesConfig: map[string]config.StatusConfig{
 						"500": {
-							Percentage: intPtr(100), // Always return error
+							Percentage: intPtr(100), // Always return this status
 						},
 					},
 				},
 			},
 		}
 
-		service := newErrorMockService(hostsConfig)
+		service := newStatusSimulationMockService(hostsConfig)
 
 		successData := []byte("success response")
 		mockNext := &mockMockService{
@@ -50,31 +50,31 @@ func TestErrorMockService_getMockResponse(t *testing.T) {
 			t.Fatal("expected response, got nil")
 		}
 
-		// Should return error response
+		// Should override status code with drawn status
 		if response.StatusCode != 500 {
 			t.Errorf("expected status 500, got %d", response.StatusCode)
 		}
 
-		// Should have empty response body
-		if response.Data == nil || len(*response.Data) != 0 {
-			t.Error("error response should have empty body")
+		// Downstream should have been called (lastRequest will be populated)
+		if mockNext.lastRequest.Host == "" {
+			t.Error("expected downstream to be called")
 		}
 	})
 
-	t.Run("passes through when no error is drawn", func(t *testing.T) {
+	t.Run("passes through with status 200 when no status is drawn", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: map[string]config.HostConfig{
 				"example.com": {
-					ErrorsConfig: map[string]config.ErrorConfig{
+					StatusesConfig: map[string]config.StatusConfig{
 						"500": {
-							Percentage: intPtr(0), // Never return error
+							Percentage: intPtr(0), // Never return status
 						},
 					},
 				},
 			},
 		}
 
-		service := newErrorMockService(hostsConfig)
+		service := newStatusSimulationMockService(hostsConfig)
 
 		successData2 := []byte("success response")
 		mockNext := &mockMockService{
@@ -102,14 +102,19 @@ func TestErrorMockService_getMockResponse(t *testing.T) {
 		if response.StatusCode != 200 {
 			t.Errorf("expected status 200, got %d", response.StatusCode)
 		}
+
+		// Downstream should have been called (lastRequest will be populated)
+		if mockNext.lastRequest.Host == "" {
+			t.Error("expected downstream to be called")
+		}
 	})
 
-	t.Run("skips when no error config", func(t *testing.T) {
+	t.Run("calls downstream when no status config", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: make(map[string]config.HostConfig),
 		}
 
-		service := newErrorMockService(hostsConfig)
+		service := newStatusSimulationMockService(hostsConfig)
 
 		successData3 := []byte("success response")
 		mockNext := &mockMockService{
@@ -137,28 +142,33 @@ func TestErrorMockService_getMockResponse(t *testing.T) {
 		if response.StatusCode != 200 {
 			t.Errorf("expected status 200, got %d", response.StatusCode)
 		}
+
+		// Downstream should have been called (lastRequest will be populated)
+		if mockNext.lastRequest.Host == "" {
+			t.Error("expected downstream to be called")
+		}
 	})
 }
 
-func TestErrorMockService_drawError(t *testing.T) {
+func TestStatusSimulationMockService_drawStatus(t *testing.T) {
 	// Set a fixed seed for deterministic random behavior in tests
 	rand.Seed(12345)
 
-	service := &errorMockService{}
+	service := &statusSimulationMockService{}
 
-	t.Run("draws error based on percentage", func(t *testing.T) {
-		errorsConfig := map[string]config.ErrorConfig{
+	t.Run("draws status based on percentage", func(t *testing.T) {
+		statusesConfig := map[string]config.StatusConfig{
 			"500": {
-				Percentage: intPtr(100), // Always draw this error
+				Percentage: intPtr(100), // Always draw this status
 			},
 		}
 
-		// Should always return the error
+		// Should always return the status
 		for i := 0; i < 10; i++ {
-			wrapper := service.drawError(&errorsConfig)
+			wrapper := service.drawStatus(&statusesConfig)
 
 			if wrapper == nil {
-				t.Error("expected error wrapper, got nil")
+				t.Error("expected status wrapper, got nil")
 				continue
 			}
 
@@ -172,47 +182,47 @@ func TestErrorMockService_drawError(t *testing.T) {
 		}
 	})
 
-	t.Run("handles zero percentage error configuration", func(t *testing.T) {
-		errorsConfig := map[string]config.ErrorConfig{
+	t.Run("handles zero percentage status configuration", func(t *testing.T) {
+		statusesConfig := map[string]config.StatusConfig{
 			"500": {
-				Percentage: intPtr(0), // 0% error rate
+				Percentage: intPtr(0), // 0% status rate
 			},
 		}
 
-		// With 0% error rate, errors should be very rare but can still occur
+		// With 0% status rate, statuses should be very rare but can still occur
 		// when rand.Intn(101) returns 0, since 0 <= 0 is true
-		var errorCount int
+		var statusCount int
 		var totalRuns int = 100
 
 		for i := 0; i < totalRuns; i++ {
-			wrapper := service.drawError(&errorsConfig)
+			wrapper := service.drawStatus(&statusesConfig)
 			if wrapper != nil {
-				errorCount++
+				statusCount++
 			}
 		}
 
-		errorRate := float64(errorCount) / float64(totalRuns) * 100
+		statusRate := float64(statusCount) / float64(totalRuns) * 100
 
-		// With 0% configured, we expect very low actual error rate (around 1%)
+		// With 0% configured, we expect very low actual status rate (around 1%)
 		// since rand.Intn(101) returns 0 about 1% of the time
 		// Allow generous tolerance for test stability across different runs
-		if errorRate > 10.0 { // Increased tolerance for race/shuffle testing
-			t.Errorf("expected low error rate with 0%% config, got %.1f%%", errorRate)
+		if statusRate > 10.0 { // Increased tolerance for race/shuffle testing
+			t.Errorf("expected low status rate with 0%% config, got %.1f%%", statusRate)
 		}
 
-		t.Logf("with 0%% configured error rate, got %.1f%% actual error rate", errorRate)
+		t.Logf("with 0%% configured status rate, got %.1f%% actual status rate", statusRate)
 	})
 
 	t.Run("handles invalid status code strings", func(t *testing.T) {
-		errorsConfig := map[string]config.ErrorConfig{
+		statusesConfig := map[string]config.StatusConfig{
 			"invalid": { // Invalid status code string (should be validated at config level)
 				Percentage: intPtr(100),
 			},
 		}
 
-		service := &errorMockService{}
+		service := &statusSimulationMockService{}
 
-		wrapper := service.drawError(&errorsConfig)
+		wrapper := service.drawStatus(&statusesConfig)
 
 		if wrapper != nil {
 			t.Logf("status code 'invalid' converted to %d", wrapper.statusCode)
@@ -225,41 +235,41 @@ func TestErrorMockService_drawError(t *testing.T) {
 		}
 	})
 
-	t.Run("validates random range behavior with 100% error rate", func(t *testing.T) {
-		errorsConfig := map[string]config.ErrorConfig{
+	t.Run("validates random range behavior with 100% status rate", func(t *testing.T) {
+		statusesConfig := map[string]config.StatusConfig{
 			"500": {
 				Percentage: intPtr(100), // Total percentage is exactly 100
 			},
 		}
 
-		service := &errorMockService{}
+		service := &statusSimulationMockService{}
 
-		var errorCount int
+		var statusCount int
 		var totalDraws int = 1000
 
-		// Test the random logic with 100% error rate
+		// Test the random logic with 100% status rate
 		for i := 0; i < totalDraws; i++ {
-			wrapper := service.drawError(&errorsConfig)
+			wrapper := service.drawStatus(&statusesConfig)
 			if wrapper != nil {
-				errorCount++
+				statusCount++
 			}
 		}
 
-		errorRate := float64(errorCount) / float64(totalDraws) * 100
+		statusRate := float64(statusCount) / float64(totalDraws) * 100
 
-		t.Logf("with 100%% configured error rate, got %.1f%% actual error rate", errorRate)
+		t.Logf("with 100%% configured status rate, got %.1f%% actual status rate", statusRate)
 		t.Logf("random range: rand.Intn(101) generates 0-100, condition: draw <= totalPercentage")
 
-		// With 100% error rate, we should get close to 100% errors (allowing for randomness)
-		if errorRate >= 99.0 { // Allow 1% tolerance for randomness
+		// With 100% status rate, we should get close to 100% statuses (allowing for randomness)
+		if statusRate >= 99.0 { // Allow 1% tolerance for randomness
 			t.Log("random range logic works correctly")
 		} else {
-			t.Logf("unexpected: error rate %.1f%% is lower than expected", errorRate)
+			t.Logf("unexpected: status rate %.1f%% is lower than expected", statusRate)
 		}
 	})
 
-	t.Run("handles multiple errors with different percentages", func(t *testing.T) {
-		errorsConfig := map[string]config.ErrorConfig{
+	t.Run("handles multiple statuses with different percentages", func(t *testing.T) {
+		statusesConfig := map[string]config.StatusConfig{
 			"400": {
 				Percentage: intPtr(30),
 			},
@@ -268,33 +278,33 @@ func TestErrorMockService_drawError(t *testing.T) {
 			},
 		}
 
-		service := &errorMockService{}
+		service := &statusSimulationMockService{}
 
-		var errorCount int
+		var statusCount int
 		var totalDraws int = 1000
 
 		for i := 0; i < totalDraws; i++ {
-			wrapper := service.drawError(&errorsConfig)
+			wrapper := service.drawStatus(&statusesConfig)
 			if wrapper != nil {
-				errorCount++
+				statusCount++
 			}
 		}
 
-		// With 50% total error rate, we should get roughly 500 errors
-		expectedErrors := totalDraws * 50 / 100
+		// With 50% total status rate, we should get roughly 500 statuses
+		expectedStatuses := totalDraws * 50 / 100
 		tolerance := totalDraws * 10 / 100 // 10% tolerance
 
-		if errorCount < expectedErrors-tolerance || errorCount > expectedErrors+tolerance {
-			t.Errorf("expected ~%d errors, got %d (outside tolerance)", expectedErrors, errorCount)
+		if statusCount < expectedStatuses-tolerance || statusCount > expectedStatuses+tolerance {
+			t.Errorf("expected ~%d statuses, got %d (outside tolerance)", expectedStatuses, statusCount)
 		}
 	})
 
-	t.Run("handles empty errors config", func(t *testing.T) {
-		errorsConfig := make(map[string]config.ErrorConfig)
+	t.Run("handles empty statuses config", func(t *testing.T) {
+		statusesConfig := make(map[string]config.StatusConfig)
 
-		service := &errorMockService{}
+		service := &statusSimulationMockService{}
 
-		wrapper := service.drawError(&errorsConfig)
+		wrapper := service.drawStatus(&statusesConfig)
 
 		if wrapper != nil {
 			t.Error("expected nil wrapper with empty config")
@@ -302,13 +312,13 @@ func TestErrorMockService_drawError(t *testing.T) {
 	})
 }
 
-func TestErrorMockService_setNext(t *testing.T) {
+func TestStatusSimulationMockService_setNext(t *testing.T) {
 	t.Run("sets next service correctly", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: make(map[string]config.HostConfig),
 		}
 
-		service := newErrorMockService(hostsConfig)
+		service := newStatusSimulationMockService(hostsConfig)
 		mockNext := &mockMockService{}
 
 		service.setNext(mockNext)

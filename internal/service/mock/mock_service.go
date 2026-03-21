@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/Caik/go-mock-server/internal/config"
@@ -12,11 +13,12 @@ type mockService interface {
 }
 
 type MockRequest struct {
-	Host   string
-	Method string
-	URI    string
-	Accept string
-	Uuid   string
+	Host       string
+	Method     string
+	URI        string
+	Accept     string
+	Uuid       string
+	StatusCode int
 }
 
 type MockResponse struct {
@@ -25,7 +27,7 @@ type MockResponse struct {
 	ContentType         string
 	Headers             map[string]string
 	Metadata            map[string]string
-	activeErrorConfig   *config.ErrorConfig
+	activeStatusConfig  *config.StatusConfig
 	activeLatencyConfig *config.LatencyConfig
 }
 
@@ -50,5 +52,10 @@ func (m *MockResponse) AddHeaders(headers map[string]string) {
 }
 
 func GenerateCacheKey(mockRequest MockRequest) string {
-	return strings.Join([]string{mockRequest.Host, mockRequest.Method, mockRequest.URI}, ":")
+	return strings.Join([]string{
+		mockRequest.Host,
+		mockRequest.Method,
+		mockRequest.URI,
+		strconv.Itoa(mockRequest.StatusCode),
+	}, ":")
 }
