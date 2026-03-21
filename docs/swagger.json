@@ -244,14 +244,14 @@
         }
       }
     },
-    "/api/v1/config/hosts/{host}/errors": {
+    "/api/v1/config/hosts/{host}/statuses": {
       "post": {
-        "description": "Creates a new errors configuration for the specified host, or updates it if there's already an existing one",
+        "description": "Creates a new status simulation configuration for the specified host, or updates it if there's already an existing one",
         "tags": [
           "Host Config Admin"
         ],
-        "summary": "Saves or updates the host errors configuration",
-        "operationId": "addUpdateHostErrors",
+        "summary": "Saves or updates the host status simulation configuration",
+        "operationId": "addUpdateHostStatuses",
         "parameters": [
           {
             "description": "Host whose configuration will be returned",
@@ -268,7 +268,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddHostErrrorsConfigRequest"
+                "$ref": "#/components/schemas/AddHostStatusesConfigRequest"
               }
             }
           }
@@ -307,14 +307,14 @@
         }
       }
     },
-    "/api/v1/config/hosts/{host}/errors/{errorCode}": {
+    "/api/v1/config/hosts/{host}/statuses/{status}": {
       "delete": {
-        "description": "Deletes the error configuration for the specified host and error code",
+        "description": "Deletes the status simulation configuration for the specified host and status code",
         "tags": [
           "Host Config Admin"
         ],
-        "summary": "Deletes the host error configuration",
-        "operationId": "deleteHostError",
+        "summary": "Deletes the host status simulation configuration",
+        "operationId": "deleteHostStatus",
         "parameters": [
           {
             "description": "Host whose configuration will be updated",
@@ -327,8 +327,8 @@
             }
           },
           {
-            "description": "Error code whose configuration will be deleted",
-            "name": "errorCode",
+            "description": "Status code whose configuration will be deleted",
+            "name": "status",
             "in": "path",
             "required": true,
             "schema": {
@@ -616,6 +616,16 @@
             "schema": {
               "type": "string",
               "example": "GET"
+            }
+          },
+          {
+            "description": "HTTP status code the mock will return (defaults to 200 if omitted)",
+            "name": "x-mock-status",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "example": 200
             }
           }
         ],
@@ -934,11 +944,11 @@
       },
       "ErrorConfig": {
         "type": "object",
-        "description": "Error configuration for a specific host and/or URI",
+        "description": "Status simulation configuration for a specific host and/or URI",
         "properties": {
           "percentage": {
             "type": "integer",
-            "description": "Percentage value (0 - 100) which defines how frequent the error code will be returned",
+            "description": "Percentage value (0 - 100) which defines how frequent the status code will be returned",
             "examples": [
               20
             ]
@@ -955,9 +965,9 @@
           "latency": {
             "$ref": "#/components/schemas/LatencyConfig"
           },
-          "errors": {
+          "statuses": {
             "type": "object",
-            "description": "Holds all the errors configurations for a specific host and/or URI\n\nEach entry in the object represents an error configuration where the key is the HTTP error code and the value is an ErrorConfig object",
+            "description": "Holds all the status simulation configurations for a specific host and/or URI\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an ErrorConfig object",
             "additionalProperties": {
               "type": "object",
               "$ref": "#/components/schemas/ErrorConfig"
@@ -972,9 +982,9 @@
           "latency": {
             "$ref": "#/components/schemas/LatencyConfig"
           },
-          "errors": {
+          "statuses": {
             "type": "object",
-            "description": "Holds all the errors configurations for a specific host and/or URI\n\nEach entry in the object represents an error configuration where the key is the HTTP error code and the value is an ErrorConfig object",
+            "description": "Holds all the status simulation configurations for a specific host and/or URI\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an ErrorConfig object",
             "additionalProperties": {
               "type": "object",
               "$ref": "#/components/schemas/ErrorConfig"
@@ -1012,9 +1022,9 @@
           "latency": {
             "$ref": "#/components/schemas/LatencyConfig"
           },
-          "errors": {
+          "statuses": {
             "type": "object",
-            "description": "Holds all the default errors configurations for a specific host\n\nEach entry in the object represents an error configuration where the key is the HTTP error code and the value is an ErrorConfig object",
+            "description": "Holds all the default status simulation configurations for a specific host\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an ErrorConfig object",
             "additionalProperties": {
               "type": "object",
               "$ref": "#/components/schemas/ErrorConfig"
@@ -1030,9 +1040,9 @@
           }
         }
       },
-      "AddHostErrrorsConfigRequest": {
+      "AddHostStatusesConfigRequest": {
         "type": "object",
-        "description": "Holds the errors configuration to be applied for a specific host",
+        "description": "Holds the status simulation configuration to be applied for a specific host",
         "properties": {
           "host": {
             "type": "string",
@@ -1041,9 +1051,9 @@
               "example.host.com"
             ]
           },
-          "errors": {
+          "statuses": {
             "type": "object",
-            "description": "Holds all the default errors configurations for a specific host\n\nEach entry in the object represents an error configuration where the key is the HTTP error code and the value is an ErrorConfig object",
+            "description": "Holds all the default status simulation configurations for a specific host\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an ErrorConfig object",
             "additionalProperties": {
               "type": "object",
               "$ref": "#/components/schemas/ErrorConfig"
@@ -1214,6 +1224,11 @@
             "type": "string",
             "description": "The HTTP method being mocked",
             "example": "GET"
+          },
+          "status_code": {
+            "type": "integer",
+            "description": "The HTTP status code returned by this mock",
+            "example": 200
           }
         }
       },

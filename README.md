@@ -13,6 +13,7 @@ Contents
 ========
 - [Why Use Go Mock Server?](#-why-use-go-mock-server)
 - [Key Features](#-key-features)
+- [Breaking Changes](#breaking-changes)
 - [Installation](#-installation)
   - [Docker](#1-docker)
   - [Pre-compiled Binaries](#2-pre-compiled-binaries)
@@ -22,7 +23,7 @@ Contents
   - [Creating Mocks](#2-creating-mocks)
     - [a) Writing Mock Files](#a-writing-mock-files)
     - [b) Dynamic Mock Creation via API](#b-dynamic-mock-creation-via-api)
-  - [Simulate Errors and Latencies](#3-simulate-errors-and-latencies)
+  - [Simulate Statuses and Latencies](#3-simulate-statuses-and-latencies)
   - [Integrate with Your Application](#4-integrate-with-your-application)
   - [Explore the Command-Line Options](#5-explore-the-command-line-options)
 - [Admin UI](#%EF%B8%8F-admin-ui)
@@ -70,9 +71,9 @@ Configuring mock responses is a breeze. Simply write the desired response body i
 
 Simulate various network conditions by introducing latency to mock responses. Useful for testing the performance of your application under different scenarios.
 
-### 3. Error Simulation
+### 3. Status Simulation
 
-Mimic error responses to validate how your application handles unexpected situations. Ensure robustness and error-handling capabilities.
+Mimic non-200 status responses to validate how your application handles unexpected situations. Ensure robustness and error-handling capabilities.
 
 ### 4. Host Resolution
 
@@ -101,7 +102,7 @@ Dynamically create mocks on the fly in two convenient ways:
 
 ### 9. Dynamic Configuration via API
 
-Configure the simulation of errors and latencies dynamically with Go Mock Server's powerful API. This feature empowers users to fine-tune error simulation and adjust latencies for specific hosts and/or URIs during runtime. Gain precise control over the testing environment to ensure comprehensive and targeted evaluations of your application's resilience and performance.
+Configure the simulation of statuses and latencies dynamically with Go Mock Server's powerful API. This feature empowers users to fine-tune status simulation and adjust latencies for specific hosts and/or URIs during runtime. Gain precise control over the testing environment to ensure comprehensive and targeted evaluations of your application's resilience and performance.
 
 ### 10. Cross-Platform Support
 
@@ -110,6 +111,34 @@ Go Mock Server provides precompiled binaries for Linux, Mac (AMD64 and ARM64), a
 Explore these features and more to streamline your API mocking workflow and accelerate your development process.
 
 ### 
+
+<br />
+
+## Breaking Changes
+
+### Mock file naming
+
+Mock files now require an explicit HTTP status code suffix.
+
+**Before:** `example.com/api/users.get`
+**After:** `example.com/api/users.get.200`
+
+To migrate existing mock files, run:
+```bash
+find ./mocks -type f | grep -v '\.[0-9]\{3\}$' | while read f; do
+  mv "$f" "${f}.200"
+done
+```
+
+### API routes
+
+The status simulation configuration endpoint has been renamed:
+- Before: `POST /admin/config/hosts/{host}/errors`
+- After: `POST /admin/config/hosts/{host}/statuses`
+
+### CLI flag
+
+`--disable-error` has been renamed to `--disable-status-simulation`
 
 <br />
 
@@ -177,9 +206,9 @@ To mock HTTP responses, you have two options:
 
 #### a) Writing Mock Files:
 
-Create mock files by writing the desired response body in a file within the specified mocks directory. Follow the naming convention for systematic organization: `{path-to-mocks-directory}/{host}/{uri-and-querystring}.{http-method}`
+Create mock files by writing the desired response body in a file within the specified mocks directory. Follow the naming convention for systematic organization: `{path-to-mocks-directory}/{host}/{uri-and-querystring}.{http-method}.{status-code}`
 
-For example: `./path-for-the-mocks-directory/example.com/api/v1/resource.get`
+For example: `./path-for-the-mocks-directory/example.com/api/v1/resource.get.200`
 
 Here's a breakdown of the components in the file name:
 
@@ -187,13 +216,16 @@ Here's a breakdown of the components in the file name:
 - `{host}`: The host name for which the mock is intended.
 - `{uri-and-querystring}`: The URI and optional query string of the API endpoint.
 - `{http-method}`: The HTTP method for which the mock is intended.
+- `{status-code}`: The HTTP status code the mock will return (e.g. `200`, `201`, `404`).
+
+You can also create a `_default.{status-code}` file (e.g. `_default.200`) in a host directory to serve as a fallback response for any unmatched request to that host.
 
 This convention allows for easy identification and management of specific mocks.
 
 ```bash
 # Example for creating a mock file:
-# GET example.com/api/v1/resource
-echo '{"key": "value"}' > ./path-for-the-mocks-directory/example.com/api/v1/resource.get
+# GET example.com/api/v1/resource → 200 OK
+echo '{"key": "value"}' > ./path-for-the-mocks-directory/example.com/api/v1/resource.get.200
 ```
 
 #### b) Dynamic Mock Creation via API:
@@ -229,23 +261,23 @@ curl -X DELETE \
 
 For more details and additional API endpoints, please refer to the [Swagger documentation](https://github.com/Caik/go-mock-server/blob/main/docs/swagger.json).
 
-### 3. Simulate Errors and Latencies
+### 3. Simulate Statuses and Latencies
 
-To enhance your testing experience, Go Mock Server provides powerful API endpoints for dynamically simulating errors and adjusting latencies. These features are particularly useful for testing your application's resilience under different conditions.
+To enhance your testing experience, Go Mock Server provides powerful API endpoints for dynamically simulating status codes and adjusting latencies. These features are particularly useful for testing your application's resilience under different conditions.
 
-#### Simulate Errors
-To simulate errors for a specific host, you can use the following example:
+#### Simulate Status Codes
+To simulate a non-200 status for a specific host, you can use the following example:
 
 ```bash
-# Simulate a 500 Error for 20% of the requests to the host example.host.com
+# Simulate a 500 response for 20% of the requests to the host example.host.com
 curl -X POST -H "Content-Type: application/json" -d '{
   "host": "example.host.com",
-  "errors": {
+  "statuses": {
     "500": {
       "percentage": 20
     }
   }
-}' http://localhost:8080/admin/config/hosts/example.host.com/errors
+}' http://localhost:8080/admin/config/hosts/example.host.com/statuses
 ```
 
 #### Simulate Latency
@@ -320,7 +352,7 @@ To customize Go Mock Server's behavior, you can use the following command-line o
 | --default-content-type | Set the default content type for responses. Default is text/plain. |
 | --disable-cache        | Disable caching of responses.                                      |
 | --disable-latency      | Disable simulation of latency in responses.                        |
-| --disable-error        | Disable simulation of error responses.                             |
+| --disable-status-simulation | Disable simulation of non-200 status responses.               |
 | --disable-cors         | Disable CORS headers in responses.                                 |
 
 **Example:**
