@@ -12,11 +12,9 @@ services:
       - "9090:9090"
     volumes:
       - ./sample-mocks/:/mocks
-    command:
-      - --mocks-directory
-      - /mocks
-      - --ui-dir
-      - /app/ui
+    environment:
+      - MOCKS_DIR=/mocks
+      - UI_DIR=/app/ui
 
 networks:
   go-mock-server: null

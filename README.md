@@ -44,9 +44,7 @@ Get a mock server running in under a minute:
 docker run --name mock-server --rm \
   -p 8080:8080 -p 9090:9090 \
   -v $(pwd)/my-mocks:/mocks \
-  caik/go-mock-server:latest \
-  --mocks-directory /mocks \
-  --ui-dir /app/ui
+  caik/go-mock-server:latest
 ```
 
 **2. Create your first mock:**
@@ -133,9 +131,17 @@ The easiest way to run Go Mock Server. The Docker image includes the pre-built a
 docker run --name mock-server --rm \
   -p 8080:8080 -p 9090:9090 \
   -v $(pwd)/my-mocks:/mocks \
-  caik/go-mock-server:latest \
-  --mocks-directory /mocks \
-  --ui-dir /app/ui
+  caik/go-mock-server:latest
+```
+
+The image defaults to `/mocks` for `--mocks-directory` and `/app/ui` for `--ui-dir`. Override either via environment variables:
+
+```bash
+docker run --name mock-server --rm \
+  -p 8080:8080 -p 9090:9090 \
+  -e MOCKS_DIR=/custom-mocks \
+  -v $(pwd)/my-mocks:/custom-mocks \
+  caik/go-mock-server:latest
 ```
 
 Omit the `-v` volume mount if you want to start with no pre-existing mocks and create them all via the API or UI.
@@ -302,7 +308,7 @@ curl -H "Host: example.host.com" http://localhost:8080/api/v1/users
 
 ## 🖥️ Admin UI
 
-Go Mock Server ships with a fully-featured web UI, available at **http://localhost:9090/ui/** (requires `--ui-dir /app/ui` when using Docker, or `--ui-dir ./web/build/client` when running from source).
+Go Mock Server ships with a fully-featured web UI, available at **http://localhost:9090/ui/** (enabled automatically when using Docker, or pass `--ui-dir ./web/build/client` when running from source).
 
 From the UI you can:
 
@@ -321,7 +327,7 @@ From the UI you can:
 | `--mocks-directory` | *(required)* | Path to the directory containing mock files |
 | `--port` | `8080` | Port for the mock server |
 | `--admin-port` | `9090` | Port for the admin API and UI (set to `0` to disable) |
-| `--ui-dir` | *(none)* | Path to the web UI directory to serve at `/ui/`. The Docker image ships with the UI at `/app/ui`. |
+| `--ui-dir` | *(none)* | Path to the web UI directory to serve at `/ui/`. The Docker image defaults to `/app/ui` via the `UI_DIR` env var. |
 | `--mocks-config-file` | *(none)* | Path to an additional config file |
 | `--default-content-type` | `text/plain` | Default `Content-Type` for responses when none is specified |
 | `--traffic-log-buffer-size` | `1000` | Number of recent requests to keep in the in-memory traffic log (set to `0` to disable) |
