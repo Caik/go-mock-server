@@ -206,6 +206,7 @@ $RECYCLE.BIN/
 docs/superpowers/
 roadmap.md
 dist/
+web/coverage/
 
 .qodo
 coverage.txt
