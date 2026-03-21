@@ -18,7 +18,7 @@ type AddDeleteMockRequest struct {
 	Host       string `header:"x-mock-host" binding:"required"`
 	Uri        string `header:"x-mock-uri" binding:"required"`
 	Method     string `header:"x-mock-method" binding:"required"`
-	StatusCode int    `header:"x-mock-status"`
+	StatusCode int    `header:"x-mock-status" binding:"required"`
 }
 
 type AdminMocksController struct {
@@ -466,10 +466,6 @@ func (a *AddDeleteMockRequest) validate() error {
 		return errors.New("invalid method provided: it should be a valid HTTP method")
 	}
 
-	// Default to 200 if not provided
-	if a.StatusCode == 0 {
-		a.StatusCode = 200
-	}
 	if a.StatusCode < 100 || a.StatusCode > 599 {
 		return errors.New("invalid status code provided: must be between 100 and 599")
 	}
