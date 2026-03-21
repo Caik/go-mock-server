@@ -317,15 +317,15 @@ func TestFilesystemContentService_GetContent(t *testing.T) {
 		}
 	})
 
-	t.Run("returns error for non-existent file", func(t *testing.T) {
-		_, err := service.GetContent("example.com", "/api/nonexistent", "GET", "test-uuid", 200)
+	t.Run("returns empty body for non-existent file", func(t *testing.T) {
+		result, err := service.GetContent("example.com", "/api/nonexistent", "GET", "test-uuid", 200)
 
-		if err == nil {
-			t.Error("expected error for non-existent file")
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
 		}
 
-		if !strings.Contains(err.Error(), "mock not found") {
-			t.Errorf("expected 'mock not found' error, got '%v'", err)
+		if result == nil || string(*result.Data) != "" {
+			t.Error("expected empty body result for non-existent file")
 		}
 	})
 }

@@ -66,13 +66,14 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string, st
 		}
 	}
 
-	if statusCode == 200 {
-		log.Info().Str("uuid", uuid).Str("path", absolutePath).Msg("mock not found")
-		return nil, errors.New("mock not found")
-	}
+	// No specific mock or default found — return empty body
+	log.Info().
+		Str("uuid", uuid).
+		Str("path", absolutePath).
+		Msg("mock not found")
 
-	// Non-200 with no default — return empty body (not an error)
 	empty := []byte("")
+	
 	return &ContentResult{
 		Data:   &empty,
 		Source: "filesystem",
@@ -258,6 +259,7 @@ func (f *FilesystemContentService) getDefaultFilePath(host, method string, statu
 		return "", errors.New("invalid path")
 
 	}
+
 	return filepath.Join(mocksDir, rel), nil
 }
 
