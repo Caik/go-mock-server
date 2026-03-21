@@ -341,3 +341,17 @@ From the UI you can:
 # Run with CORS disabled (e.g. server-to-server testing)
 ./mock-server --mocks-directory ./my-mocks --disable-cors
 ```
+
+<br />
+
+## 🔧 Want to Contribute?
+
+Contributions are welcome! Please review the [contribution guidelines](https://github.com/Caik/go-mock-server/blob/main/CONTRIBUTING.md) before opening a PR.
+
+<br />
+
+## ⚖️ License
+
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Caik/go-mock-server/blob/main/LICENSE)
+
+Released 2023 by [Carlos Henrique Severino](https://github.com/Caik)
