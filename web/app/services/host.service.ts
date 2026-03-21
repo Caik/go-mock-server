@@ -99,19 +99,19 @@ interface LatencyPayload {
   p99?: number;
 }
 
-interface ErrorPayload {
+interface StatusPayload {
   percentage: number;
 }
 
 interface UriPayload {
   latency?: LatencyPayload;
-  statuses?: Record<string, ErrorPayload>;
+  statuses?: Record<string, StatusPayload>;
 }
 
 export interface HostSaveData {
   host: string;
   latency?: LatencyPayload;
-  statuses?: Record<string, ErrorPayload>;
+  statuses?: Record<string, StatusPayload>;
   uris?: Record<string, UriPayload>;
 }
 
