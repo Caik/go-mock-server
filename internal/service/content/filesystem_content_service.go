@@ -39,41 +39,44 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string, st
 		return nil, err // real I/O error — propagate it
 	}
 
-	if err != nil {
-		// file not found — apply fallback logic for non-200 status codes
-		if statusCode == 200 {
-			log.Info().Str("uuid", uuid).Str("path", absolutePath).Msg("mock not found")
-			return nil, errors.New("mock not found")
-		}
-
-		defaultPath, defErr := f.getDefaultFilePath(host, statusCode)
-		if defErr == nil {
-			defaultData, defReadErr := os.ReadFile(defaultPath)
-			if defReadErr != nil && !errors.Is(defReadErr, os.ErrNotExist) {
-				return nil, defReadErr // real I/O error on default file — propagate it
-			}
-			if defReadErr == nil {
-				return &ContentResult{
-					Data:   &defaultData,
-					Source: "filesystem",
-					Path:   defaultPath,
-				}, nil
-			}
-		}
-
-		// No default file found — return empty body (not an error)
-		empty := []byte("")
+	if err == nil {
 		return &ContentResult{
-			Data:   &empty,
+			Data:   &data,
 			Source: "filesystem",
-			Path:   "",
+			Path:   absolutePath,
 		}, nil
 	}
 
+	// file not found — try _default.<statusCode> fallback
+	defaultPath, defErr := f.getDefaultFilePath(host, statusCode)
+
+	if defErr == nil {
+		defaultData, defReadErr := os.ReadFile(defaultPath)
+
+		if defReadErr != nil && !errors.Is(defReadErr, os.ErrNotExist) {
+			return nil, defReadErr // real I/O error on default file — propagate it
+		}
+
+		if defReadErr == nil {
+			return &ContentResult{
+				Data:   &defaultData,
+				Source: "filesystem",
+				Path:   defaultPath,
+			}, nil
+		}
+	}
+
+	if statusCode == 200 {
+		log.Info().Str("uuid", uuid).Str("path", absolutePath).Msg("mock not found")
+		return nil, errors.New("mock not found")
+	}
+
+	// Non-200 with no default — return empty body (not an error)
+	empty := []byte("")
 	return &ContentResult{
-		Data:   &data,
+		Data:   &empty,
 		Source: "filesystem",
-		Path:   absolutePath,
+		Path:   "",
 	}, nil
 }
 
