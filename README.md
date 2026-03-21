@@ -2,370 +2,351 @@
 
 # Go Mock Server
 
-Go Mock Server is a versatile tool crafted in Go to simplify the process of mocking HTTP requests, with a primary focus on being **user-friendly**, **powerful**, and **flexible**.
-
 [![Build & Test](https://github.com/Caik/go-mock-server/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/Caik/go-mock-server/actions/workflows/build.yml)
 [![Version](https://img.shields.io/github/release/Caik/go-mock-server.svg?style=flat-square)](https://github.com/Caik/go-mock-server/releases/latest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Caik/go-mock-server)](https://goreportcard.com/report/github.com/Caik/go-mock-server)
 [![codecov](https://codecov.io/github/Caik/go-mock-server/graph/badge.svg)](https://codecov.io/github/Caik/go-mock-server)
 
-Contents
-========
-- [Why Use Go Mock Server?](#-why-use-go-mock-server)
-- [Key Features](#-key-features)
+**Go Mock Server** is a lightweight HTTP mock server built in Go. Run it locally, point your app at it, and control every response — no real API needed.
+
+Ever found yourself waiting for a backend that isn't ready? Dealing with flaky third-party services in CI? Trying to reproduce a rate-limit or 503 error that only happens in production? Go Mock Server solves all of that: define your mock responses as plain files, start the server, and your app has a fully controllable API to talk to — complete with a web UI for managing everything in real time.
+
+![Admin UI demo](.github/demo.gif)
+
+## Contents
+
+- [Quick Start](#-quick-start)
+- [How It Works](#-how-it-works)
 - [Installation](#-installation)
   - [Docker](#1-docker)
   - [Pre-compiled Binaries](#2-pre-compiled-binaries)
   - [Compiling Your Own Binary](#3-compiling-your-own-binary)
-- [Usage](#-usage)
-  - [Running the App](#1-running-the-app)
-  - [Creating Mocks](#2-creating-mocks)
-    - [a) Writing Mock Files](#a-writing-mock-files)
-    - [b) Dynamic Mock Creation via API](#b-dynamic-mock-creation-via-api)
-  - [Simulate Statuses and Latencies](#3-simulate-statuses-and-latencies)
-  - [Integrate with Your Application](#4-integrate-with-your-application)
-  - [Explore the Command-Line Options](#5-explore-the-command-line-options)
+- [Creating Mocks](#-creating-mocks)
+  - [Mock Files](#a-mock-files)
+  - [Dynamic Creation via API](#b-dynamic-creation-via-api)
+- [Simulate Latency and Status Codes](#-simulate-latency-and-status-codes)
+  - [Latency Simulation](#latency-simulation)
+  - [Status Code Simulation](#status-code-simulation)
+- [Integrate with Your Application](#-integrate-with-your-application)
 - [Admin UI](#%EF%B8%8F-admin-ui)
+- [Command-Line Options](#-command-line-options)
 - [Want to Contribute?](#-want-to-contribute)
 - [License](#%EF%B8%8F-license)
 
 <br />
 
-## 🤔 Why Use Go Mock Server?
+## ⚡ Quick Start
 
-Ever found yourself in situations where you needed to kick off development but the actual API wasn't ready? Or perhaps you faced challenges in confidently testing your application due to unreliable upstream services?
+Get a mock server running in under a minute:
 
-**Go Mock Server** steps in to tackle these common scenarios and more. Here's why it's your go-to solution:
+**1. Start the server:**
+```bash
+docker run --name mock-server --rm \
+  -p 8080:8080 -p 9090:9090 \
+  -v $(pwd)/my-mocks:/mocks \
+  caik/go-mock-server:latest \
+  --mocks-directory /mocks \
+  --ui-dir /app/ui
+```
 
-### Rapid Development Kickstart
+**2. Create your first mock:**
+```bash
+mkdir -p my-mocks/localhost:8080/api/v1
+echo '{"message": "hello from mock"}' > my-mocks/localhost:8080/api/v1/hello.get.200
+```
 
-Need to mock an API response swiftly to jumpstart development when the real API isn't available? Go Mock Server lets you mock HTTP responses effortlessly without writing a single line of code.
+**3. Call it:**
+```bash
+curl http://localhost:8080/api/v1/hello
+# {"message": "hello from mock"}
+```
 
-### Robust Performance Testing
+Open **http://localhost:9090/ui/** to browse and manage your mocks visually.
 
-When conducting performance tests, confidence is key. Go Mock Server empowers you to simulate various network conditions, dynamically adjusting latency based on hosts and URIs. Ensure your application performs admirably under diverse response time scenarios.
-
-### Reliable CI/CD Integration Testing
-
-Integrate mock responses seamlessly into your CI/CD pipelines for thorough integration testing. Test your application's interactions with external APIs confidently, removing external interferences from your pipeline.
-
-### Dynamic Configuration for Ultimate Flexibility
-
-Whether you're simulating statuses or latencies, Go Mock Server's Dynamic Configuration via API offers unparalleled flexibility. Fine-tune your mock server on-the-fly to adapt to evolving testing requirements.
-
-If you've ever faced these challenges, or if you're just looking for a versatile and powerful HTTP mocking tool, you've come to the right place. Dive into the [usage](#-usage) section to discover how Go Mock Server can make your development and testing workflows smoother than ever.
-
-
-<br />
-
-## 📝 Key Features
-
-**Go Mock Server** comes packed with a range of features designed to make HTTP request mocking easy, powerful, and flexible for your development and testing needs:
-
-### 1. Easy Configuration
-
-Configuring mock responses is a breeze. Simply write the desired response body in a file, and you're good to go. Optionally, utilize a dedicated API for dynamic configuration.
-
-### 2. Latency Simulation
-
-Simulate various network conditions by introducing latency to mock responses. Useful for testing the performance of your application under different scenarios.
-
-### 3. Status Simulation
-
-Mimic non-200 status responses to validate how your application handles unexpected situations. Ensure robustness and error-handling capabilities.
-
-### 4. Host Resolution
-
-The application automatically identifies mocks based on URI and HTTP method, streamlining host resolution for seamless integration with your applications. Define custom host configurations as needed.
-
-### 5. Caching
-
-Optimize performance and enhance Go Mock Server's reliability, making it more suitable for handling a high volume of requests, particularly beneficial in performance testing scenarios. 
-
-### 6. Content-Type Awareness
-
-To ensure proper Content-Type handling, the Go Mock Server sets the response's Content-Type to match that of the incoming request.
-If no Content-Type is provided, it defaults to text/plain, unless overridden via the --default-content-type flag.
-
-### 7. CORS Support
-
-Automatically adds Cross-Origin Resource Sharing (CORS) headers to all mock responses, making the mock server compatible with web applications that require CORS. The CORS service can be disabled using the `--disable-cors` flag if not needed.
-
-### 8. Dynamic Mock Creation
-
-Dynamically create mocks on the fly in two convenient ways:
-
-1. **File-Based Creation:** Simply create a new mock file or update/delete an existing mock file. Go Mock Server will automatically detect and apply these changes.
-
-2. **API Interaction:** Interact with Go Mock Server's API to dynamically create, update, or delete mocks. This provides users with fine-grained control over mock configurations during runtime.
-
-### 9. Dynamic Configuration via API
-
-Configure the simulation of statuses and latencies dynamically with Go Mock Server's powerful API. This feature empowers users to fine-tune status simulation and adjust latencies for specific hosts and/or URIs during runtime. Gain precise control over the testing environment to ensure comprehensive and targeted evaluations of your application's resilience and performance.
-
-### 10. Cross-Platform Support
-
-Go Mock Server provides precompiled binaries for Linux, Mac (AMD64 and ARM64), and Windows. Choose the binary that suits your platform or build from source if preferred.
-
-Explore these features and more to streamline your API mocking workflow and accelerate your development process.
-
-### 
+> **No Docker?** Download a [pre-compiled binary](https://github.com/Caik/go-mock-server/releases) and run:
+> ```bash
+> ./mock-server --mocks-directory ./my-mocks
+> ```
 
 <br />
 
+## 🔍 How It Works
+
+Go Mock Server runs two servers simultaneously:
+
+- **Port 8080** — the mock server. Your application points here instead of the real API.
+- **Port 9090** — the admin server. Hosts the REST API and the web UI.
+
+### Request Routing
+
+When a request arrives at port 8080, Go Mock Server resolves it to a file on disk using this pattern:
+
+```
+{mocks-directory}/{host}/{uri}.{method}.{status-code}
+```
+
+**Example:** A `GET` request to `http://localhost:8080/api/v1/hello` with `Host: example.host.com` resolves to:
+
+```
+my-mocks/example.host.com/api/v1/hello.get.200
+```
+
+The file's contents become the response body, and the status code in the filename is returned as the HTTP status.
+
+### Filename Anatomy
+
+| Part | Example | Description |
+|------|---------|-------------|
+| Host directory | `example.host.com/` | Matches the `Host` request header |
+| URI path | `api/v1/hello` | Maps directly to the request path |
+| Method | `.get` | HTTP method, lowercase |
+| Status code | `.200` | The HTTP status code returned |
+
+More examples:
+
+```
+my-mocks/
+└── example.host.com/
+    ├── api/v1/users.get.200       # GET /api/v1/users → 200
+    ├── api/v1/users.post.201      # POST /api/v1/users → 201
+    ├── api/v1/users.get.404       # GET /api/v1/users → 404 (used by status simulation)
+    └── _default.get.200           # fallback for any unmatched GET → 200
+```
+
+### Fallback: `_default`
+
+Place a `_default.{method}.{status-code}` file in any host directory to catch requests that don't match a specific URI. The status code is part of the filename — `_default.get.200` only fires for unmatched GETs when a 200 is expected. If you're using status simulation that injects 404s, you'd also want a `_default.get.404` to provide the response body for those injected errors. Useful during early development when you want the server to always respond rather than return an error.
+
+### Hot Reload
+
+Mock files are watched automatically. Create, update, or delete a file and Go Mock Server picks up the change immediately — no restart required.
+
+<br />
 
 ## 💿 Installation
 
 ### 1. Docker
 
-The easiest and recommended way to run **Go Mock Server** is via **Docker**: 
+The easiest way to run Go Mock Server. The Docker image includes the pre-built admin UI at `/app/ui`.
 
 ```bash
 docker run --name mock-server --rm \
   -p 8080:8080 -p 9090:9090 \
-  -v $(pwd)/sample-mocks:/mocks \
+  -v $(pwd)/my-mocks:/mocks \
   caik/go-mock-server:latest \
-  --mocks-directory /mocks
+  --mocks-directory /mocks \
+  --ui-dir /app/ui
 ```
 
-Where `$(pwd)/sample-mocks` is the path in your host machine where you have stored the mocks files. In case you want to start the application without any pre-existing mock files, you can also omit it:
-
-```bash
-docker run --name mock-server --rm -p 8080:8080 caik/go-mock-server:latest --mocks-directory /mocks
-```
-
-Please also note that you change the port mapping from `8080` to any other port of your preference. 
+Omit the `-v` volume mount if you want to start with no pre-existing mocks and create them all via the API or UI.
 
 ### 2. Pre-compiled Binaries
 
-Alternatively, you can download and run the already pre-compiled binaries. There are versions for **Linux**, **Mac**, and **Windows** on the **[Releases](https://github.com/Caik/go-mock-server/releases)** page.
-So you only have to choose the appropriate file, download, extract it and run the binary in your machine.
+Download a binary for your platform from the **[Releases](https://github.com/Caik/go-mock-server/releases)** page. Available for Linux, macOS (AMD64 and ARM64), and Windows.
 
-PS: You may need to give execution permission to the binary after downloading it:
-
- ```shell
-# giving execution permission on linux
+```bash
+# macOS / Linux: make executable first
 chmod +x ./mock-server
+
+./mock-server --mocks-directory ./my-mocks
 ```
 
 ### 3. Compiling Your Own Binary
 
-If you have **Go** configured on your environment, you can also choose to build your own binary as well:
+Requires Go installed on your machine.
 
-```shell
-# building a MacOS on AMD64 binary
-CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s -w' -o ./mock-server-darwin-amd64 cmd/mock-server/main.go
+```bash
+# Example: build a macOS AMD64 binary
+CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 \
+  go build -a -ldflags '-extldflags "-static" -s -w' \
+  -o ./mock-server-darwin-amd64 \
+  cmd/mock-server/main.go
 ```
 
 <br />
 
-## 📖 Usage
+## 📝 Creating Mocks
 
-### 1. Running the App
+### a) Mock Files
 
-Please check [Installation](#-installation) for how to get/build the application binary. 
-
-After you have the binary, you can run the server: 
+Create a file inside `--mocks-directory` following the naming convention described in [How It Works](#-how-it-works). The file contents become the response body.
 
 ```bash
-# Example for Mac
-./mock-server_mac --mocks-directory ./path-for-the-mocks-directory
+# GET example.host.com/api/v1/users → 200 with JSON body
+mkdir -p my-mocks/example.host.com/api/v1
+echo '[{"id": 1, "name": "Alice"}]' > my-mocks/example.host.com/api/v1/users.get.200
+
+# POST example.host.com/api/v1/users → 201
+echo '{"id": 2, "name": "Bob"}' > my-mocks/example.host.com/api/v1/users.post.201
 ```
 
-### 2. Creating Mocks
+Changes are picked up automatically — no restart needed.
 
-To mock HTTP responses, you have two options:
+### b) Dynamic Creation via API
 
-#### a) Writing Mock Files:
+Use the admin API to create, update, or delete mocks at runtime. Useful in CI pipelines or when you want to automate mock setup.
 
-Create mock files by writing the desired response body in a file within the specified mocks directory. Follow the naming convention for systematic organization: `{path-to-mocks-directory}/{host}/{uri-and-querystring}.{http-method}.{status-code}`
-
-For example: `./path-for-the-mocks-directory/example.com/api/v1/resource.get.200`
-
-Here's a breakdown of the components in the file name:
-
-- `{path-to-mocks-directory}`: The directory where mock files are stored.
-- `{host}`: The host name for which the mock is intended.
-- `{uri-and-querystring}`: The URI and optional query string of the API endpoint.
-- `{http-method}`: The HTTP method for which the mock is intended.
-- `{status-code}`: The HTTP status code the mock will return (e.g. `200`, `201`, `404`).
-
-You can also create a `_default.{http-method}.{status-code}` file (e.g. `_default.get.200`) in a host directory to serve as a fallback response for any unmatched request to that host with that method and status code.
-
-This convention allows for easy identification and management of specific mocks.
-
+**Create a mock:**
 ```bash
-# Example for creating a mock file:
-# GET example.com/api/v1/resource → 200 OK
-echo '{"key": "value"}' > ./path-for-the-mocks-directory/example.com/api/v1/resource.get.200
-```
-
-#### b) Dynamic Mock Creation via API:
-
-Alternatively, you can use the dedicated API to dynamically create mocks during runtime:
-
-```bash
-# Example for creating a mock via API:
-# GET example.com/api/v1/resource
 curl -X POST \
   -H "x-mock-host: example.host.com" \
-  -H "x-mock-uri: /api/v1/resource" \
+  -H "x-mock-uri: /api/v1/users" \
   -H "x-mock-method: GET" \
-  --data-raw '{
-    "key1": "value1",
-    "key2": "value2"
-  }' \
-  http://localhost:8080/admin/mocks
-
+  -H "x-mock-status: 200" \
+  --data-raw '[{"id": 1, "name": "Alice"}]' \
+  http://localhost:9090/api/v1/mocks
 ```
 
-To delete a mock:
-
+**Delete a mock:**
 ```bash
-# Example for deleting a mock via API:
-# GET example.com/api/v1/resource
 curl -X DELETE \
   -H "x-mock-host: example.host.com" \
-  -H "x-mock-uri: /api/v1/resource" \
+  -H "x-mock-uri: /api/v1/users" \
   -H "x-mock-method: GET" \
-  http://localhost:8080/admin/mocks
+  -H "x-mock-status: 200" \
+  http://localhost:9090/api/v1/mocks
 ```
 
-For more details and additional API endpoints, please refer to the [Swagger documentation](https://github.com/Caik/go-mock-server/blob/main/docs/swagger.json).
+For the full list of API endpoints, see the [Swagger documentation](https://github.com/Caik/go-mock-server/blob/main/docs/swagger.json).
 
-### 3. Simulate Statuses and Latencies
+<br />
 
-To enhance your testing experience, Go Mock Server provides powerful API endpoints for dynamically simulating status codes and adjusting latencies. These features are particularly useful for testing your application's resilience under different conditions.
+## ⚙️ Simulate Latency and Status Codes
 
-#### Simulate Status Codes
-To simulate a non-200 status for a specific host, you can use the following example:
+These features let you test how your application behaves under adverse conditions — slow responses, intermittent errors, or sustained failure rates — without touching the real API.
+
+### Latency Simulation
+
+Configure per-host latency using a percentile distribution. This lets you model realistic network conditions rather than a flat delay.
 
 ```bash
-# Simulate a 500 response for 20% of the requests to the host example.host.com
-curl -X POST -H "Content-Type: application/json" -d '{
-  "host": "example.host.com",
-  "statuses": {
-    "500": {
-      "percentage": 20
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "latency": {
+      "min": 100,
+      "p95": 1800,
+      "p99": 1900,
+      "max": 2000
     }
-  }
-}' http://localhost:8080/admin/config/hosts/example.host.com/statuses
+  }' \
+  http://localhost:9090/api/v1/config/hosts/example.host.com/latencies
 ```
 
-#### Simulate Latency
+| Field | Meaning |
+|-------|---------|
+| `min` | Minimum delay in milliseconds — every request waits at least this long |
+| `p95` | 95% of requests complete within this many milliseconds |
+| `p99` | 99% of requests complete within this many milliseconds |
+| `max` | Hard ceiling — no request waits longer than this |
+
+To remove latency simulation for a host, send a `DELETE` to the same endpoint.
+
+### Status Code Simulation
+
+Inject non-200 responses at a configurable rate. Useful for testing error handling and retry logic.
 
 ```bash
-# Simulating latency for the host example.host.com
-curl -X POST -H "Content-Type: application/json" -d '{
-  "host": "example.host.com",
-  "latency": {
-    "min": 100,
-    "p95": 1800,
-    "p99": 1900,
-    "max": 2000
-  }
-}' http://localhost:8080/admin/config/hosts/example.host.com/latencies
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "statuses": {
+      "500": {"percentage": 10},
+      "503": {"percentage": 5}
+    }
+  }' \
+  http://localhost:9090/api/v1/config/hosts/example.host.com/statuses
 ```
 
-For more details and additional API endpoints, please refer to the [Swagger documentation](https://github.com/Caik/go-mock-server/blob/main/docs/swagger.json).
+In this example, for requests to `example.host.com`:
+- **10%** receive a `500 Internal Server Error`
+- **5%** receive a `503 Service Unavailable`
+- **85%** receive the normal mock response
 
-### 4. Integrate with Your Application
+Multiple status codes can be combined as long as the total percentage does not exceed 100%. Go Mock Server needs a corresponding mock file for each status code you inject (e.g. `api/v1/users.get.500`) to serve as the response body for that error.
 
-Integrating Go Mock Server with your application is a straightforward process. By updating your application's URLs to point to Go Mock Server, you enable seamless testing and development. Go Mock Server intelligently identifies and sets the correct request host based on URI and HTTP method.
-
-#### Example Scenario:
-
-Let's consider a scenario where you have a web application that communicates with an external API. Initially, your application is configured to interact with the production API as follows:
-
-```plaintext
-Production API Base URL: https://example.host.com
+To remove a specific status simulation:
+```bash
+curl -X DELETE http://localhost:9090/api/v1/config/hosts/example.host.com/statuses/500
 ```
 
-Now, you want to test your application with different mock responses provided by Go Mock Server. Here's how you can integrate Go Mock Server into your testing environment:
+For the full API reference, see the [Swagger documentation](https://github.com/Caik/go-mock-server/blob/main/docs/swagger.json).
 
-##### 1. Update Application Configuration:
+<br />
 
-Update your application's configuration to point to the Go Mock Server URL:
+## 🔗 Integrate with Your Application
 
-```plaintext
-Go Mock Server URL: http://localhost:8080
+Point your application's API base URL at the mock server instead of the real API:
+
+```
+Before: https://example.host.com/api/v1/users
+After:  http://localhost:8080/api/v1/users
 ```
 
-##### 2. Make Requests:
+Go Mock Server uses the `Host` header to determine which host directory to look in. When you change the base URL, the `Host` header automatically becomes `localhost:8080`, so Go Mock Server looks for mocks under a `localhost:8080/` directory.
 
-Your application can now make requests to Go Mock Server, and Go Mock Server will dynamically provide the mock responses based on the configured mocks.
+**To keep your host directory name meaningful** (e.g. `example.host.com/`), pass the original hostname as a `Host` header in your requests, or configure your application to send it explicitly.
 
-For example, if your application originally made a request to:
-
-```plaintext
-GET https://example.host.com/data
-```
-
-Now the request will be:
-
-```plaintext
-GET http://localhost:8080/data
-```
-
-Go Mock Server will handle the request and respond according to the configured mocks.
-
-
-### 5. Explore the Command-Line Options
-
-To customize Go Mock Server's behavior, you can use the following command-line options:
-
-| Option                 | Description                                                        |
-|------------------------|--------------------------------------------------------------------|
-| --mocks-directory      | Specify the directory for mock files.                              |
-| --port                 | Set the port for the mock server. Default is 8080.                 |
-| --admin-port           | Port for the admin API and UI. Default is 9090 (0 to disable).    |
-| --ui-dir               | Path to a web UI directory to serve (optional). Go Mock Server ships with a built-in UI (included in the Docker image at `/app/ui`), but you can provide your own. When set, the UI is served at `http://localhost:{admin-port}/ui/`. |
-| --mocks-config-file    | Specify the path to a config file for additional settings.         |
-| --default-content-type | Set the default content type for responses. Default is text/plain. |
-| --disable-cache        | Disable caching of responses.                                      |
-| --disable-latency      | Disable simulation of latency in responses.                        |
-| --disable-cors         | Disable CORS headers in responses.                                 |
-
-**Example:**
+Alternatively, just name your mock directory `localhost:8080/` — it works exactly the same way.
 
 ```bash
-# Run the server on port 9090 with a custom mock directory and disable cache
-./mock-server_mac --mocks-directory ./custom-mocks --port 9090 --disable-cache
+# These two are equivalent:
+curl http://localhost:8080/api/v1/users
+# → looks in: my-mocks/localhost:8080/api/v1/users.get.200
 
-# Run the server with CORS disabled for environments that don't need it
-./mock-server_mac --mocks-directory ./mocks --disable-cors
+curl -H "Host: example.host.com" http://localhost:8080/api/v1/users
+# → looks in: my-mocks/example.host.com/api/v1/users.get.200
 ```
-
-### 6. Admin UI
-
-Go Mock Server ships with a built-in React admin UI that covers all functionality — browsing mocks, managing hosts, and inspecting traffic logs — out of the box.
-
-- **Port 8080** handles mock traffic; **port 9090** serves the admin API and UI.
-- The UI is available at `http://localhost:9090/ui/` when `--ui-dir` is set.
-- The Docker image includes the pre-built UI at `/app/ui`. Pass `--ui-dir /app/ui` to activate it.
-- **Bring Your Own UI:** The `--ui-dir` flag accepts any directory. Build your own custom admin UI and point `--ui-dir` at the output folder — Go Mock Server will serve it with full SPA routing support.
 
 <br />
 
 ## 🖥️ Admin UI
 
-![Admin UI demo](.github/demo.gif)
+Go Mock Server ships with a fully-featured web UI, available at **http://localhost:9090/ui/** (requires `--ui-dir /app/ui` when using Docker, or `--ui-dir ./web/build/client` when running from source).
 
-No more digging through config files or firing off curl commands just to check what's happening inside your mock server. **Go Mock Server ships with a fully-featured Admin UI out of the box** — zero setup, zero extra tools, just open your browser and you're in control.
+From the UI you can:
 
-From the moment you start the server, head to `http://localhost:9090` and get instant visibility into everything:
+- **Manage mocks** — create, edit, and delete mock definitions. Changes take effect immediately, no restart required.
+- **Control host behaviour** — configure per-host latency ranges and error injection rates without writing a single curl command.
+- **Watch live traffic** — the Logs page streams every request in real time. Filter by method, status code, host, or path to debug routing issues and validate your integration.
 
-- 🔁 **Manage mocks visually** — create, edit, and delete mock definitions in seconds. No file editing, no restarts. Changes take effect immediately.
-- 🌐 **Control host behaviour** — dial in per-host latency ranges and error injection rates to stress-test your app against real-world failure scenarios, directly from the UI.
-- 📡 **Watch live traffic in real time** — the Logs page streams every request as it hits your mock server. Filter by method, status code, host, or path to zero in on exactly what you need. Spot unexpected calls, debug mismatched routes, and validate your integration — all without leaving the browser.
+**Bring your own UI:** The `--ui-dir` flag accepts any directory. Build a custom admin interface and point `--ui-dir` at its output folder — Go Mock Server will serve it with full SPA routing support.
 
-Whether you're onboarding a new teammate, demoing an integration, or hunting down a subtle routing bug, the Admin UI turns your mock server from a black box into a transparent, interactive development companion.
+<br />
+
+## 🛠️ Command-Line Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--mocks-directory` | *(required)* | Path to the directory containing mock files |
+| `--port` | `8080` | Port for the mock server |
+| `--admin-port` | `9090` | Port for the admin API and UI (set to `0` to disable) |
+| `--ui-dir` | *(none)* | Path to the web UI directory to serve at `/ui/`. The Docker image ships with the UI at `/app/ui`. |
+| `--mocks-config-file` | *(none)* | Path to an additional config file |
+| `--default-content-type` | `text/plain` | Default `Content-Type` for responses when none is specified |
+| `--traffic-log-buffer-size` | `1000` | Number of recent requests to keep in the in-memory traffic log (set to `0` to disable) |
+| `--disable-cache` | `false` | Disable in-memory response caching |
+| `--disable-latency` | `false` | Disable latency simulation |
+| `--disable-cors` | `false` | Disable automatic CORS headers |
+
+**Examples:**
+
+```bash
+# Run on a custom port with caching disabled
+./mock-server --mocks-directory ./my-mocks --port 9080 --disable-cache
+
+# Run with the admin UI enabled (binary build)
+./mock-server --mocks-directory ./my-mocks --ui-dir ./web/build/client
+
+# Run with CORS disabled (e.g. server-to-server testing)
+./mock-server --mocks-directory ./my-mocks --disable-cors
+```
 
 <br />
 
 ## 🔧 Want to Contribute?
 
-We welcome contributions from the community! If you're interested in helping improve Go Mock Server, please take a moment to review our [contribution guidelines](https://github.com/Caik/go-mock-server/blob/main/CONTRIBUTING.md).
+Contributions are welcome! Please review the [contribution guidelines](https://github.com/Caik/go-mock-server/blob/main/CONTRIBUTING.md) before opening a PR.
 
 <br />
 
