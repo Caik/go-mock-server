@@ -9,7 +9,7 @@ import (
 type HostAddDeleteRequest struct {
 	Host          string
 	LatencyConfig *config.LatencyConfig
-	ErrorConfig   map[string]config.ErrorConfig
+	StatusConfig  map[string]config.StatusConfig
 	UriConfig     map[string]config.UriConfig
 }
 
@@ -27,9 +27,9 @@ func (h *HostsConfigAdminService) GetHostConfig(host string) *config.HostConfig 
 
 func (h *HostsConfigAdminService) AddUpdateHost(addRequest HostAddDeleteRequest) (*config.HostConfig, error) {
 	hostConfig := config.HostConfig{
-		LatencyConfig: addRequest.LatencyConfig,
-		ErrorsConfig:  addRequest.ErrorConfig,
-		UrisConfig:    addRequest.UriConfig,
+		LatencyConfig:  addRequest.LatencyConfig,
+		StatusesConfig: addRequest.StatusConfig,
+		UrisConfig:     addRequest.UriConfig,
 	}
 
 	if err := hostConfig.Validate(); err != nil {
@@ -73,29 +73,29 @@ func (h *HostsConfigAdminService) DeleteHostLatency(host string) (*config.HostCo
 	return hostConfig, nil
 }
 
-func (h *HostsConfigAdminService) AddUpdateHostErrors(addErrorsRequest HostAddDeleteRequest) (*config.HostConfig, error) {
+func (h *HostsConfigAdminService) AddUpdateHostStatuses(addStatusesRequest HostAddDeleteRequest) (*config.HostConfig, error) {
 	newHostConfig := config.HostConfig{
-		ErrorsConfig: addErrorsRequest.ErrorConfig,
+		StatusesConfig: addStatusesRequest.StatusConfig,
 	}
 
 	if err := newHostConfig.Validate(); err != nil {
-		return nil, fmt.Errorf("error while validating host errors config: %v", err)
+		return nil, fmt.Errorf("error while validating host statuses config: %v", err)
 	}
 
-	hostConfig, err := h.hostsConfig.UpdateHostErrorsConfig(addErrorsRequest.Host, newHostConfig.ErrorsConfig)
+	hostConfig, err := h.hostsConfig.UpdateHostStatusesConfig(addStatusesRequest.Host, newHostConfig.StatusesConfig)
 
 	if err != nil {
-		return nil, fmt.Errorf("error updating host errors config: %v", err)
+		return nil, fmt.Errorf("error updating host statuses config: %v", err)
 	}
 
 	return hostConfig, nil
 }
 
-func (h *HostsConfigAdminService) DeleteHostError(host, errorCode string) (*config.HostConfig, error) {
-	hostConfig, err := h.hostsConfig.DeleteHostErrorConfig(host, errorCode)
+func (h *HostsConfigAdminService) DeleteHostStatus(host, statusCode string) (*config.HostConfig, error) {
+	hostConfig, err := h.hostsConfig.DeleteHostStatusConfig(host, statusCode)
 
 	if err != nil {
-		return nil, fmt.Errorf("error deleting host error config: %v", err)
+		return nil, fmt.Errorf("error deleting host status config: %v", err)
 	}
 
 	return hostConfig, nil

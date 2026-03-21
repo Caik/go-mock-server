@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Caik/go-mock-server/internal/service/content"
@@ -18,17 +19,19 @@ var (
 )
 
 type MockAddDeleteRequest struct {
-	Host   string
-	URI    string
-	Method string
-	Data   *[]byte
+	Host       string
+	URI        string
+	Method     string
+	StatusCode int
+	Data       *[]byte
 }
 
 type MockListItem struct {
-	ID     string `json:"id"`
-	Host   string `json:"host"`
-	URI    string `json:"uri"`
-	Method string `json:"method"`
+	ID         string `json:"id"`
+	Host       string `json:"host"`
+	URI        string `json:"uri"`
+	Method     string `json:"method"`
+	StatusCode int    `json:"status_code"`
 }
 
 type MockAdminService struct {
@@ -36,36 +39,33 @@ type MockAdminService struct {
 }
 
 func (m *MockAdminService) AddUpdateMock(addRequest MockAddDeleteRequest, uuid string) error {
-	// placeholder 0; replaced in Task 4
-	return m.contentService.SetContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid, 0, addRequest.Data)
+	return m.contentService.SetContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid, addRequest.StatusCode, addRequest.Data)
 }
 
 func (m *MockAdminService) DeleteMock(addRequest MockAddDeleteRequest, uuid string) error {
-	// placeholder 0; replaced in Task 4
-	return m.contentService.DeleteContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid, 0)
+	return m.contentService.DeleteContent(addRequest.Host, addRequest.URI, addRequest.Method, uuid, addRequest.StatusCode)
 }
 
 func (m *MockAdminService) DeleteMockByID(id, uuid string) error {
-	host, uri, method, err := decodeMockID(id)
+	host, uri, method, statusCode, err := decodeMockID(id)
 
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalidMockID, err)
 	}
 
-	// placeholder 0; replaced in Task 4
-	return m.contentService.DeleteContent(host, uri, method, uuid, 0)
+	return m.contentService.DeleteContent(host, uri, method, uuid, statusCode)
 }
 
 func (m *MockAdminService) GetMockContent(id, uuid string) ([]byte, error) {
-	// Decode the ID to get host, uri, method
-	host, uri, method, err := decodeMockID(id)
+	// Decode the ID to get host, uri, method, statusCode
+	host, uri, method, statusCode, err := decodeMockID(id)
 
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidMockID, err)
 	}
 
-	// Get the content — placeholder 0; replaced in Task 4
-	result, err := m.contentService.GetContent(host, uri, method, uuid, 0)
+	// Get the content
+	result, err := m.contentService.GetContent(host, uri, method, uuid, statusCode)
 
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMockNotFound, err)
@@ -93,37 +93,44 @@ func (m *MockAdminService) ListMocks(uuid string) ([]MockListItem, error) {
 
 	for i, c := range *contents {
 		mocks[i] = MockListItem{
-			ID:     generateMockID(c.Host, c.Uri, c.Method),
-			Host:   c.Host,
-			URI:    c.Uri,
-			Method: c.Method,
+			ID:         generateMockID(c.Host, c.Uri, c.Method, c.StatusCode),
+			Host:       c.Host,
+			URI:        c.Uri,
+			Method:     c.Method,
+			StatusCode: c.StatusCode,
 		}
 	}
 
 	return mocks, nil
 }
 
-// generateMockID creates a unique identifier for a mock based on its host, uri, and method.
-func generateMockID(host, uri, method string) string {
-	data := fmt.Sprintf("%s%s%s%s%s", host, mockIDSeparator, uri, mockIDSeparator, method)
+// generateMockID creates a unique identifier for a mock based on its host, uri, method, and statusCode.
+func generateMockID(host, uri, method string, statusCode int) string {
+	data := fmt.Sprintf("%s%s%s%s%s%s%d",
+		host, mockIDSeparator, uri, mockIDSeparator, method, mockIDSeparator, statusCode)
 	return base64.URLEncoding.EncodeToString([]byte(data))
 }
 
-// decodeMockID decodes a mock ID back to host, uri, and method.
-func decodeMockID(id string) (host, uri, method string, err error) {
+// decodeMockID decodes a mock ID back to host, uri, method, and statusCode.
+func decodeMockID(id string) (host, uri, method string, statusCode int, err error) {
 	data, err := base64.URLEncoding.DecodeString(id)
 
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to decode mock ID: %v", err)
+		return "", "", "", 0, fmt.Errorf("failed to decode mock ID: %v", err)
 	}
 
-	parts := strings.SplitN(string(data), mockIDSeparator, 3)
+	parts := strings.SplitN(string(data), mockIDSeparator, 4)
 
-	if len(parts) != 3 {
-		return "", "", "", fmt.Errorf("invalid mock ID format")
+	if len(parts) != 4 {
+		return "", "", "", 0, fmt.Errorf("invalid mock ID format")
 	}
 
-	return parts[0], parts[1], parts[2], nil
+	sc, err := strconv.Atoi(parts[3])
+	if err != nil {
+		return "", "", "", 0, fmt.Errorf("invalid status code in mock ID: %v", err)
+	}
+
+	return parts[0], parts[1], parts[2], sc, nil
 }
 
 func NewMockAdminService(contentService content.ContentService) *MockAdminService {
