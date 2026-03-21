@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/Caik/go-mock-server/internal/rest"
@@ -16,11 +15,10 @@ import (
 )
 
 type AddDeleteMockRequest struct {
-	Host          string `header:"x-mock-host" binding:"required"`
-	Uri           string `header:"x-mock-uri" binding:"required"`
-	Method        string `header:"x-mock-method" binding:"required"`
-	StatusCodeStr string `header:"x-mock-status"`
-	StatusCode    int    // populated by validate()
+	Host       string `header:"x-mock-host" binding:"required"`
+	Uri        string `header:"x-mock-uri" binding:"required"`
+	Method     string `header:"x-mock-method" binding:"required"`
+	StatusCode int    `header:"x-mock-status"`
 }
 
 type AdminMocksController struct {
@@ -469,14 +467,12 @@ func (a *AddDeleteMockRequest) validate() error {
 	}
 
 	// Default to 200 if not provided
-	if a.StatusCodeStr == "" {
-		a.StatusCodeStr = "200"
+	if a.StatusCode == 0 {
+		a.StatusCode = 200
 	}
-	sc, err := strconv.Atoi(a.StatusCodeStr)
-	if err != nil || sc < 100 || sc > 599 {
+	if a.StatusCode < 100 || a.StatusCode > 599 {
 		return errors.New("invalid status code provided: must be between 100 and 599")
 	}
-	a.StatusCode = sc
 	return nil
 }
 
