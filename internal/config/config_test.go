@@ -320,7 +320,7 @@ func TestNewHostsConfig_InvalidLatencyConfig(t *testing.T) {
 	}
 }
 
-func TestNewHostsConfig_InvalidErrorConfig(t *testing.T) {
+func TestNewHostsConfig_InvalidStatusConfig(t *testing.T) {
 	// Create a temporary file with invalid error config (percentage > 100)
 	tempDir := t.TempDir()
 	configFile := filepath.Join(tempDir, "invalid-error-config.json")
