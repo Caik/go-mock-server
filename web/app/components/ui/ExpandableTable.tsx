@@ -64,7 +64,6 @@ export function ExpandableTable<T>({
         {data.map((item) => {
           const key = getRowKey(item);
           const isExpanded = selectedKey === key;
-
           const extraClass = rowClassName ? (rowClassName(item) ?? '') : '';
           return (
             <React.Fragment key={key}>
@@ -105,4 +104,3 @@ export function ExpandableTable<T>({
     </table>
   );
 }
-

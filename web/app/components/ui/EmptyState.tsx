@@ -1,4 +1,5 @@
 // EmptyState - Reusable empty state component for pages and tables
+import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 
 interface EmptyStateProps {
