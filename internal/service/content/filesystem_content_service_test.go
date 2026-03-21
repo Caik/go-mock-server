@@ -557,6 +557,172 @@ func TestFilesystemContentService_ListContents(t *testing.T) {
 	})
 }
 
+func TestFilesystemContentService_defaultFilePathToContentData(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "mock_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
+		mocksDirConfig: &config.MocksDirectoryConfig{Path: tempDir},
+	}
+
+	t.Run("parses valid default file path", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "_default.get.200")
+		data, err := service.defaultFilePathToContentData(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if data.Host != "example.com" {
+			t.Errorf("expected host 'example.com', got '%s'", data.Host)
+		}
+		if data.Uri != "/_default" {
+			t.Errorf("expected uri '/_default', got '%s'", data.Uri)
+		}
+		if data.Method != "GET" {
+			t.Errorf("expected method 'GET', got '%s'", data.Method)
+		}
+		if data.StatusCode != 200 {
+			t.Errorf("expected status code 200, got %d", data.StatusCode)
+		}
+	})
+
+	t.Run("parses POST 404 default file", func(t *testing.T) {
+		path := filepath.Join(tempDir, "api.test.com", "_default.post.404")
+		data, err := service.defaultFilePathToContentData(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if data.Method != "POST" {
+			t.Errorf("expected method 'POST', got '%s'", data.Method)
+		}
+		if data.StatusCode != 404 {
+			t.Errorf("expected status code 404, got %d", data.StatusCode)
+		}
+	})
+
+	t.Run("rejects file without host separator", func(t *testing.T) {
+		path := filepath.Join(tempDir, "_default.get.200")
+		// trim tempDir prefix so it looks like a root-level file
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for path without host directory")
+		}
+	})
+
+	t.Run("rejects non-default filename", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "users.get.200")
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for non-default filename")
+		}
+	})
+
+	t.Run("rejects invalid status code", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "_default.get.999")
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for out-of-range status code")
+		}
+	})
+
+	t.Run("rejects non-numeric status code", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "_default.get.abc")
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for non-numeric status code")
+		}
+	})
+
+	t.Run("rejects missing status code dot", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "_default.get")
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for filename missing status code")
+		}
+	})
+}
+
+func TestFilesystemContentService_ListDefaultContents(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "mock_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create a mix of default and regular mock files
+	files := map[string][]byte{
+		"example.com/_default.get.200":  []byte(`{"default": true}`),
+		"example.com/_default.post.201": []byte(`{"created": true}`),
+		"example.com/api/users.get.200": []byte(`{"users": []}`), // should be excluded
+		"api.test.com/_default.get.404": []byte(`{"error": "not found"}`),
+	}
+	for relPath, content := range files {
+		fullPath := filepath.Join(tempDir, relPath)
+		os.MkdirAll(filepath.Dir(fullPath), 0755)
+		os.WriteFile(fullPath, content, 0644)
+	}
+
+	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
+		mocksDirConfig: &config.MocksDirectoryConfig{Path: tempDir},
+	}
+
+	t.Run("returns only default mocks", func(t *testing.T) {
+		contents, err := service.ListDefaultContents("test-uuid")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if contents == nil {
+			t.Fatal("expected non-nil contents")
+		}
+		if len(*contents) != 3 {
+			t.Errorf("expected 3 default mocks, got %d", len(*contents))
+			for _, c := range *contents {
+				t.Logf("  found: host=%s uri=%s method=%s status=%d", c.Host, c.Uri, c.Method, c.StatusCode)
+			}
+		}
+		for _, c := range *contents {
+			if c.Uri != "/_default" {
+				t.Errorf("expected all URIs to be '/_default', got '%s'", c.Uri)
+			}
+		}
+	})
+
+	t.Run("returns empty slice for empty directory", func(t *testing.T) {
+		emptyDir, _ := os.MkdirTemp("", "empty_mock_test")
+		defer os.RemoveAll(emptyDir)
+
+		emptyService := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
+			mocksDirConfig: &config.MocksDirectoryConfig{Path: emptyDir},
+		}
+		contents, err := emptyService.ListDefaultContents("test-uuid")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(*contents) != 0 {
+			t.Errorf("expected 0 contents, got %d", len(*contents))
+		}
+	})
+
+	t.Run("returns error for non-existent directory", func(t *testing.T) {
+		badService := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
+			mocksDirConfig: &config.MocksDirectoryConfig{Path: "/non/existent/path"},
+		}
+		contents, err := badService.ListDefaultContents("test-uuid")
+		if err == nil {
+			t.Error("expected error for non-existent directory")
+		}
+		if contents != nil {
+			t.Error("expected nil contents on error")
+		}
+	})
+}
+
 func TestFilesystemContentService_Subscribe(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "mock_test")
 	if err != nil {

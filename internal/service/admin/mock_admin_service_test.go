@@ -77,7 +77,16 @@ func (m *mockContentService) ListDefaultContents(uuid string) (*[]content.Conten
 	if m.shouldError {
 		return nil, errors.New(m.errorMsg)
 	}
-	return &[]content.ContentData{}, nil
+	var defaults []content.ContentData
+	for range m.contents {
+		defaults = append(defaults, content.ContentData{
+			Host:       "example.com",
+			Uri:        "/_default",
+			Method:     "GET",
+			StatusCode: 200,
+		})
+	}
+	return &defaults, nil
 }
 
 func (m *mockContentService) Subscribe(subscriberId string, eventTypes ...content.ContentEventType) <-chan content.ContentEvent {
@@ -576,6 +585,96 @@ func TestMockAdminService_ListMocks(t *testing.T) {
 
 		if mock.StatusCode != 200 {
 			t.Errorf("expected status code 200, got %d", mock.StatusCode)
+		}
+	})
+}
+
+func TestMockAdminService_ListDefaultMocks(t *testing.T) {
+	t.Run("lists default mocks successfully", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: map[string][]byte{
+				"example.com:/_default:GET:200": []byte(`{}`),
+			},
+			events: make(chan content.ContentEvent),
+		}
+
+		service := NewMockAdminService(contentService)
+		mocks, err := service.ListDefaultMocks("test-uuid")
+
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if len(mocks) != 1 {
+			t.Fatalf("expected 1 default mock, got %d", len(mocks))
+		}
+
+		m := mocks[0]
+		if m.URI != "/_default" {
+			t.Errorf("expected uri '/_default', got '%s'", m.URI)
+		}
+		if m.Host != "example.com" {
+			t.Errorf("expected host 'example.com', got '%s'", m.Host)
+		}
+		if m.Method != "GET" {
+			t.Errorf("expected method 'GET', got '%s'", m.Method)
+		}
+		if m.StatusCode != 200 {
+			t.Errorf("expected status code 200, got %d", m.StatusCode)
+		}
+		if m.ID == "" {
+			t.Error("expected non-empty ID")
+		}
+	})
+
+	t.Run("returns empty list when no default mocks exist", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents: make(map[string][]byte),
+			events:   make(chan content.ContentEvent),
+		}
+
+		service := NewMockAdminService(contentService)
+		mocks, err := service.ListDefaultMocks("test-uuid")
+
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if len(mocks) != 0 {
+			t.Errorf("expected 0 mocks, got %d", len(mocks))
+		}
+	})
+
+	t.Run("returns error when content service fails", func(t *testing.T) {
+		contentService := &mockContentService{
+			contents:    make(map[string][]byte),
+			events:      make(chan content.ContentEvent),
+			shouldError: true,
+			errorMsg:    "content service error",
+		}
+
+		service := NewMockAdminService(contentService)
+		mocks, err := service.ListDefaultMocks("test-uuid")
+
+		if err == nil {
+			t.Error("expected error, got nil")
+		}
+
+		if mocks != nil {
+			t.Error("expected nil mocks on error")
+		}
+	})
+
+	t.Run("handles nil contents from service", func(t *testing.T) {
+		service := NewMockAdminService(&nilDataContentService{})
+		mocks, err := service.ListDefaultMocks("test-uuid")
+
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if len(mocks) != 0 {
+			t.Errorf("expected 0 mocks for nil contents, got %d", len(mocks))
 		}
 	})
 }
