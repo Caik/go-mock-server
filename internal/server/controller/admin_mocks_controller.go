@@ -19,8 +19,8 @@ type AddDeleteMockRequest struct {
 	Host          string `header:"x-mock-host" binding:"required"`
 	Uri           string `header:"x-mock-uri" binding:"required"`
 	Method        string `header:"x-mock-method" binding:"required"`
-	StatusCode    string `header:"x-mock-status"`
-	statusCodeInt int    // populated by validate()
+	StatusCodeStr string `header:"x-mock-status"`
+	StatusCode    int    // populated by validate()
 }
 
 type AdminMocksController struct {
@@ -156,7 +156,7 @@ func (a *AdminMocksController) handleMockAddUpdate(c *gin.Context) {
 		Host:       req.Host,
 		URI:        req.Uri,
 		Method:     req.Method,
-		StatusCode: req.statusCodeInt,
+		StatusCode: req.StatusCode,
 		Data:       &data,
 	}, uuid)
 
@@ -236,7 +236,7 @@ func (a *AdminMocksController) handleMockCreate(c *gin.Context) {
 		Host:       req.Host,
 		URI:        req.Uri,
 		Method:     req.Method,
-		StatusCode: req.statusCodeInt,
+		StatusCode: req.StatusCode,
 		Data:       &data,
 	}, uuid)
 
@@ -347,7 +347,7 @@ func (a *AdminMocksController) handleMockUpdate(c *gin.Context) {
 		Host:       req.Host,
 		URI:        req.Uri,
 		Method:     req.Method,
-		StatusCode: req.statusCodeInt,
+		StatusCode: req.StatusCode,
 		Data:       &data,
 	}, uuid)
 
@@ -408,7 +408,7 @@ func (a *AdminMocksController) handleMockDelete(c *gin.Context) {
 		Host:       addReq.Host,
 		URI:        addReq.Uri,
 		Method:     addReq.Method,
-		StatusCode: addReq.statusCodeInt,
+		StatusCode: addReq.StatusCode,
 	}, uuid)
 
 	if err != nil {
@@ -469,14 +469,14 @@ func (a *AddDeleteMockRequest) validate() error {
 	}
 
 	// Default to 200 if not provided
-	if a.StatusCode == "" {
-		a.StatusCode = "200"
+	if a.StatusCodeStr == "" {
+		a.StatusCodeStr = "200"
 	}
-	sc, err := strconv.Atoi(a.StatusCode)
+	sc, err := strconv.Atoi(a.StatusCodeStr)
 	if err != nil || sc < 100 || sc > 599 {
 		return errors.New("invalid status code provided: must be between 100 and 599")
 	}
-	a.statusCodeInt = sc
+	a.StatusCode = sc
 	return nil
 }
 

@@ -480,20 +480,20 @@ func TestAddDeleteMockRequest_validate(t *testing.T) {
 		{
 			name: "valid explicit status code 404",
 			request: AddDeleteMockRequest{
-				Host:       "example.com",
-				Uri:        "/api/users",
-				Method:     "GET",
-				StatusCode: "404",
+				Host:          "example.com",
+				Uri:           "/api/users",
+				Method:        "GET",
+				StatusCodeStr: "404",
 			},
 			expectError: false,
 		},
 		{
 			name: "status code out of range low",
 			request: AddDeleteMockRequest{
-				Host:       "example.com",
-				Uri:        "/api/users",
-				Method:     "GET",
-				StatusCode: "99",
+				Host:          "example.com",
+				Uri:           "/api/users",
+				Method:        "GET",
+				StatusCodeStr: "99",
 			},
 			expectError: true,
 			errorMsg:    "invalid status code provided",
@@ -501,10 +501,10 @@ func TestAddDeleteMockRequest_validate(t *testing.T) {
 		{
 			name: "status code out of range high",
 			request: AddDeleteMockRequest{
-				Host:       "example.com",
-				Uri:        "/api/users",
-				Method:     "GET",
-				StatusCode: "600",
+				Host:          "example.com",
+				Uri:           "/api/users",
+				Method:        "GET",
+				StatusCodeStr: "600",
 			},
 			expectError: true,
 			errorMsg:    "invalid status code provided",
@@ -512,10 +512,10 @@ func TestAddDeleteMockRequest_validate(t *testing.T) {
 		{
 			name: "status code non-numeric",
 			request: AddDeleteMockRequest{
-				Host:       "example.com",
-				Uri:        "/api/users",
-				Method:     "GET",
-				StatusCode: "abc",
+				Host:          "example.com",
+				Uri:           "/api/users",
+				Method:        "GET",
+				StatusCodeStr: "abc",
 			},
 			expectError: true,
 			errorMsg:    "invalid status code provided",
@@ -551,14 +551,14 @@ func TestAddDeleteMockRequest_validate(t *testing.T) {
 					t.Errorf("expected method to be converted to 'GET', got '%s'", tt.request.Method)
 				}
 
-				// For the explicit 404 status code test, verify statusCodeInt is set correctly
-				if tt.name == "valid explicit status code 404" && tt.request.statusCodeInt != 404 {
-					t.Errorf("expected statusCodeInt to be 404, got %d", tt.request.statusCodeInt)
+				// For the explicit 404 status code test, verify StatusCode is set correctly
+				if tt.name == "valid explicit status code 404" && tt.request.StatusCode != 404 {
+					t.Errorf("expected StatusCode to be 404, got %d", tt.request.StatusCode)
 				}
 
-				// For the default status code test, verify statusCodeInt defaults to 200
-				if tt.name == "default status code when empty" && tt.request.statusCodeInt != 200 {
-					t.Errorf("expected statusCodeInt to be 200, got %d", tt.request.statusCodeInt)
+				// For the default status code test, verify StatusCode defaults to 200
+				if tt.name == "default status code when empty" && tt.request.StatusCode != 200 {
+					t.Errorf("expected StatusCode to be 200, got %d", tt.request.StatusCode)
 				}
 			}
 		})

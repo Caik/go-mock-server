@@ -35,37 +35,39 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string, st
 
 	data, err := os.ReadFile(absolutePath)
 
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err // real I/O error — propagate it
+	}
+
 	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return nil, err // real I/O error — propagate it
-		}
-		// file not found — apply fallback logic
-		if statusCode != 200 {
-			defaultPath, defErr := f.getDefaultFilePath(host, statusCode)
-			if defErr == nil {
-				defaultData, defReadErr := os.ReadFile(defaultPath)
-				if defReadErr != nil && !errors.Is(defReadErr, os.ErrNotExist) {
-					return nil, defReadErr // real I/O error on default file — propagate it
-				}
-				if defReadErr == nil {
-					return &ContentResult{
-						Data:   &defaultData,
-						Source: "filesystem",
-						Path:   defaultPath,
-					}, nil
-				}
-			}
-			// No default file found — return empty body (not an error)
-			empty := []byte("")
-			return &ContentResult{
-				Data:   &empty,
-				Source: "filesystem",
-				Path:   "",
-			}, nil
+		// file not found — apply fallback logic for non-200 status codes
+		if statusCode == 200 {
+			log.Info().Str("uuid", uuid).Str("path", absolutePath).Msg("mock not found")
+			return nil, errors.New("mock not found")
 		}
 
-		log.Info().Str("uuid", uuid).Str("path", absolutePath).Msg("mock not found")
-		return nil, errors.New("mock not found")
+		defaultPath, defErr := f.getDefaultFilePath(host, statusCode)
+		if defErr == nil {
+			defaultData, defReadErr := os.ReadFile(defaultPath)
+			if defReadErr != nil && !errors.Is(defReadErr, os.ErrNotExist) {
+				return nil, defReadErr // real I/O error on default file — propagate it
+			}
+			if defReadErr == nil {
+				return &ContentResult{
+					Data:   &defaultData,
+					Source: "filesystem",
+					Path:   defaultPath,
+				}, nil
+			}
+		}
+
+		// No default file found — return empty body (not an error)
+		empty := []byte("")
+		return &ContentResult{
+			Data:   &empty,
+			Source: "filesystem",
+			Path:   "",
+		}, nil
 	}
 
 	return &ContentResult{
@@ -151,11 +153,11 @@ func (f *FilesystemContentService) ListContents(uuid string) (*[]ContentData, er
 		}
 
 		data, err := f.filePathToContentData(path)
-
-		if err == nil {
-			contents = append(contents, *data)
+		if err != nil {
+			return nil
 		}
 
+		contents = append(contents, *data)
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("error while listing contents: %v", err)
