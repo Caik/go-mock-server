@@ -36,11 +36,17 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string, st
 	data, err := os.ReadFile(absolutePath)
 
 	if err != nil {
-		// For non-200: try _default.{statusCode}, then return empty body
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, err // real I/O error — propagate it
+		}
+		// file not found — apply fallback logic
 		if statusCode != 200 {
 			defaultPath, defErr := f.getDefaultFilePath(host, statusCode)
 			if defErr == nil {
 				defaultData, defReadErr := os.ReadFile(defaultPath)
+				if defReadErr != nil && !errors.Is(defReadErr, os.ErrNotExist) {
+					return nil, defReadErr // real I/O error on default file — propagate it
+				}
 				if defReadErr == nil {
 					return &ContentResult{
 						Data:   &defaultData,
@@ -286,8 +292,8 @@ func (f *FilesystemContentService) filePathToContentData(path string) (*ContentD
 		return nil, fmt.Errorf("invalid host: %s", host)
 	}
 
-	// validating URI
-	if !util.UriRegex.MatchString(uri) {
+	// validating URI — skip regex for root path
+	if uri != "/" && !util.UriRegex.MatchString(uri) {
 		return nil, fmt.Errorf("invalid uri: %s", uri)
 	}
 
