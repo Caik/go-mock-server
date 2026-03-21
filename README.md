@@ -52,7 +52,7 @@ Integrate mock responses seamlessly into your CI/CD pipelines for thorough integ
 
 ### Dynamic Configuration for Ultimate Flexibility
 
-Whether you're simulating errors or latencies, Go Mock Server's Dynamic Configuration via API offers unparalleled flexibility. Fine-tune your mock server on-the-fly to adapt to evolving testing requirements.
+Whether you're simulating statuses or latencies, Go Mock Server's Dynamic Configuration via API offers unparalleled flexibility. Fine-tune your mock server on-the-fly to adapt to evolving testing requirements.
 
 If you've ever faced these challenges, or if you're just looking for a versatile and powerful HTTP mocking tool, you've come to the right place. Dive into the [usage](#-usage) section to discover how Go Mock Server can make your development and testing workflows smoother than ever.
 

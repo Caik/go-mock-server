@@ -942,7 +942,7 @@
           }
         }
       },
-      "ErrorConfig": {
+      "StatusConfig": {
         "type": "object",
         "description": "Status simulation configuration for a specific host and/or URI",
         "properties": {
@@ -967,10 +967,10 @@
           },
           "statuses": {
             "type": "object",
-            "description": "Holds all the status simulation configurations for a specific host and/or URI\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an ErrorConfig object",
+            "description": "Holds all the status simulation configurations for a specific host and/or URI\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an StatusConfig object",
             "additionalProperties": {
               "type": "object",
-              "$ref": "#/components/schemas/ErrorConfig"
+              "$ref": "#/components/schemas/StatusConfig"
             }
           }
         }
@@ -984,10 +984,10 @@
           },
           "statuses": {
             "type": "object",
-            "description": "Holds all the status simulation configurations for a specific host and/or URI\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an ErrorConfig object",
+            "description": "Holds all the status simulation configurations for a specific host and/or URI\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an StatusConfig object",
             "additionalProperties": {
               "type": "object",
-              "$ref": "#/components/schemas/ErrorConfig"
+              "$ref": "#/components/schemas/StatusConfig"
             }
           },
           "uris": {
@@ -1024,10 +1024,10 @@
           },
           "statuses": {
             "type": "object",
-            "description": "Holds all the default status simulation configurations for a specific host\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an ErrorConfig object",
+            "description": "Holds all the default status simulation configurations for a specific host\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an StatusConfig object",
             "additionalProperties": {
               "type": "object",
-              "$ref": "#/components/schemas/ErrorConfig"
+              "$ref": "#/components/schemas/StatusConfig"
             }
           },
           "uris": {
@@ -1053,10 +1053,10 @@
           },
           "statuses": {
             "type": "object",
-            "description": "Holds all the default status simulation configurations for a specific host\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an ErrorConfig object",
+            "description": "Holds all the default status simulation configurations for a specific host\n\nEach entry in the object represents a status simulation configuration where the key is the HTTP status code and the value is an StatusConfig object",
             "additionalProperties": {
               "type": "object",
-              "$ref": "#/components/schemas/ErrorConfig"
+              "$ref": "#/components/schemas/StatusConfig"
             }
           }
         }
