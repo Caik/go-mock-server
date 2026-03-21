@@ -118,3 +118,45 @@ Place a `_default.{method}.{status-code}` file in any host directory to catch re
 ### Hot Reload
 
 Mock files are watched automatically. Create, update, or delete a file and Go Mock Server picks up the change immediately — no restart required.
+
+<br />
+
+## 💿 Installation
+
+### 1. Docker
+
+The easiest way to run Go Mock Server. The Docker image includes the pre-built admin UI at `/app/ui`.
+
+```bash
+docker run --name mock-server --rm \
+  -p 8080:8080 -p 9090:9090 \
+  -v $(pwd)/my-mocks:/mocks \
+  caik/go-mock-server:latest \
+  --mocks-directory /mocks \
+  --ui-dir /app/ui
+```
+
+Omit the `-v` volume mount if you want to start with no pre-existing mocks and create them all via the API or UI.
+
+### 2. Pre-compiled Binaries
+
+Download a binary for your platform from the **[Releases](https://github.com/Caik/go-mock-server/releases)** page. Available for Linux, macOS (AMD64 and ARM64), and Windows.
+
+```bash
+# macOS / Linux: make executable first
+chmod +x ./mock-server
+
+./mock-server --mocks-directory ./my-mocks
+```
+
+### 3. Compiling Your Own Binary
+
+Requires Go installed on your machine.
+
+```bash
+# Example: build a macOS AMD64 binary
+CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 \
+  go build -a -ldflags '-extldflags "-static" -s -w' \
+  -o ./mock-server-darwin-amd64 \
+  cmd/mock-server/main.go
+```
