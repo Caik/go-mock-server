@@ -321,9 +321,9 @@ func TestNewHostsConfig_InvalidLatencyConfig(t *testing.T) {
 }
 
 func TestNewHostsConfig_InvalidStatusConfig(t *testing.T) {
-	// Create a temporary file with invalid error config (percentage > 100)
+	// Create a temporary file with invalid status config (percentage > 100)
 	tempDir := t.TempDir()
-	configFile := filepath.Join(tempDir, "invalid-error-config.json")
+	configFile := filepath.Join(tempDir, "invalid-status-config.json")
 
 	invalidConfig := HostsConfig{
 		Hosts: map[string]HostConfig{
@@ -354,7 +354,7 @@ func TestNewHostsConfig_InvalidStatusConfig(t *testing.T) {
 	hostsConfig, err := NewHostsConfig(appArgs)
 
 	if err == nil {
-		t.Fatal("expected error for invalid error config")
+		t.Fatal("expected error for invalid status config")
 	}
 
 	if hostsConfig != nil {
@@ -473,7 +473,7 @@ func TestNewHostsConfig_ComplexValidConfig(t *testing.T) {
 	}
 
 	if len(hostConfig.StatusesConfig) != 2 {
-		t.Errorf("expected 2 error configs, got %d", len(hostConfig.StatusesConfig))
+		t.Errorf("expected 2 status configs, got %d", len(hostConfig.StatusesConfig))
 	}
 
 	if len(hostConfig.UrisConfig) != 1 {
@@ -548,9 +548,9 @@ func TestNewHostsConfig_EmptyHostsJSONFile(t *testing.T) {
 }
 
 func TestNewHostsConfig_InvalidErrorCode(t *testing.T) {
-	// Test with invalid error code (not in 4xx or 5xx range)
+	// Test with invalid status code (not in valid range)
 	tempDir := t.TempDir()
-	configFile := filepath.Join(tempDir, "invalid-error-code-config.json")
+	configFile := filepath.Join(tempDir, "invalid-status-code-config.json")
 
 	invalidConfig := HostsConfig{
 		Hosts: map[string]HostConfig{
@@ -581,7 +581,7 @@ func TestNewHostsConfig_InvalidErrorCode(t *testing.T) {
 	hostsConfig, err := NewHostsConfig(appArgs)
 
 	if err == nil {
-		t.Fatal("expected error for invalid error code")
+		t.Fatal("expected error for invalid status code")
 	}
 
 	if hostsConfig != nil {

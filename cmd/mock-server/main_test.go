@@ -179,7 +179,6 @@ func TestConfigurationScenarios(t *testing.T) {
 					"--port", "9090",
 					"--disable-cache",
 					"--disable-latency",
-					"--disable-error",
 				},
 			},
 			{

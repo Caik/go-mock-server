@@ -276,7 +276,7 @@ func TestUriConfig_Validate_Valid(t *testing.T) {
 			},
 		},
 		{
-			name: "errors config only",
+			name: "statuses config only",
 			config: UriConfig{
 				StatusesConfig: map[string]StatusConfig{
 					"404": {
@@ -286,7 +286,7 @@ func TestUriConfig_Validate_Valid(t *testing.T) {
 			},
 		},
 		{
-			name: "both latency and errors config",
+			name: "both latency and statuses config",
 			config: UriConfig{
 				LatencyConfig: &LatencyConfig{
 					Min: intPtr(100),
@@ -392,7 +392,7 @@ func TestHostConfig_Validate_Valid(t *testing.T) {
 			},
 		},
 		{
-			name: "errors config only",
+			name: "statuses config only",
 			config: HostConfig{
 				StatusesConfig: map[string]StatusConfig{
 					"500": {
@@ -465,7 +465,7 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 			expectedErr: "invalid latency config found: min can not be greater than max",
 		},
 		{
-			name: "invalid error code - not numeric",
+			name: "invalid status code - not numeric",
 			config: HostConfig{
 				StatusesConfig: map[string]StatusConfig{
 					"abc": {
@@ -476,7 +476,7 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 			expectedErr: "invalid status code",
 		},
 		{
-			name: "invalid error code - below 1xx",
+			name: "invalid status code - below 1xx",
 			config: HostConfig{
 				StatusesConfig: map[string]StatusConfig{
 					"99": {
@@ -487,7 +487,7 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 			expectedErr: "status code must be between 100 and 599",
 		},
 		{
-			name: "invalid error code - 6xx",
+			name: "invalid status code - 6xx",
 			config: HostConfig{
 				StatusesConfig: map[string]StatusConfig{
 					"601": {
@@ -498,7 +498,7 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 			expectedErr: "status code must be between 100 and 599",
 		},
 		{
-			name: "invalid error config",
+			name: "invalid status config",
 			config: HostConfig{
 				StatusesConfig: map[string]StatusConfig{
 					"500": {
