@@ -26,7 +26,7 @@ func TestCors(t *testing.T) {
 		expectedHeaders := map[string]string{
 			"Access-Control-Allow-Origin":  "*",
 			"Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
-			"Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-Mock-Host, X-Mock-Uri, X-Mock-Method",
+			"Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-Mock-Host, X-Mock-Uri, X-Mock-Method, X-Mock-Status",
 			"Access-Control-Max-Age":       "86400",
 		}
 

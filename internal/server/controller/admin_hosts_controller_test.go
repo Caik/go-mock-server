@@ -666,10 +666,10 @@ func TestAdminHostsController_LatencyHandling(t *testing.T) {
 	})
 }
 
-func TestAdminHostsController_ErrorHandlingEndpoints(t *testing.T) {
+func TestAdminHostsController_StatusHandlingEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	t.Run("handleErrorsAddUpdate adds error config successfully", func(t *testing.T) {
+	t.Run("handleStatusesAddUpdate adds status config successfully", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: map[string]config.HostConfig{
 				"example.com": {},
@@ -678,16 +678,16 @@ func TestAdminHostsController_ErrorHandlingEndpoints(t *testing.T) {
 		service := admin.NewHostsConfigAdminService(hostsConfig)
 		controller := NewAdminHostsController(hostsConfig, service)
 
-		// Create request with error config
-		requestBody := `{"host": "example.com", "errors": {"500": {"percentage": 10}, "404": {"percentage": 5}}}`
+		// Create request with status config
+		requestBody := `{"host": "example.com", "statuses": {"500": {"percentage": 10}, "404": {"percentage": 5}}}`
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/errors", strings.NewReader(requestBody))
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/statuses", strings.NewReader(requestBody))
 		c.Request.Header.Set("Content-Type", "application/json")
 		c.Params = gin.Params{{Key: "host", Value: "example.com"}}
 		c.Set(util.UuidKey, "test-uuid")
 
-		controller.handleErrorsAddUpdate(c)
+		controller.handleStatusesAddUpdate(c)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("expected status 200, got %d", w.Code)
@@ -699,18 +699,18 @@ func TestAdminHostsController_ErrorHandlingEndpoints(t *testing.T) {
 			t.Errorf("expected status 'success', got '%s'", response.Status)
 		}
 
-		// Verify error config was added
+		// Verify status config was added
 		hostConfig := hostsConfig.GetHostConfig("example.com")
-		if hostConfig == nil || hostConfig.ErrorsConfig == nil {
-			t.Error("error config should be added to host")
+		if hostConfig == nil || hostConfig.StatusesConfig == nil {
+			t.Error("status config should be added to host")
 		}
 	})
 
-	t.Run("handleErrorDelete removes specific error successfully", func(t *testing.T) {
+	t.Run("handleStatusDelete removes specific status successfully", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: map[string]config.HostConfig{
 				"example.com": {
-					ErrorsConfig: map[string]config.ErrorConfig{
+					StatusesConfig: map[string]config.StatusConfig{
 						"500": {Percentage: intPtr(10)},
 						"404": {Percentage: intPtr(5)},
 					},
@@ -720,16 +720,16 @@ func TestAdminHostsController_ErrorHandlingEndpoints(t *testing.T) {
 		service := admin.NewHostsConfigAdminService(hostsConfig)
 		controller := NewAdminHostsController(hostsConfig, service)
 
-		// Create delete request for specific error
+		// Create delete request for specific status
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Params = gin.Params{
 			{Key: "host", Value: "example.com"},
-			{Key: "error", Value: "500"},
+			{Key: "status", Value: "500"},
 		}
 		c.Set(util.UuidKey, "test-uuid")
 
-		controller.handleErrorDelete(c)
+		controller.handleStatusDelete(c)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("expected status 200, got %d", w.Code)
@@ -751,8 +751,8 @@ func TestAdminHostsController_ErrorHandlingEndpoints(t *testing.T) {
 		service := admin.NewHostsConfigAdminService(hostsConfig)
 		controller := NewAdminHostsController(hostsConfig, service)
 
-		// Create request with valid URI config (must have either latency or errors)
-		requestBody := `{"host": "example.com", "uris": {"/api/users": {"errors": {"400": {"percentage": 10}}}, "/api/health": {"latency": {"min": 50, "max": 100}}}}`
+		// Create request with valid URI config (must have either latency or statuses)
+		requestBody := `{"host": "example.com", "uris": {"/api/users": {"statuses": {"400": {"percentage": 10}}}, "/api/health": {"latency": {"min": 50, "max": 100}}}}`
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/uris", strings.NewReader(requestBody))
@@ -779,38 +779,38 @@ func TestAdminHostsController_ErrorHandlingEndpoints(t *testing.T) {
 		}
 	})
 
-	t.Run("error endpoints handle invalid host parameters", func(t *testing.T) {
+	t.Run("status endpoints handle invalid host parameters", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: make(map[string]config.HostConfig),
 		}
 		service := admin.NewHostsConfigAdminService(hostsConfig)
 		controller := NewAdminHostsController(hostsConfig, service)
 
-		// Test handleErrorsAddUpdate with empty host
-		requestBody := `{"host": "", "errors": {"500": {"percentage": 10}}}`
+		// Test handleStatusesAddUpdate with empty host
+		requestBody := `{"host": "", "statuses": {"500": {"percentage": 10}}}`
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest("POST", "/admin/config/hosts//errors", strings.NewReader(requestBody))
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts//statuses", strings.NewReader(requestBody))
 		c.Request.Header.Set("Content-Type", "application/json")
 		c.Params = gin.Params{{Key: "host", Value: ""}}
 		c.Set(util.UuidKey, "test-uuid")
 
-		controller.handleErrorsAddUpdate(c)
+		controller.handleStatusesAddUpdate(c)
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("expected status 400, got %d", w.Code)
 		}
 
-		// Test handleErrorDelete with empty host
+		// Test handleStatusDelete with empty host
 		w = httptest.NewRecorder()
 		c, _ = gin.CreateTestContext(w)
 		c.Params = gin.Params{
 			{Key: "host", Value: ""},
-			{Key: "error", Value: "500"},
+			{Key: "status", Value: "500"},
 		}
 		c.Set(util.UuidKey, "test-uuid")
 
-		controller.handleErrorDelete(c)
+		controller.handleStatusDelete(c)
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("expected status 400, got %d", w.Code)
@@ -955,7 +955,7 @@ func TestAdminHostsController_handleLatencyDelete_NotFound(t *testing.T) {
 	})
 }
 
-func TestAdminHostsController_handleErrorsAddUpdate_NotFound(t *testing.T) {
+func TestAdminHostsController_handleStatusesAddUpdate_NotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	t.Run("returns 404 when host doesn't exist", func(t *testing.T) {
@@ -965,16 +965,16 @@ func TestAdminHostsController_handleErrorsAddUpdate_NotFound(t *testing.T) {
 		service := admin.NewHostsConfigAdminService(hostsConfig)
 		controller := NewAdminHostsController(hostsConfig, service)
 
-		// Create request with error config for non-existent host
-		requestBody := `{"errors": {"500": {"percentage": 10}}}`
+		// Create request with status config for non-existent host
+		requestBody := `{"statuses": {"500": {"percentage": 10}}}`
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/nonexistent.com/errors", strings.NewReader(requestBody))
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/nonexistent.com/statuses", strings.NewReader(requestBody))
 		c.Request.Header.Set("Content-Type", "application/json")
 		c.Params = gin.Params{{Key: "host", Value: "nonexistent.com"}}
 		c.Set(util.UuidKey, "test-uuid")
 
-		controller.handleErrorsAddUpdate(c)
+		controller.handleStatusesAddUpdate(c)
 
 		if w.Code != http.StatusNotFound {
 			t.Errorf("expected status 404, got %d", w.Code)
@@ -1001,16 +1001,16 @@ func TestAdminHostsController_handleErrorsAddUpdate_NotFound(t *testing.T) {
 		service := admin.NewHostsConfigAdminService(hostsConfig)
 		controller := NewAdminHostsController(hostsConfig, service)
 
-		// Create request with invalid error config (percentage > 100)
-		requestBody := `{"errors": {"500": {"percentage": 150}}}`
+		// Create request with invalid status config (percentage > 100)
+		requestBody := `{"statuses": {"500": {"percentage": 150}}}`
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/errors", strings.NewReader(requestBody))
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/statuses", strings.NewReader(requestBody))
 		c.Request.Header.Set("Content-Type", "application/json")
 		c.Params = gin.Params{{Key: "host", Value: "example.com"}}
 		c.Set(util.UuidKey, "test-uuid")
 
-		controller.handleErrorsAddUpdate(c)
+		controller.handleStatusesAddUpdate(c)
 
 		if w.Code != http.StatusInternalServerError {
 			t.Errorf("expected status 500, got %d", w.Code)
@@ -1024,7 +1024,7 @@ func TestAdminHostsController_handleErrorsAddUpdate_NotFound(t *testing.T) {
 		}
 	})
 
-	t.Run("returns 400 when errors config is missing", func(t *testing.T) {
+	t.Run("returns 400 when statuses config is missing", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: map[string]config.HostConfig{
 				"example.com": {},
@@ -1033,16 +1033,16 @@ func TestAdminHostsController_handleErrorsAddUpdate_NotFound(t *testing.T) {
 		service := admin.NewHostsConfigAdminService(hostsConfig)
 		controller := NewAdminHostsController(hostsConfig, service)
 
-		// Create request without errors config
+		// Create request without statuses config
 		requestBody := `{}`
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/errors", strings.NewReader(requestBody))
+		c.Request = httptest.NewRequest("POST", "/admin/config/hosts/example.com/statuses", strings.NewReader(requestBody))
 		c.Request.Header.Set("Content-Type", "application/json")
 		c.Params = gin.Params{{Key: "host", Value: "example.com"}}
 		c.Set(util.UuidKey, "test-uuid")
 
-		controller.handleErrorsAddUpdate(c)
+		controller.handleStatusesAddUpdate(c)
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("expected status 400, got %d", w.Code)
@@ -1057,7 +1057,7 @@ func TestAdminHostsController_handleErrorsAddUpdate_NotFound(t *testing.T) {
 	})
 }
 
-func TestAdminHostsController_handleErrorDelete_NotFound(t *testing.T) {
+func TestAdminHostsController_handleStatusDelete_NotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	t.Run("returns 404 when host doesn't exist", func(t *testing.T) {
@@ -1072,11 +1072,11 @@ func TestAdminHostsController_handleErrorDelete_NotFound(t *testing.T) {
 		c, _ := gin.CreateTestContext(w)
 		c.Params = gin.Params{
 			{Key: "host", Value: "nonexistent.com"},
-			{Key: "error", Value: "500"},
+			{Key: "status", Value: "500"},
 		}
 		c.Set(util.UuidKey, "test-uuid")
 
-		controller.handleErrorDelete(c)
+		controller.handleStatusDelete(c)
 
 		if w.Code != http.StatusNotFound {
 			t.Errorf("expected status 404, got %d", w.Code)
@@ -1094,11 +1094,11 @@ func TestAdminHostsController_handleErrorDelete_NotFound(t *testing.T) {
 		}
 	})
 
-	t.Run("returns 400 when error code parameter is missing", func(t *testing.T) {
+	t.Run("returns 400 when status code parameter is missing", func(t *testing.T) {
 		hostsConfig := &config.HostsConfig{
 			Hosts: map[string]config.HostConfig{
 				"example.com": {
-					ErrorsConfig: map[string]config.ErrorConfig{
+					StatusesConfig: map[string]config.StatusConfig{
 						"500": {Percentage: intPtr(10)},
 					},
 				},
@@ -1107,16 +1107,16 @@ func TestAdminHostsController_handleErrorDelete_NotFound(t *testing.T) {
 		service := admin.NewHostsConfigAdminService(hostsConfig)
 		controller := NewAdminHostsController(hostsConfig, service)
 
-		// Create delete request without error code
+		// Create delete request without status code
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Params = gin.Params{
 			{Key: "host", Value: "example.com"},
-			{Key: "error", Value: ""},
+			{Key: "status", Value: ""},
 		}
 		c.Set(util.UuidKey, "test-uuid")
 
-		controller.handleErrorDelete(c)
+		controller.handleStatusDelete(c)
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("expected status 400, got %d", w.Code)

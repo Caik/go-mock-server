@@ -11,19 +11,23 @@ import (
 // errContentService returns errContentServiceNotFound to trigger the 500 path
 type errContentService struct{}
 
-func (e *errContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
+func (e *errContentService) GetContent(host, uri, method, uuid string, statusCode int) (*content.ContentResult, error) {
 	return nil, errContentServiceNotFound
 }
 
-func (e *errContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
+func (e *errContentService) SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error {
 	return nil
 }
 
-func (e *errContentService) DeleteContent(host, uri, method, uuid string) error {
+func (e *errContentService) DeleteContent(host, uri, method, uuid string, statusCode int) error {
 	return nil
 }
 
 func (e *errContentService) ListContents(uuid string) (*[]content.ContentData, error) {
+	return nil, nil
+}
+
+func (e *errContentService) ListDefaultContents(uuid string) (*[]content.ContentData, error) {
 	return nil, nil
 }
 
@@ -61,7 +65,7 @@ func TestContentMockService_new500Response(t *testing.T) {
 }
 
 func TestContentMockService_new404Response(t *testing.T) {
-	t.Run("returns 404 when content not found", func(t *testing.T) {
+	t.Run("returns empty body with Matched=false when content not found for non-200 status", func(t *testing.T) {
 		svc := &contentMockService{
 			contentService: &mockContentService{
 				contents: make(map[string][]byte),
@@ -70,20 +74,17 @@ func TestContentMockService_new404Response(t *testing.T) {
 		}
 
 		req := MockRequest{
-			Host:   "example.com",
-			URI:    "/nonexistent",
-			Method: "GET",
-			Uuid:   "test-uuid",
+			Host:       "example.com",
+			URI:        "/nonexistent",
+			Method:     "GET",
+			Uuid:       "test-uuid",
+			StatusCode: 404,
 		}
 
 		resp := svc.getMockResponse(req)
 
 		if resp == nil {
 			t.Fatal("expected non-nil response")
-		}
-
-		if resp.StatusCode != http.StatusNotFound {
-			t.Errorf("expected status 404, got %d", resp.StatusCode)
 		}
 
 		if resp.Metadata[MetadataMatched] != "false" {
@@ -105,10 +106,11 @@ func TestContentMockService_getMockResponse_found(t *testing.T) {
 		}
 
 		req := MockRequest{
-			Host:   "example.com",
-			URI:    "/api/test",
-			Method: "GET",
-			Uuid:   "test-uuid",
+			Host:       "example.com",
+			URI:        "/api/test",
+			Method:     "GET",
+			Uuid:       "test-uuid",
+			StatusCode: 200,
 		}
 
 		resp := svc.getMockResponse(req)

@@ -11,25 +11,25 @@ const URI_REGEX = /^\/?(?:[\w-]+\/)*[\w-]+\/?(?:\?(?:[\w-]+=[\w-]+)(?:&[\w-]+=[\
 // State types
 // =============================================================================
 interface LatencyState { min: string; max: string; p95: string; p99: string; }
-interface ErrorRow { code: string; percentage: string; }
-interface UriState { pattern: string; latency: LatencyState; errorRows: ErrorRow[]; }
+interface StatusRow { code: string; percentage: string; }
+interface UriState { pattern: string; latency: LatencyState; statusRows: StatusRow[]; }
 
 // =============================================================================
 // Error types
 // =============================================================================
 interface LatencyErrors { min?: string; max?: string; p95?: string; p99?: string; range?: string; }
-interface ErrorRowError { code?: string; percentage?: string; }
+interface StatusRowError { code?: string; percentage?: string; }
 interface UriFormError {
   pattern?: string;
   latency?: LatencyErrors;
-  errorRows?: ErrorRowError[];
+  statusRows?: StatusRowError[];
   atLeastOne?: string;
   errorSum?: string;
 }
 interface FormErrors {
   hostname?: string;
   latency?: LatencyErrors;
-  globalErrorRows?: ErrorRowError[];
+  globalStatusRows?: StatusRowError[];
   globalErrorSum?: string;
   atLeastOne?: string;
   uris?: UriFormError[];
@@ -39,7 +39,7 @@ interface FormErrors {
 // Helpers
 // =============================================================================
 function emptyLatency(): LatencyState { return { min: '', max: '', p95: '', p99: '' }; }
-function emptyUri(): UriState { return { pattern: '', latency: emptyLatency(), errorRows: [] }; }
+function emptyUri(): UriState { return { pattern: '', latency: emptyLatency(), statusRows: [] }; }
 
 function hasLatencyAnyField(l: LatencyState): boolean {
   return l.min.trim() !== '' || l.max.trim() !== '' || l.p95.trim() !== '' || l.p99.trim() !== '';
@@ -97,15 +97,15 @@ function validateLatency(l: LatencyState): LatencyErrors {
   return errs;
 }
 
-function validateErrorRows(rows: ErrorRow[]): { rowErrors: ErrorRowError[]; sum?: string } {
-  const rowErrors = rows.map((row): ErrorRowError => {
+function validateStatusRows(rows: StatusRow[]): { rowErrors: StatusRowError[]; sum?: string } {
+  const rowErrors = rows.map((row): StatusRowError => {
     const codeBlank = !row.code.trim();
     const pctBlank = !row.percentage.trim();
     if (codeBlank && pctBlank) return {};
     if (codeBlank) return { code: 'Status code is required' };
     if (pctBlank) return { percentage: 'Percentage is required' };
     const code = parseInt(row.code, 10);
-    if (isNaN(code) || code < 400 || code > 599) return { code: 'Must be 400–599' };
+    if (isNaN(code) || code < 100 || code > 599) return { code: 'Must be 100–599' };
     const pct = parseInt(row.percentage, 10);
     if (isNaN(pct) || pct <= 0 || pct > 100) return { percentage: 'Must be 1–100' };
     return {};
@@ -130,7 +130,7 @@ function buildLatencyPayload(l: LatencyState) {
   };
 }
 
-function buildErrorsPayload(rows: ErrorRow[]): Record<string, { percentage: number }> | undefined {
+function buildErrorsPayload(rows: StatusRow[]): Record<string, { percentage: number }> | undefined {
   const filled = rows.filter((r) => r.code.trim() && r.percentage.trim());
   if (filled.length === 0) return undefined;
   const result: Record<string, { percentage: number }> = {};
@@ -141,11 +141,11 @@ function buildErrorsPayload(rows: ErrorRow[]): Record<string, { percentage: numb
 function hasFormErrors(errors: FormErrors): boolean {
   if (errors.hostname || errors.globalErrorSum || errors.atLeastOne) return true;
   if (errors.latency && Object.values(errors.latency).some(Boolean)) return true;
-  if (errors.globalErrorRows?.some((e) => e.code || e.percentage)) return true;
+  if (errors.globalStatusRows?.some((e) => e.code || e.percentage)) return true;
   if (errors.uris?.some((u) => {
     if (u.pattern || u.atLeastOne || u.errorSum) return true;
     if (u.latency && Object.values(u.latency).some(Boolean)) return true;
-    if (u.errorRows?.some((e) => e.code || e.percentage)) return true;
+    if (u.statusRows?.some((e) => e.code || e.percentage)) return true;
     return false;
   })) return true;
   return false;
@@ -192,9 +192,9 @@ function LatencyFields({ value, errors, onChange }: {
   );
 }
 
-function ErrorRowsSection({ rows, rowErrors, onRowChange, onAdd, onRemove }: {
-  rows: ErrorRow[];
-  rowErrors?: ErrorRowError[];
+function StatusRowsSection({ rows, rowErrors, onRowChange, onAdd, onRemove }: {
+  rows: StatusRow[];
+  rowErrors?: StatusRowError[];
   onRowChange: (index: number, field: 'code' | 'percentage', value: string) => void;
   onAdd: () => void;
   onRemove: (index: number) => void;
@@ -234,7 +234,7 @@ function ErrorRowsSection({ rows, rowErrors, onRowChange, onAdd, onRemove }: {
       )}
       <button type="button" className="btn btn-secondary btn-sm" onClick={onAdd}
         style={{ marginTop: rows.length > 0 ? '8px' : '0' }}>
-        + Add Error
+        + Add Status
       </button>
     </>
   );
@@ -254,7 +254,7 @@ interface HostEditModalProps {
 export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: HostEditModalProps) {
   const [hostname, setHostname] = useState('');
   const [latency, setLatency] = useState<LatencyState>(emptyLatency());
-  const [errorRows, setErrorRows] = useState<ErrorRow[]>([]);
+  const [statusRows, setStatusRows] = useState<StatusRow[]>([]);
   const [uris, setUris] = useState<UriState[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -272,8 +272,8 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
         p95: host.latency.p95 != null ? String(host.latency.p95) : '',
         p99: host.latency.p99 != null ? String(host.latency.p99) : '',
       } : emptyLatency());
-      setErrorRows(host.errors
-        ? Object.entries(host.errors).map(([code, cfg]) => ({ code, percentage: String(cfg.percentage) }))
+      setStatusRows(host.statuses
+        ? Object.entries(host.statuses).map(([code, cfg]) => ({ code, percentage: String(cfg.percentage) }))
         : []);
       setUris(host.uris
         ? Object.entries(host.uris).map(([pattern, uri]) => ({
@@ -284,15 +284,15 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
               p95: uri.latency.p95 != null ? String(uri.latency.p95) : '',
               p99: uri.latency.p99 != null ? String(uri.latency.p99) : '',
             } : emptyLatency(),
-            errorRows: uri.errors
-              ? Object.entries(uri.errors).map(([code, cfg]) => ({ code, percentage: String(cfg.percentage) }))
+            statusRows: uri.statuses
+              ? Object.entries(uri.statuses).map(([code, cfg]) => ({ code, percentage: String(cfg.percentage) }))
               : [],
           }))
         : []);
     } else {
       setHostname('');
       setLatency(emptyLatency());
-      setErrorRows([]);
+      setStatusRows([]);
       setUris([]);
     }
   }, [isOpen, host]);
@@ -310,9 +310,9 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
     const latencyErrs = validateLatency(latency);
     if (Object.keys(latencyErrs).length > 0) newErrors.latency = latencyErrs;
 
-    // Global errors
-    const { rowErrors: globalRowErrs, sum: globalSum } = validateErrorRows(errorRows);
-    if (globalRowErrs.some((e) => e.code || e.percentage)) newErrors.globalErrorRows = globalRowErrs;
+    // Global status rows
+    const { rowErrors: globalRowErrs, sum: globalSum } = validateStatusRows(statusRows);
+    if (globalRowErrs.some((e) => e.code || e.percentage)) newErrors.globalStatusRows = globalRowErrs;
     if (globalSum) newErrors.globalErrorSum = globalSum;
 
     // URIs
@@ -328,15 +328,15 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
       const uriLatencyErrs = validateLatency(uri.latency);
       if (Object.keys(uriLatencyErrs).length > 0) uriErr.latency = uriLatencyErrs;
 
-      const { rowErrors: uriRowErrs, sum: uriSum } = validateErrorRows(uri.errorRows);
-      if (uriRowErrs.some((e) => e.code || e.percentage)) uriErr.errorRows = uriRowErrs;
+      const { rowErrors: uriRowErrs, sum: uriSum } = validateStatusRows(uri.statusRows);
+      if (uriRowErrs.some((e) => e.code || e.percentage)) uriErr.statusRows = uriRowErrs;
       if (uriSum) uriErr.errorSum = uriSum;
 
-      // Each URI must have at least latency (min+max) or errors
+      // Each URI must have at least latency (min+max) or status rows
       // Only show if user hasn't started configuring anything (partial input → field errors guide them)
       const uriHasLatency = uri.latency.min.trim() !== '' && uri.latency.max.trim() !== '';
-      const uriHasErrors = uri.errorRows.some((r) => r.code.trim() && r.percentage.trim());
-      const uriAttemptingAnything = hasLatencyAnyField(uri.latency) || uri.errorRows.some((r) => r.code.trim() || r.percentage.trim());
+      const uriHasErrors = uri.statusRows.some((r) => r.code.trim() && r.percentage.trim());
+      const uriAttemptingAnything = hasLatencyAnyField(uri.latency) || uri.statusRows.some((r) => r.code.trim() || r.percentage.trim());
       if (!uriHasLatency && !uriHasErrors && !uriAttemptingAnything) {
         uriErr.atLeastOne = 'Each URI must have at least a latency or an error configured';
       }
@@ -346,11 +346,11 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
 
     if (uriErrs.some((e) => Object.keys(e).length > 0)) newErrors.uris = uriErrs;
 
-    // At least one global config (latency, errors, or URIs)
+    // At least one global config (latency, status rows, or URIs)
     // Only show if the user hasn't started configuring anything — partial/invalid input is guided by field errors
     const isConfiguringAnything =
       hasLatencyAnyField(latency) ||
-      errorRows.some((r) => r.code.trim() || r.percentage.trim()) ||
+      statusRows.some((r) => r.code.trim() || r.percentage.trim()) ||
       uris.length > 0;
     if (!isConfiguringAnything) {
       newErrors.atLeastOne = 'At least one configuration (latency, errors, or URIs) is required';
@@ -365,15 +365,15 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
     const payload: HostSaveData = { host: hostname.trim() };
     const latencyPayload = buildLatencyPayload(latency);
     if (latencyPayload) payload.latency = latencyPayload;
-    const errorsPayload = buildErrorsPayload(errorRows);
-    if (errorsPayload) payload.errors = errorsPayload;
+    const errorsPayload = buildErrorsPayload(statusRows);
+    if (errorsPayload) payload.statuses = errorsPayload;
 
     if (uris.length > 0) {
       payload.uris = {};
       for (const uri of uris) {
         payload.uris[uri.pattern.trim()] = {
           ...(buildLatencyPayload(uri.latency) && { latency: buildLatencyPayload(uri.latency)! }),
-          ...(buildErrorsPayload(uri.errorRows) && { errors: buildErrorsPayload(uri.errorRows)! }),
+          ...(buildErrorsPayload(uri.statusRows) && { statuses: buildErrorsPayload(uri.statusRows)! }),
         };
       }
     }
@@ -413,17 +413,17 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
   };
 
   // ---------------------------------------------------------------------------
-  // Global error row handlers
+  // Global status row handlers
   // ---------------------------------------------------------------------------
-  const handleErrorRowChange = (index: number, field: 'code' | 'percentage', value: string) => {
-    let updatedRows: ErrorRow[] = [];
-    setErrorRows((prev) => {
+  const handleStatusRowChange = (index: number, field: 'code' | 'percentage', value: string) => {
+    let updatedRows: StatusRow[] = [];
+    setStatusRows((prev) => {
       updatedRows = prev.map((r, i) => (i === index ? { ...r, [field]: value } : r));
       return updatedRows;
     });
     setErrors((prev) => {
-      const newRowErrors = prev.globalErrorRows
-        ? prev.globalErrorRows.map((e, i) => {
+      const newRowErrors = prev.globalStatusRows
+        ? prev.globalStatusRows.map((e, i) => {
             if (i !== index) return e;
             const row = updatedRows[i];
             if (row && !row.code.trim() && !row.percentage.trim()) return {};
@@ -435,24 +435,24 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
         .reduce((sum, r) => sum + parseInt(r.percentage, 10), 0);
       return {
         ...prev,
-        ...(newRowErrors && { globalErrorRows: newRowErrors }),
+        ...(newRowErrors && { globalStatusRows: newRowErrors }),
         ...(prev.globalErrorSum && total <= 100 && { globalErrorSum: undefined }),
       };
     });
   };
 
-  const addErrorRow = () => {
-    setErrorRows((prev) => [...prev, { code: '', percentage: '' }]);
+  const addStatusRow = () => {
+    setStatusRows((prev) => [...prev, { code: '', percentage: '' }]);
     setErrors((prev) => ({
       ...prev,
       atLeastOne: undefined,
-      globalErrorRows: [...(prev.globalErrorRows ?? []), {}],
+      globalStatusRows: [...(prev.globalStatusRows ?? []), {}],
     }));
   };
 
-  const removeErrorRow = (index: number) => {
-    let remainingRows: ErrorRow[] = [];
-    setErrorRows((prev) => {
+  const removeStatusRow = (index: number) => {
+    let remainingRows: StatusRow[] = [];
+    setStatusRows((prev) => {
       remainingRows = prev.filter((_, i) => i !== index);
       return remainingRows;
     });
@@ -462,7 +462,7 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
         .reduce((sum, r) => sum + parseInt(r.percentage, 10), 0);
       return {
         ...prev,
-        globalErrorRows: prev.globalErrorRows?.filter((_, i) => i !== index),
+        globalStatusRows: prev.globalStatusRows?.filter((_, i) => i !== index),
         ...(prev.globalErrorSum && total <= 100 && { globalErrorSum: undefined }),
       };
     });
@@ -523,50 +523,50 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
     });
   };
 
-  const handleUriErrorRowChange = (uriIndex: number, rowIndex: number, field: 'code' | 'percentage', value: string) => {
-    let updatedRow: ErrorRow | null = null;
+  const handleUriStatusRowChange = (uriIndex: number, rowIndex: number, field: 'code' | 'percentage', value: string) => {
+    let updatedRow: StatusRow | null = null;
     setUris((prev) => prev.map((u, i) => {
       if (i !== uriIndex) return u;
-      const newRows = u.errorRows.map((r, j) => {
+      const newRows = u.statusRows.map((r, j) => {
         if (j !== rowIndex) return r;
         const updated = { ...r, [field]: value };
         updatedRow = updated;
         return updated;
       });
-      return { ...u, errorRows: newRows };
+      return { ...u, statusRows: newRows };
     }));
     setErrors((prev) => {
       if (!prev.uris?.[uriIndex]) return prev;
       const newUriErrors = prev.uris.map((u, i) => {
         if (i !== uriIndex) return u;
-        const newRowErrors = (u.errorRows ?? []).map((e, j) => {
+        const newRowErrors = (u.statusRows ?? []).map((e, j) => {
           if (j !== rowIndex) return e;
           if (updatedRow && !updatedRow.code.trim() && !updatedRow.percentage.trim()) return {};
           return { ...e, [field]: undefined };
         });
         const rowNowValid = updatedRow && updatedRow.code.trim() !== '' && updatedRow.percentage.trim() !== '';
-        return { ...u, errorRows: newRowErrors, ...(rowNowValid && { atLeastOne: undefined }) };
+        return { ...u, statusRows: newRowErrors, ...(rowNowValid && { atLeastOne: undefined }) };
       });
       const anyUriNowValid = newUriErrors.some((u) => !u.atLeastOne);
       return { ...prev, uris: newUriErrors, ...(anyUriNowValid && { atLeastOne: undefined }) };
     });
   };
 
-  const addUriErrorRow = (uriIndex: number) => {
+  const addUriStatusRow = (uriIndex: number) => {
     setUris((prev) => prev.map((u, i) =>
-      i === uriIndex ? { ...u, errorRows: [...u.errorRows, { code: '', percentage: '' }] } : u
+      i === uriIndex ? { ...u, statusRows: [...u.statusRows, { code: '', percentage: '' }] } : u
     ));
   };
 
-  const removeUriErrorRow = (uriIndex: number, rowIndex: number) => {
-    let remainingRows: ErrorRow[] = [];
+  const removeUriStatusRow = (uriIndex: number, rowIndex: number) => {
+    let remainingRows: StatusRow[] = [];
     setUris((prev) => prev.map((u, i) => {
       if (i !== uriIndex) return u;
-      remainingRows = u.errorRows.filter((_, j) => j !== rowIndex);
-      return { ...u, errorRows: remainingRows };
+      remainingRows = u.statusRows.filter((_, j) => j !== rowIndex);
+      return { ...u, statusRows: remainingRows };
     }));
     setErrors((prev) => {
-      if (!prev.uris?.[uriIndex]?.errorRows) return prev;
+      if (!prev.uris?.[uriIndex]?.statusRows) return prev;
       const total = remainingRows
         .filter((r) => r.code.trim() && r.percentage.trim())
         .reduce((sum, r) => sum + parseInt(r.percentage, 10), 0);
@@ -574,7 +574,7 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
         if (i !== uriIndex) return u;
         return {
           ...u,
-          errorRows: u.errorRows?.filter((_, j) => j !== rowIndex),
+          statusRows: u.statusRows?.filter((_, j) => j !== rowIndex),
           ...(u.errorSum && total <= 100 && { errorSum: undefined }),
         };
       });
@@ -616,22 +616,22 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
           <LatencyFields value={latency} errors={errors.latency} onChange={handleLatencyChange} />
         </div>
 
-        {/* Global Errors */}
+        {/* Status Simulation */}
         <div className="form-group">
-          <label>Global Errors <span className="label-optional">(optional)</span></label>
-          <ErrorRowsSection
-            rows={errorRows}
-            rowErrors={errors.globalErrorRows}
-            onRowChange={handleErrorRowChange}
-            onAdd={addErrorRow}
-            onRemove={removeErrorRow}
+          <label>Status Simulation <span className="label-optional">(optional)</span></label>
+          <StatusRowsSection
+            rows={statusRows}
+            rowErrors={errors.globalStatusRows}
+            onRowChange={handleStatusRowChange}
+            onAdd={addStatusRow}
+            onRemove={removeStatusRow}
           />
           {errors.globalErrorSum && <p className="form-error" style={{ marginTop: '6px' }}>{errors.globalErrorSum}</p>}
         </div>
 
         {/* URI Overrides */}
         <div className="form-group">
-          <label>URI Overrides <span className="label-optional">(optional — each URI needs latency or errors)</span></label>
+          <label>URI Overrides <span className="label-optional">(optional — each URI needs latency or status simulation)</span></label>
           {uris.map((uri, uriIndex) => {
             const uriErr = errors.uris?.[uriIndex] ?? {};
             return (
@@ -663,15 +663,15 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
                   />
                 </div>
 
-                {/* URI Errors */}
+                {/* URI Status Simulation */}
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label style={{ fontSize: '13px' }}>Errors <span className="label-optional">(optional)</span></label>
-                  <ErrorRowsSection
-                    rows={uri.errorRows}
-                    rowErrors={uriErr.errorRows}
-                    onRowChange={(rowIndex, field, value) => handleUriErrorRowChange(uriIndex, rowIndex, field, value)}
-                    onAdd={() => addUriErrorRow(uriIndex)}
-                    onRemove={(rowIndex) => removeUriErrorRow(uriIndex, rowIndex)}
+                  <label style={{ fontSize: '13px' }}>Status Simulation <span className="label-optional">(optional)</span></label>
+                  <StatusRowsSection
+                    rows={uri.statusRows}
+                    rowErrors={uriErr.statusRows}
+                    onRowChange={(rowIndex, field, value) => handleUriStatusRowChange(uriIndex, rowIndex, field, value)}
+                    onAdd={() => addUriStatusRow(uriIndex)}
+                    onRemove={(rowIndex) => removeUriStatusRow(uriIndex, rowIndex)}
                   />
                   {uriErr.errorSum && <p className="form-error" style={{ marginTop: '6px' }}>{uriErr.errorSum}</p>}
                 </div>

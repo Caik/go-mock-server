@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/Caik/go-mock-server/internal/config"
@@ -25,8 +26,8 @@ type FilesystemContentService struct {
 	broadcaster    *util.Broadcaster[ContentEvent]
 }
 
-func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*ContentResult, error) {
-	absolutePath, err := f.getFinalFilePath(host, uri, method)
+func (f *FilesystemContentService) GetContent(host, uri, method, uuid string, statusCode int) (*ContentResult, error) {
+	absolutePath, err := f.getFinalFilePath(host, uri, method, statusCode)
 
 	if err != nil {
 		return nil, err
@@ -34,24 +35,54 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string) (*
 
 	data, err := os.ReadFile(absolutePath)
 
-	if err != nil {
-		log.Info().
-			Str("uuid", uuid).
-			Str("path", absolutePath).
-			Msg("mock not found")
-
-		return nil, errors.New("mock not found")
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err // real I/O error — propagate it
 	}
 
+	if err == nil {
+		return &ContentResult{
+			Data:   &data,
+			Source: "filesystem",
+			Path:   absolutePath,
+		}, nil
+	}
+
+	// file not found — try _default.<method>.<statusCode> fallback
+	defaultPath, defErr := f.getDefaultFilePath(host, method, statusCode)
+
+	if defErr == nil {
+		defaultData, defReadErr := os.ReadFile(defaultPath)
+
+		if defReadErr != nil && !errors.Is(defReadErr, os.ErrNotExist) {
+			return nil, defReadErr // real I/O error on default file — propagate it
+		}
+
+		if defReadErr == nil {
+			return &ContentResult{
+				Data:   &defaultData,
+				Source: "filesystem",
+				Path:   defaultPath,
+			}, nil
+		}
+	}
+
+	// No specific mock or default found — return empty body
+	log.Info().
+		Str("uuid", uuid).
+		Str("path", absolutePath).
+		Msg("mock not found")
+
+	empty := []byte("")
+
 	return &ContentResult{
-		Data:   &data,
+		Data:   &empty,
 		Source: "filesystem",
-		Path:   absolutePath,
+		Path:   "",
 	}, nil
 }
 
-func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
-	absolutePath, err := f.getFinalFilePath(host, uri, method)
+func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error {
+	absolutePath, err := f.getFinalFilePath(host, uri, method, statusCode)
 
 	if err != nil {
 		return err
@@ -91,8 +122,8 @@ func (f *FilesystemContentService) SetContent(host, uri, method, uuid string, da
 	return nil
 }
 
-func (f *FilesystemContentService) DeleteContent(host, uri, method, uuid string) error {
-	absolutePath, err := f.getFinalFilePath(host, uri, method)
+func (f *FilesystemContentService) DeleteContent(host, uri, method, uuid string, statusCode int) error {
+	absolutePath, err := f.getFinalFilePath(host, uri, method, statusCode)
 
 	if err != nil {
 		return err
@@ -126,14 +157,40 @@ func (f *FilesystemContentService) ListContents(uuid string) (*[]ContentData, er
 		}
 
 		data, err := f.filePathToContentData(path)
-
-		if err == nil {
-			contents = append(contents, *data)
+		if err != nil {
+			return nil
 		}
 
+		contents = append(contents, *data)
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("error while listing contents: %v", err)
+	}
+
+	return &contents, nil
+}
+
+func (f *FilesystemContentService) ListDefaultContents(uuid string) (*[]ContentData, error) {
+	contents := make([]ContentData, 0)
+
+	if err := f.retrieveContents(f.mocksDirConfig.Path, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		data, err := f.defaultFilePathToContentData(path)
+		if err != nil {
+			return nil
+		}
+
+		contents = append(contents, *data)
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("error while listing default contents: %v", err)
 	}
 
 	return &contents, nil
@@ -160,7 +217,7 @@ func (f *FilesystemContentService) Unsubscribe(subscriberId string) {
 	f.broadcaster.Unsubscribe(subscriberId)
 }
 
-func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (string, error) {
+func (f *FilesystemContentService) getFinalFilePath(host, uri, method string, statusCode int) (string, error) {
 	// Validate inputs before using them in a path expression.
 	// The regexes allow only safe characters (no ".." or path separators in host,
 	// no ".." in uri), breaking the taint chain before any path is constructed.
@@ -196,7 +253,7 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (s
 		finalPath += rootToken
 	}
 
-	finalPath += "." + strings.ToLower(method)
+	finalPath += "." + strings.ToLower(method) + "." + strconv.Itoa(statusCode)
 
 	// Verify the resolved path is within the mocks directory by computing the relative path
 	mocksDir := filepath.Clean(f.mocksDirConfig.Path)
@@ -210,29 +267,56 @@ func (f *FilesystemContentService) getFinalFilePath(host, uri, method string) (s
 	return filepath.Join(mocksDir, rel), nil
 }
 
+func (f *FilesystemContentService) getDefaultFilePath(host, method string, statusCode int) (string, error) {
+	return f.getFinalFilePath(host, "/_default", method, statusCode)
+}
+
 func (f *FilesystemContentService) filePathToContentData(path string) (*ContentData, error) {
 	rootPath := strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator) + pathSeparator
-
 	relativePath := strings.TrimPrefix(path, rootPath)
 
 	firstSlashIndex := strings.Index(relativePath, pathSeparator)
+
+	// Skip _default.* files — these are fallbacks, not real mocks
+	if firstSlashIndex != -1 {
+		fileName := relativePath[firstSlashIndex+1:]
+
+		if strings.HasPrefix(fileName, "_default.") {
+			return nil, fmt.Errorf("skipping fallback file: %s", path)
+		}
+	}
+
+	// Expect format: host/uri.method.status — two trailing dots
 	lastDotIndex := strings.LastIndex(relativePath, ".")
 
-	if firstSlashIndex == -1 || lastDotIndex == -1 || firstSlashIndex >= lastDotIndex {
+	if lastDotIndex == -1 {
+		return nil, fmt.Errorf("incorrect file name pattern, ignoring it: %s", path)
+	}
+
+	secondLastDotIndex := strings.LastIndex(relativePath[:lastDotIndex], ".")
+
+	if firstSlashIndex == -1 || secondLastDotIndex == -1 || firstSlashIndex >= secondLastDotIndex {
 		return nil, fmt.Errorf("incorrect file name pattern, ignoring it: %s", path)
 	}
 
 	host := relativePath[:firstSlashIndex]
-	uri := relativePath[firstSlashIndex:lastDotIndex]
-	method := strings.ToUpper(relativePath[lastDotIndex+1:])
+	uri := relativePath[firstSlashIndex:secondLastDotIndex]
+	method := strings.ToUpper(relativePath[secondLastDotIndex+1 : lastDotIndex])
+	statusStr := relativePath[lastDotIndex+1:]
+
+	statusCode, err := strconv.Atoi(statusStr)
+
+	if err != nil || statusCode < 100 || statusCode > 599 {
+		return nil, fmt.Errorf("invalid status code in filename: %s", path)
+	}
 
 	// validating host
 	if !util.HostRegex.MatchString(host) {
 		return nil, fmt.Errorf("invalid host: %s", host)
 	}
 
-	// validating URI
-	if !util.UriRegex.MatchString(uri) {
+	// validating URI — skip regex for root path
+	if uri != "/" && !util.UriRegex.MatchString(uri) {
 		return nil, fmt.Errorf("invalid uri: %s", uri)
 	}
 
@@ -241,18 +325,68 @@ func (f *FilesystemContentService) filePathToContentData(path string) (*ContentD
 		return nil, fmt.Errorf("invalid method: %s", method)
 	}
 
-	// checking if root suffix has been added
+	// checking if root suffix has been added (e.g. uri ends with /root → trim to /)
 	if strings.HasSuffix(uri, fmt.Sprintf("%s%s", pathSeparator, rootToken)) {
 		uri = strings.TrimSuffix(uri, rootToken)
 	}
 
-	data := ContentData{
-		Host:   host,
-		Uri:    uri,
-		Method: method,
+	return &ContentData{
+		Host:       host,
+		Uri:        uri,
+		Method:     method,
+		StatusCode: statusCode,
+	}, nil
+}
+
+// defaultFilePathToContentData parses a _default.method.status filename into ContentData.
+// Expected format: <mocksDir>/<host>/_default.<method>.<status>
+func (f *FilesystemContentService) defaultFilePathToContentData(path string) (*ContentData, error) {
+	rootPath := strings.TrimSuffix(f.mocksDirConfig.Path, pathSeparator) + pathSeparator
+	relativePath := strings.TrimPrefix(path, rootPath)
+	firstSlashIndex := strings.Index(relativePath, pathSeparator)
+
+	if firstSlashIndex == -1 {
+		return nil, fmt.Errorf("not a default file: %s", path)
 	}
 
-	return &data, nil
+	fileName := relativePath[firstSlashIndex+1:]
+
+	if !strings.HasPrefix(fileName, "_default.") {
+		return nil, fmt.Errorf("not a default file: %s", path)
+	}
+
+	host := relativePath[:firstSlashIndex]
+
+	// Parse _default.<method>.<status>
+	rest := strings.TrimPrefix(fileName, "_default.")
+	lastDotIndex := strings.LastIndex(rest, ".")
+
+	if lastDotIndex == -1 {
+		return nil, fmt.Errorf("invalid default filename: %s", path)
+	}
+
+	method := strings.ToUpper(rest[:lastDotIndex])
+	statusStr := rest[lastDotIndex+1:]
+	statusCode, err := strconv.Atoi(statusStr)
+
+	if err != nil || statusCode < 100 || statusCode > 599 {
+		return nil, fmt.Errorf("invalid status code in default filename: %s", path)
+	}
+
+	if !util.HostRegex.MatchString(host) {
+		return nil, fmt.Errorf("invalid host in default filename: %s", host)
+	}
+
+	if !util.HttpMethodRegex.MatchString(method) {
+		return nil, fmt.Errorf("invalid method in default filename: %s", method)
+	}
+
+	return &ContentData{
+		Host:       host,
+		Uri:        "/_default",
+		Method:     method,
+		StatusCode: statusCode,
+	}, nil
 }
 
 func (f *FilesystemContentService) startContentWatcher() {

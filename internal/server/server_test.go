@@ -21,19 +21,23 @@ import (
 // mockContentService is a minimal implementation for testing
 type mockContentService struct{}
 
-func (m *mockContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
+func (m *mockContentService) GetContent(host, uri, method, uuid string, statusCode int) (*content.ContentResult, error) {
 	return nil, nil
 }
 
-func (m *mockContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
+func (m *mockContentService) SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error {
 	return nil
 }
 
-func (m *mockContentService) DeleteContent(host, uri, method, uuid string) error {
+func (m *mockContentService) DeleteContent(host, uri, method, uuid string, statusCode int) error {
 	return nil
 }
 
 func (m *mockContentService) ListContents(uuid string) (*[]content.ContentData, error) {
+	return nil, nil
+}
+
+func (m *mockContentService) ListDefaultContents(uuid string) (*[]content.ContentData, error) {
 	return nil, nil
 }
 

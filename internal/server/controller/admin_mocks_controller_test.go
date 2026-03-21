@@ -24,14 +24,14 @@ type mockContentService struct {
 	errorMsg    string
 }
 
-func (m *mockContentService) SetContent(host, uri, method, uuid string, data *[]byte) error {
+func (m *mockContentService) SetContent(host, uri, method, uuid string, statusCode int, data *[]byte) error {
 	if m.shouldError {
 		return errors.New(m.errorMsg)
 	}
 	return nil
 }
 
-func (m *mockContentService) GetContent(host, uri, method, uuid string) (*content.ContentResult, error) {
+func (m *mockContentService) GetContent(host, uri, method, uuid string, statusCode int) (*content.ContentResult, error) {
 	if m.shouldError {
 		return nil, errors.New(m.errorMsg)
 	}
@@ -43,7 +43,7 @@ func (m *mockContentService) GetContent(host, uri, method, uuid string) (*conten
 	}, nil
 }
 
-func (m *mockContentService) DeleteContent(host, uri, method, uuid string) error {
+func (m *mockContentService) DeleteContent(host, uri, method, uuid string, statusCode int) error {
 	if m.shouldError {
 		return errors.New(m.errorMsg)
 	}
@@ -56,6 +56,16 @@ func (m *mockContentService) ListContents(uuid string) (*[]content.ContentData, 
 	}
 	contents := []content.ContentData{
 		{Host: "example.com", Uri: "/api/users", Method: "GET"},
+	}
+	return &contents, nil
+}
+
+func (m *mockContentService) ListDefaultContents(uuid string) (*[]content.ContentData, error) {
+	if m.shouldError {
+		return nil, errors.New(m.errorMsg)
+	}
+	contents := []content.ContentData{
+		{Host: "example.com", Uri: "/_default", Method: "GET", StatusCode: 200},
 	}
 	return &contents, nil
 }
@@ -99,6 +109,7 @@ func TestAdminMocksController_handleMockAddUpdate(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		// Create test context
 		w := httptest.NewRecorder()
@@ -169,6 +180,7 @@ func TestAdminMocksController_handleMockAddUpdate(t *testing.T) {
 		req.Header.Set("x-mock-host", "invalid host.com") // Invalid host with space
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		// Create test context
 		w := httptest.NewRecorder()
@@ -204,6 +216,7 @@ func TestAdminMocksController_handleMockAddUpdate(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		// Create test context
 		w := httptest.NewRecorder()
@@ -247,6 +260,7 @@ func TestAdminMocksController_handleMockAddUpdate(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		// Create test context
 		w := httptest.NewRecorder()
@@ -286,6 +300,7 @@ func TestAdminMocksController_handleMockDelete(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		// Create test context
 		w := httptest.NewRecorder()
@@ -357,6 +372,7 @@ func TestAdminMocksController_handleMockDelete(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		// Create test context
 		w := httptest.NewRecorder()
@@ -393,18 +409,20 @@ func TestAddDeleteMockRequest_validate(t *testing.T) {
 		{
 			name: "valid request",
 			request: AddDeleteMockRequest{
-				Host:   "example.com",
-				Uri:    "/api/users",
-				Method: "GET",
+				Host:       "example.com",
+				Uri:        "/api/users",
+				Method:     "GET",
+				StatusCode: 200,
 			},
 			expectError: false,
 		},
 		{
 			name: "valid IP address",
 			request: AddDeleteMockRequest{
-				Host:   "192.168.1.1",
-				Uri:    "/api/users",
-				Method: "POST",
+				Host:       "192.168.1.1",
+				Uri:        "/api/users",
+				Method:     "POST",
+				StatusCode: 200,
 			},
 			expectError: false,
 		},
@@ -471,11 +489,65 @@ func TestAddDeleteMockRequest_validate(t *testing.T) {
 		{
 			name: "lowercase method gets converted",
 			request: AddDeleteMockRequest{
-				Host:   "example.com",
-				Uri:    "/api/users",
-				Method: "get", // Should be converted to uppercase
+				Host:       "example.com",
+				Uri:        "/api/users",
+				Method:     "get", // Should be converted to uppercase
+				StatusCode: 200,
 			},
 			expectError: false, // This should pass after conversion
+		},
+		{
+			name: "valid explicit status code 404",
+			request: AddDeleteMockRequest{
+				Host:       "example.com",
+				Uri:        "/api/users",
+				Method:     "GET",
+				StatusCode: 404,
+			},
+			expectError: false,
+		},
+		{
+			name: "status code out of range low",
+			request: AddDeleteMockRequest{
+				Host:       "example.com",
+				Uri:        "/api/users",
+				Method:     "GET",
+				StatusCode: 99,
+			},
+			expectError: true,
+			errorMsg:    "invalid status code provided",
+		},
+		{
+			name: "status code out of range high",
+			request: AddDeleteMockRequest{
+				Host:       "example.com",
+				Uri:        "/api/users",
+				Method:     "GET",
+				StatusCode: 600,
+			},
+			expectError: true,
+			errorMsg:    "invalid status code provided",
+		},
+		{
+			name: "status code negative",
+			request: AddDeleteMockRequest{
+				Host:       "example.com",
+				Uri:        "/api/users",
+				Method:     "GET",
+				StatusCode: -1,
+			},
+			expectError: true,
+			errorMsg:    "invalid status code provided",
+		},
+		{
+			name: "status code zero (missing header)",
+			request: AddDeleteMockRequest{
+				Host:   "example.com",
+				Uri:    "/api/users",
+				Method: "GET",
+			},
+			expectError: true,
+			errorMsg:    "invalid status code provided",
 		},
 	}
 
@@ -498,6 +570,12 @@ func TestAddDeleteMockRequest_validate(t *testing.T) {
 				if tt.name == "lowercase method gets converted" && tt.request.Method != "GET" {
 					t.Errorf("expected method to be converted to 'GET', got '%s'", tt.request.Method)
 				}
+
+				// For the explicit 404 status code test, verify StatusCode is set correctly
+				if tt.name == "valid explicit status code 404" && tt.request.StatusCode != 404 {
+					t.Errorf("expected StatusCode to be 404, got %d", tt.request.StatusCode)
+				}
+
 			}
 		})
 	}
@@ -521,6 +599,7 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 				req.Header.Set("x-mock-host", "example.com")
 				req.Header.Set("x-mock-uri", "/api/test")
 				req.Header.Set("x-mock-method", method)
+				req.Header.Set("x-mock-status", "200")
 
 				w := httptest.NewRecorder()
 				c, _ := gin.CreateTestContext(w)
@@ -580,6 +659,7 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 				req.Header.Set("x-mock-host", "example.com")
 				req.Header.Set("x-mock-uri", "/api/test") // Use simple URI
 				req.Header.Set("x-mock-method", "GET")
+				req.Header.Set("x-mock-status", "200")
 				req.Header.Set("Content-Type", tc.contentType)
 
 				w := httptest.NewRecorder()
@@ -619,6 +699,7 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/large")
 		req.Header.Set("x-mock-method", "POST")
+		req.Header.Set("x-mock-status", "200")
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -659,6 +740,7 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 				req.Header.Set("x-mock-host", "example.com")
 				req.Header.Set("x-mock-uri", uri)
 				req.Header.Set("x-mock-method", "GET")
+				req.Header.Set("x-mock-status", "200")
 
 				w := httptest.NewRecorder()
 				c, _ := gin.CreateTestContext(w)
@@ -783,6 +865,7 @@ func TestAdminMocksController_handleMockUpdate(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -816,6 +899,7 @@ func TestAdminMocksController_handleMockUpdate(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -874,6 +958,7 @@ func TestAdminMocksController_handleMockUpdate(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -912,6 +997,7 @@ func TestAdminMocksController_handleMockUpdate(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "GET")
+		req.Header.Set("x-mock-status", "200")
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -949,6 +1035,7 @@ func TestAdminMocksController_handleMockCreate(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "POST")
+		req.Header.Set("x-mock-status", "200")
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -984,6 +1071,7 @@ func TestAdminMocksController_handleMockCreate(t *testing.T) {
 		req.Header.Set("x-mock-host", "example.com")
 		req.Header.Set("x-mock-uri", "/api/users")
 		req.Header.Set("x-mock-method", "POST")
+		req.Header.Set("x-mock-status", "200")
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -1008,8 +1096,9 @@ func TestAdminMocksController_handleMockCreate(t *testing.T) {
 }
 
 // generateTestMockID mirrors the admin package's generateMockID encoding.
+// Defaults to status code 200 which matches the controller default.
 func generateTestMockID(host, uri, method string) string {
-	data := host + "|" + uri + "|" + method
+	data := host + "|" + uri + "|" + method + "|200"
 	return b64.URLEncoding.EncodeToString([]byte(data))
 }
 

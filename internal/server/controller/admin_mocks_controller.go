@@ -15,9 +15,10 @@ import (
 )
 
 type AddDeleteMockRequest struct {
-	Host   string `header:"x-mock-host" binding:"required"`
-	Uri    string `header:"x-mock-uri" binding:"required"`
-	Method string `header:"x-mock-method" binding:"required"`
+	Host       string `header:"x-mock-host" binding:"required"`
+	Uri        string `header:"x-mock-uri" binding:"required"`
+	Method     string `header:"x-mock-method" binding:"required"`
+	StatusCode int    `header:"x-mock-status" binding:"required"`
 }
 
 type AdminMocksController struct {
@@ -26,12 +27,23 @@ type AdminMocksController struct {
 
 func (a *AdminMocksController) handleMocksList(c *gin.Context) {
 	uuid := c.GetString(util.UuidKey)
+	onlyDefaults := c.Query("default") == "true"
 
 	log.Info().
 		Str("uuid", uuid).
+		Bool("only_defaults", onlyDefaults).
 		Msg("listing mocks")
 
-	mocks, err := a.service.ListMocks(uuid)
+	var (
+		mocks []admin.MockListItem
+		err   error
+	)
+
+	if onlyDefaults {
+		mocks, err = a.service.ListDefaultMocks(uuid)
+	} else {
+		mocks, err = a.service.ListMocks(uuid)
+	}
 
 	if err != nil {
 		msg := fmt.Sprintf("error while listing mocks: %v", err)
@@ -150,10 +162,11 @@ func (a *AdminMocksController) handleMockAddUpdate(c *gin.Context) {
 		Msg("adding/updating mock")
 
 	err = a.service.AddUpdateMock(admin.MockAddDeleteRequest{
-		Host:   req.Host,
-		URI:    req.Uri,
-		Method: req.Method,
-		Data:   &data,
+		Host:       req.Host,
+		URI:        req.Uri,
+		Method:     req.Method,
+		StatusCode: req.StatusCode,
+		Data:       &data,
 	}, uuid)
 
 	if err != nil {
@@ -229,10 +242,11 @@ func (a *AdminMocksController) handleMockCreate(c *gin.Context) {
 		Msg("creating mock")
 
 	err = a.service.AddUpdateMock(admin.MockAddDeleteRequest{
-		Host:   req.Host,
-		URI:    req.Uri,
-		Method: req.Method,
-		Data:   &data,
+		Host:       req.Host,
+		URI:        req.Uri,
+		Method:     req.Method,
+		StatusCode: req.StatusCode,
+		Data:       &data,
 	}, uuid)
 
 	if err != nil {
@@ -339,10 +353,11 @@ func (a *AdminMocksController) handleMockUpdate(c *gin.Context) {
 
 	// Create the new mock
 	err = a.service.AddUpdateMock(admin.MockAddDeleteRequest{
-		Host:   req.Host,
-		URI:    req.Uri,
-		Method: req.Method,
-		Data:   &data,
+		Host:       req.Host,
+		URI:        req.Uri,
+		Method:     req.Method,
+		StatusCode: req.StatusCode,
+		Data:       &data,
 	}, uuid)
 
 	if err != nil {
@@ -399,9 +414,10 @@ func (a *AdminMocksController) handleMockDelete(c *gin.Context) {
 		Msg("deleting mock")
 
 	err := a.service.DeleteMock(admin.MockAddDeleteRequest{
-		Host:   addReq.Host,
-		URI:    addReq.Uri,
-		Method: addReq.Method,
+		Host:       addReq.Host,
+		URI:        addReq.Uri,
+		Method:     addReq.Method,
+		StatusCode: addReq.StatusCode,
 	}, uuid)
 
 	if err != nil {
@@ -448,7 +464,7 @@ func (a *AddDeleteMockRequest) validate() error {
 	}
 
 	if !util.UriRegex.MatchString(a.Uri) {
-		return errors.New("invalid uri provided: it doesn't match a host pattern")
+		return errors.New("invalid uri provided: it doesn't match a uri pattern")
 	}
 
 	a.Method = strings.ToUpper(strings.TrimSpace(a.Method))
@@ -459,6 +475,10 @@ func (a *AddDeleteMockRequest) validate() error {
 
 	if !util.HttpMethodRegex.MatchString(a.Method) {
 		return errors.New("invalid method provided: it should be a valid HTTP method")
+	}
+
+	if a.StatusCode < 100 || a.StatusCode > 599 {
+		return errors.New("invalid status code provided: must be between 100 and 599")
 	}
 
 	return nil

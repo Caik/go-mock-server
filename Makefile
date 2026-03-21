@@ -11,7 +11,7 @@ test:
 	@echo "##        Running all tests           ##"
 	@echo "########################################"
 	@echo ""
-	@CGO_ENABLED=0 go test -timeout 30s ./internal/...
+	@CGO_ENABLED=0 go test -v -count=1 -race -shuffle=on -coverprofile=coverage.txt ./...
 
 build-ui:
 	@echo ""

@@ -13,14 +13,14 @@ type HostsConfig struct {
 }
 
 type HostConfig struct {
-	LatencyConfig *LatencyConfig         `json:"latency"`
-	ErrorsConfig  map[string]ErrorConfig `json:"errors"`
-	UrisConfig    map[string]UriConfig   `json:"uris"`
+	LatencyConfig  *LatencyConfig          `json:"latency"`
+	StatusesConfig map[string]StatusConfig `json:"statuses"`
+	UrisConfig     map[string]UriConfig    `json:"uris"`
 }
 
 type UriConfig struct {
-	LatencyConfig *LatencyConfig         `json:"latency"`
-	ErrorsConfig  map[string]ErrorConfig `json:"errors"`
+	LatencyConfig  *LatencyConfig          `json:"latency"`
+	StatusesConfig map[string]StatusConfig `json:"statuses"`
 }
 
 type LatencyConfig struct {
@@ -30,7 +30,7 @@ type LatencyConfig struct {
 	Max *int `json:"max"`
 }
 
-type ErrorConfig struct {
+type StatusConfig struct {
 	Percentage    *int           `json:"percentage"`
 	LatencyConfig *LatencyConfig `json:"latency"`
 }
@@ -93,27 +93,27 @@ func (h *HostsConfig) DeleteHostLatencyConfig(host string) (*HostConfig, error) 
 	return &hostConfig, nil
 }
 
-func (h *HostsConfig) UpdateHostErrorsConfig(host string, errorsConfig map[string]ErrorConfig) (*HostConfig, error) {
+func (h *HostsConfig) UpdateHostStatusesConfig(host string, statusesConfig map[string]StatusConfig) (*HostConfig, error) {
 	hostConfig, exists := h.Hosts[host]
 
 	if !exists {
 		return nil, nil
 	}
 
-	hostConfig.ErrorsConfig = errorsConfig
+	hostConfig.StatusesConfig = statusesConfig
 	h.Hosts[host] = hostConfig
 
 	return &hostConfig, nil
 }
 
-func (h *HostsConfig) DeleteHostErrorConfig(host, errorCode string) (*HostConfig, error) {
+func (h *HostsConfig) DeleteHostStatusConfig(host, statusCode string) (*HostConfig, error) {
 	hostConfig, exists := h.Hosts[host]
 
 	if !exists {
 		return nil, nil
 	}
 
-	delete(hostConfig.ErrorsConfig, errorCode)
+	delete(hostConfig.StatusesConfig, statusCode)
 	h.Hosts[host] = hostConfig
 
 	return &hostConfig, nil
@@ -132,24 +132,24 @@ func (h *HostsConfig) UpdateHostUrisConfig(host string, urisConfig map[string]Ur
 	return &hostConfig, nil
 }
 
-func (h *HostsConfig) GetAppropriateErrorsConfig(host, uri string) (*map[string]ErrorConfig, string) {
+func (h *HostsConfig) GetAppropriateStatusesConfig(host, uri string) (*map[string]StatusConfig, string) {
 	hostConfig, exists := h.Hosts[host]
 
 	if !exists {
 		return nil, ""
 	}
 
-	errorsConfig := hostConfig.ErrorsConfig
+	statusesConfig := hostConfig.StatusesConfig
 	scope := "Host Default"
 	uriConfig, exists := hostConfig.UrisConfig[uri]
 
-	if exists && len(uriConfig.ErrorsConfig) > 0 {
-		errorsConfig = uriConfig.ErrorsConfig
+	if exists && len(uriConfig.StatusesConfig) > 0 {
+		statusesConfig = uriConfig.StatusesConfig
 		scope = "URI Override"
 	}
 
-	if len(errorsConfig) > 0 {
-		return &errorsConfig, scope
+	if len(statusesConfig) > 0 {
+		return &statusesConfig, scope
 	}
 
 	return nil, ""
@@ -183,22 +183,22 @@ func (h *HostConfig) Validate() error {
 
 	sumPercentage := 0
 
-	for errorCode, errorConfig := range h.ErrorsConfig {
-		intErrorCode, err := strconv.Atoi(errorCode)
+	for statusCode, statusConfig := range h.StatusesConfig {
+		intErrorCode, err := strconv.Atoi(statusCode)
 
 		if err != nil {
-			return fmt.Errorf("invalid host config found: invalid error code: %v", err)
+			return fmt.Errorf("invalid host config found: invalid status code: %v", err)
 		}
 
-		if intErrorCode < 400 || intErrorCode > 599 {
-			return errors.New("invalid host config found: invalid error code: error should belong to either 4xx or 5xx classes")
+		if intErrorCode < 100 || intErrorCode > 599 {
+			return errors.New("invalid host config found: invalid error code: status code must be between 100 and 599")
 		}
 
-		if err := errorConfig.validate(); err != nil {
+		if err := statusConfig.validate(); err != nil {
 			return fmt.Errorf("invalid host config found: %v", err)
 		}
 
-		sumPercentage += *errorConfig.Percentage
+		sumPercentage += *statusConfig.Percentage
 	}
 
 	if sumPercentage > 100 {
@@ -243,25 +243,25 @@ func (l *LatencyConfig) validate() error {
 	return nil
 }
 
-func (e *ErrorConfig) validate() error {
-	if e.Percentage == nil || *e.Percentage <= 0 || *e.Percentage > 100 {
-		return errors.New("invalid error config found: percentage should be greater than 0 and lesser than 100")
+func (s *StatusConfig) validate() error {
+	if s.Percentage == nil || *s.Percentage <= 0 || *s.Percentage > 100 {
+		return errors.New("invalid status config found: percentage should be greater than 0 and lesser than 100")
 	}
 
-	if e.LatencyConfig == nil {
+	if s.LatencyConfig == nil {
 		return nil
 	}
 
-	if err := e.LatencyConfig.validate(); err != nil {
-		return fmt.Errorf("invalid error config found: %v", err)
+	if err := s.LatencyConfig.validate(); err != nil {
+		return fmt.Errorf("invalid status config found: %v", err)
 	}
 
 	return nil
 }
 
 func (u *UriConfig) validate() error {
-	if u.ErrorsConfig == nil && u.LatencyConfig == nil {
-		return errors.New("invalid uri config found: latency or errors should not be both null")
+	if u.StatusesConfig == nil && u.LatencyConfig == nil {
+		return errors.New("invalid uri config found: latency or statuses should not be both null")
 	}
 
 	if u.LatencyConfig != nil {
@@ -272,22 +272,22 @@ func (u *UriConfig) validate() error {
 
 	sumPercentage := 0
 
-	for statusCode, errorConfig := range u.ErrorsConfig {
+	for statusCode, statusConfig := range u.StatusesConfig {
 		intStatusCode, err := strconv.Atoi(statusCode)
 
 		if err != nil {
 			return fmt.Errorf("invalid uri config found: invalid status code: %v", err)
 		}
 
-		if intStatusCode < 400 || intStatusCode > 599 {
-			return errors.New("invalid uri config found: error status code should be between 400 and 599")
+		if intStatusCode < 100 || intStatusCode > 599 {
+			return errors.New("invalid uri config found: status code must be between 100 and 599")
 		}
 
-		if err = errorConfig.validate(); err != nil {
+		if err = statusConfig.validate(); err != nil {
 			return fmt.Errorf("invalid uri config found: %v", err)
 		}
 
-		sumPercentage += *errorConfig.Percentage
+		sumPercentage += *statusConfig.Percentage
 	}
 
 	if sumPercentage > 100 {

@@ -30,24 +30,24 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 	}
 
 	t.Run("generates correct path for simple URI", func(t *testing.T) {
-		path, err := service.getFinalFilePath("example.com", "/api/users", "GET")
+		path, err := service.getFinalFilePath("example.com", "/api/users", "GET", 200)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		expected := filepath.Join(tempDir, "example.com", "api", "users.get")
+		expected := filepath.Join(tempDir, "example.com", "api", "users.get.200")
 		if path != expected {
 			t.Errorf("expected path '%s', got '%s'", expected, path)
 		}
 	})
 
 	t.Run("handles root path correctly", func(t *testing.T) {
-		path, err := service.getFinalFilePath("example.com", "/", "GET")
+		path, err := service.getFinalFilePath("example.com", "/", "GET", 200)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		expected := filepath.Join(tempDir, "example.com", "root.get")
+		expected := filepath.Join(tempDir, "example.com", "root.get.200")
 		if path != expected {
 			t.Errorf("expected path '%s', got '%s'", expected, path)
 		}
@@ -57,7 +57,7 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 		// URI with query parameter that contains a question mark
 		uri := "/api/search?query=what?is?this"
 
-		path, err := service.getFinalFilePath("example.com", uri, "GET")
+		path, err := service.getFinalFilePath("example.com", uri, "GET", 200)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -80,7 +80,7 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 		}
 
 		// Verify the generated path contains the complete query string
-		expectedSuffix := "search?query=what?is?this.get"
+		expectedSuffix := "search?query=what?is?this.get.200"
 		if !strings.HasSuffix(path, expectedSuffix) {
 			t.Errorf("expected path to end with '%s', got '%s'", expectedSuffix, path)
 		} else {
@@ -89,24 +89,24 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 	})
 
 	t.Run("handles query parameters", func(t *testing.T) {
-		path, err := service.getFinalFilePath("example.com", "/api/users?id=123", "GET")
+		path, err := service.getFinalFilePath("example.com", "/api/users?id=123", "GET", 200)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		expected := filepath.Join(tempDir, "example.com", "api", "users?id=123.get")
+		expected := filepath.Join(tempDir, "example.com", "api", "users?id=123.get.200")
 		if path != expected {
 			t.Errorf("expected path '%s', got '%s'", expected, path)
 		}
 	})
 
 	t.Run("handles nested paths", func(t *testing.T) {
-		path, err := service.getFinalFilePath("api.example.com", "/v1/users/profile", "POST")
+		path, err := service.getFinalFilePath("api.example.com", "/v1/users/profile", "POST", 200)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		expected := filepath.Join(tempDir, "api.example.com", "v1", "users", "profile.post")
+		expected := filepath.Join(tempDir, "api.example.com", "v1", "users", "profile.post.200")
 		if path != expected {
 			t.Errorf("expected path '%s', got '%s'", expected, path)
 		}
@@ -116,12 +116,12 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 		methods := []string{"GET", "POST", "PUT", "DELETE", "PATCH"}
 
 		for _, method := range methods {
-			path, err := service.getFinalFilePath("example.com", "/api/test", method)
+			path, err := service.getFinalFilePath("example.com", "/api/test", method, 200)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			expectedSuffix := "." + strings.ToLower(method)
+			expectedSuffix := "." + strings.ToLower(method) + ".200"
 			if !strings.HasSuffix(path, expectedSuffix) {
 				t.Errorf("path should end with '%s', got '%s'", expectedSuffix, path)
 			}
@@ -129,14 +129,14 @@ func TestFilesystemContentService_getFinalFilePath(t *testing.T) {
 	})
 
 	t.Run("rejects path traversal in host", func(t *testing.T) {
-		_, err := service.getFinalFilePath("../../etc", "/passwd", "GET")
+		_, err := service.getFinalFilePath("../../etc", "/passwd", "GET", 200)
 		if err == nil {
 			t.Error("expected error for path traversal, got nil")
 		}
 	})
 
 	t.Run("rejects path traversal in uri", func(t *testing.T) {
-		_, err := service.getFinalFilePath("example.com", "/../../etc/passwd", "GET")
+		_, err := service.getFinalFilePath("example.com", "/../../etc/passwd", "GET", 200)
 		if err == nil {
 			t.Error("expected error for path traversal, got nil")
 		}
@@ -161,7 +161,7 @@ func TestFilesystemContentService_filePathToContentData(t *testing.T) {
 	}
 
 	t.Run("parses valid file path correctly", func(t *testing.T) {
-		filePath := filepath.Join(tempDir, "example.com", "api", "users.get")
+		filePath := filepath.Join(tempDir, "example.com", "api", "users.get.200")
 
 		data, err := service.filePathToContentData(filePath)
 
@@ -181,41 +181,27 @@ func TestFilesystemContentService_filePathToContentData(t *testing.T) {
 		if data.Method != "GET" {
 			t.Errorf("expected method 'GET', got '%s'", data.Method)
 		}
+
+		if data.StatusCode != 200 {
+			t.Errorf("expected status code 200, got %d", data.StatusCode)
+		}
 	})
 
 	t.Run("validates file path parsing logic", func(t *testing.T) {
-		// Create a valid file path
+		// A path with only one dot segment (no status code) should fail
 		filePath := filepath.Join(tempDir, "example.com", "api.get")
 
 		_, err := service.filePathToContentData(filePath)
 
 		t.Logf("testing file path: %s", filePath)
 
-		// Calculate the indices that the validation logic uses
-		rootPath := strings.TrimSuffix(tempDir, string(os.PathSeparator)) + string(os.PathSeparator)
-		relativePath := strings.TrimPrefix(filePath, rootPath)
-		firstSlashIndex := strings.Index(relativePath, string(os.PathSeparator))
-		lastDotIndex := strings.LastIndex(relativePath, ".")
-
-		t.Logf("relative path: %s", relativePath)
-		t.Logf("first slash index: %d", firstSlashIndex)
-		t.Logf("last dot index: %d", lastDotIndex)
-
-		// Test the validation logic
-		// For "example.com/api.get": firstSlashIndex=11, lastDotIndex=15
-		// The condition should allow firstSlashIndex < lastDotIndex for valid paths
-		if firstSlashIndex >= lastDotIndex && err != nil {
-			t.Logf("validation logic rejects this path")
-			t.Logf("condition 'firstSlashIndex >= lastDotIndex' triggered")
-		}
-
 		if err != nil {
-			t.Logf("error returned: %v", err)
+			t.Logf("error returned (expected): %v", err)
 		}
 	})
 
 	t.Run("handles root path with root token", func(t *testing.T) {
-		filePath := filepath.Join(tempDir, "example.com", "root.get")
+		filePath := filepath.Join(tempDir, "example.com", "root.get.200")
 
 		data, err := service.filePathToContentData(filePath)
 
@@ -247,7 +233,7 @@ func TestFilesystemContentService_filePathToContentData(t *testing.T) {
 
 	t.Run("validates host format", func(t *testing.T) {
 		// Create path with invalid host
-		filePath := filepath.Join(tempDir, "invalid host.com", "api", "users.get")
+		filePath := filepath.Join(tempDir, "invalid host.com", "api", "users.get.200")
 
 		_, err := service.filePathToContentData(filePath)
 
@@ -262,7 +248,7 @@ func TestFilesystemContentService_filePathToContentData(t *testing.T) {
 
 	t.Run("validates URI format", func(t *testing.T) {
 		// Create path with invalid URI (spaces)
-		filePath := filepath.Join(tempDir, "example.com", "invalid uri", "users.get")
+		filePath := filepath.Join(tempDir, "example.com", "invalid uri", "users.get.200")
 
 		_, err := service.filePathToContentData(filePath)
 
@@ -276,17 +262,13 @@ func TestFilesystemContentService_filePathToContentData(t *testing.T) {
 	})
 
 	t.Run("validates HTTP method", func(t *testing.T) {
-		// Create path with invalid method
-		filePath := filepath.Join(tempDir, "example.com", "api", "users.invalid")
+		// Create path with invalid method (status code is non-numeric word)
+		filePath := filepath.Join(tempDir, "example.com", "api", "users.get.invalid")
 
 		_, err := service.filePathToContentData(filePath)
 
 		if err == nil {
-			t.Error("expected error for invalid HTTP method")
-		}
-
-		if !strings.Contains(err.Error(), "invalid method") {
-			t.Errorf("expected 'invalid method' error, got '%v'", err)
+			t.Error("expected error for invalid status code")
 		}
 	})
 }
@@ -303,7 +285,7 @@ func TestFilesystemContentService_GetContent(t *testing.T) {
 	testContent := []byte("test response content")
 	testDir := filepath.Join(tempDir, "example.com", "api")
 	os.MkdirAll(testDir, 0755)
-	testFile := filepath.Join(testDir, "users.get")
+	testFile := filepath.Join(testDir, "users.get.200")
 	os.WriteFile(testFile, testContent, 0644)
 
 	mocksDirConfig := &config.MocksDirectoryConfig{
@@ -316,7 +298,7 @@ func TestFilesystemContentService_GetContent(t *testing.T) {
 	}
 
 	t.Run("reads existing file successfully", func(t *testing.T) {
-		result, err := service.GetContent("example.com", "/api/users", "GET", "test-uuid")
+		result, err := service.GetContent("example.com", "/api/users", "GET", "test-uuid", 200)
 
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -335,15 +317,15 @@ func TestFilesystemContentService_GetContent(t *testing.T) {
 		}
 	})
 
-	t.Run("returns error for non-existent file", func(t *testing.T) {
-		_, err := service.GetContent("example.com", "/api/nonexistent", "GET", "test-uuid")
+	t.Run("returns empty body for non-existent file", func(t *testing.T) {
+		result, err := service.GetContent("example.com", "/api/nonexistent", "GET", "test-uuid", 200)
 
-		if err == nil {
-			t.Error("expected error for non-existent file")
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
 		}
 
-		if !strings.Contains(err.Error(), "mock not found") {
-			t.Errorf("expected 'mock not found' error, got '%v'", err)
+		if result == nil || string(*result.Data) != "" {
+			t.Error("expected empty body result for non-existent file")
 		}
 	})
 }
@@ -368,14 +350,14 @@ func TestFilesystemContentService_SetContent(t *testing.T) {
 	t.Run("creates file and directories successfully", func(t *testing.T) {
 		testContent := []byte("new test content")
 
-		err := service.SetContent("example.com", "/api/users", "POST", "test-uuid", &testContent)
+		err := service.SetContent("example.com", "/api/users", "POST", "test-uuid", 201, &testContent)
 
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
 		// Verify file was created
-		expectedPath := filepath.Join(tempDir, "example.com", "api", "users.post")
+		expectedPath := filepath.Join(tempDir, "example.com", "api", "users.post.201")
 		if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
 			t.Error("file should have been created")
 		}
@@ -394,18 +376,18 @@ func TestFilesystemContentService_SetContent(t *testing.T) {
 	t.Run("overwrites existing file", func(t *testing.T) {
 		// Create initial file
 		initialContent := []byte("initial content")
-		service.SetContent("example.com", "/api/test", "GET", "test-uuid", &initialContent)
+		service.SetContent("example.com", "/api/test", "GET", "test-uuid", 200, &initialContent)
 
 		// Overwrite with new content
 		newContent := []byte("updated content")
-		err := service.SetContent("example.com", "/api/test", "GET", "test-uuid", &newContent)
+		err := service.SetContent("example.com", "/api/test", "GET", "test-uuid", 200, &newContent)
 
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
 		// Verify new content
-		expectedPath := filepath.Join(tempDir, "example.com", "api", "test.get")
+		expectedPath := filepath.Join(tempDir, "example.com", "api", "test.get.200")
 		content, err := os.ReadFile(expectedPath)
 		if err != nil {
 			t.Fatalf("failed to read file: %v", err)
@@ -428,7 +410,7 @@ func TestFilesystemContentService_DeleteContent(t *testing.T) {
 	// Create test file
 	testDir := filepath.Join(tempDir, "example.com", "api")
 	os.MkdirAll(testDir, 0755)
-	testFile := filepath.Join(testDir, "users.delete")
+	testFile := filepath.Join(testDir, "users.delete.200")
 	os.WriteFile(testFile, []byte("test content"), 0644)
 
 	mocksDirConfig := &config.MocksDirectoryConfig{
@@ -441,7 +423,7 @@ func TestFilesystemContentService_DeleteContent(t *testing.T) {
 	}
 
 	t.Run("deletes existing file successfully", func(t *testing.T) {
-		err := service.DeleteContent("example.com", "/api/users", "DELETE", "test-uuid")
+		err := service.DeleteContent("example.com", "/api/users", "DELETE", "test-uuid", 200)
 
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -454,7 +436,7 @@ func TestFilesystemContentService_DeleteContent(t *testing.T) {
 	})
 
 	t.Run("returns error for non-existent file", func(t *testing.T) {
-		err := service.DeleteContent("example.com", "/api/nonexistent", "DELETE", "test-uuid")
+		err := service.DeleteContent("example.com", "/api/nonexistent", "DELETE", "test-uuid", 200)
 
 		if err == nil {
 			t.Error("expected error for non-existent file")
@@ -476,10 +458,10 @@ func TestFilesystemContentService_ListContents(t *testing.T) {
 
 	// Create test files (using valid hostnames that match the regex)
 	testFiles := map[string][]byte{
-		"example.com/api/users.get":        []byte("users get"),
-		"example.com/api/users.post":       []byte("users post"),
-		"api.test.com/v1/health.get":       []byte("health check"),
-		"admin.local.com/admin/status.get": []byte("admin status"),
+		"example.com/api/users.get.200":        []byte("users get"),
+		"example.com/api/users.post.201":       []byte("users post"),
+		"api.test.com/v1/health.get.200":       []byte("health check"),
+		"admin.local.com/admin/status.get.200": []byte("admin status"),
 	}
 
 	for filePath, content := range testFiles {
@@ -569,6 +551,172 @@ func TestFilesystemContentService_ListContents(t *testing.T) {
 			t.Error("expected error for non-existent directory")
 		}
 
+		if contents != nil {
+			t.Error("expected nil contents on error")
+		}
+	})
+}
+
+func TestFilesystemContentService_defaultFilePathToContentData(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "mock_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
+		mocksDirConfig: &config.MocksDirectoryConfig{Path: tempDir},
+	}
+
+	t.Run("parses valid default file path", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "_default.get.200")
+		data, err := service.defaultFilePathToContentData(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if data.Host != "example.com" {
+			t.Errorf("expected host 'example.com', got '%s'", data.Host)
+		}
+		if data.Uri != "/_default" {
+			t.Errorf("expected uri '/_default', got '%s'", data.Uri)
+		}
+		if data.Method != "GET" {
+			t.Errorf("expected method 'GET', got '%s'", data.Method)
+		}
+		if data.StatusCode != 200 {
+			t.Errorf("expected status code 200, got %d", data.StatusCode)
+		}
+	})
+
+	t.Run("parses POST 404 default file", func(t *testing.T) {
+		path := filepath.Join(tempDir, "api.test.com", "_default.post.404")
+		data, err := service.defaultFilePathToContentData(path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if data.Method != "POST" {
+			t.Errorf("expected method 'POST', got '%s'", data.Method)
+		}
+		if data.StatusCode != 404 {
+			t.Errorf("expected status code 404, got %d", data.StatusCode)
+		}
+	})
+
+	t.Run("rejects file without host separator", func(t *testing.T) {
+		path := filepath.Join(tempDir, "_default.get.200")
+		// trim tempDir prefix so it looks like a root-level file
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for path without host directory")
+		}
+	})
+
+	t.Run("rejects non-default filename", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "users.get.200")
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for non-default filename")
+		}
+	})
+
+	t.Run("rejects invalid status code", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "_default.get.999")
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for out-of-range status code")
+		}
+	})
+
+	t.Run("rejects non-numeric status code", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "_default.get.abc")
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for non-numeric status code")
+		}
+	})
+
+	t.Run("rejects missing status code dot", func(t *testing.T) {
+		path := filepath.Join(tempDir, "example.com", "_default.get")
+		_, err := service.defaultFilePathToContentData(path)
+		if err == nil {
+			t.Error("expected error for filename missing status code")
+		}
+	})
+}
+
+func TestFilesystemContentService_ListDefaultContents(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "mock_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create a mix of default and regular mock files
+	files := map[string][]byte{
+		"example.com/_default.get.200":  []byte(`{"default": true}`),
+		"example.com/_default.post.201": []byte(`{"created": true}`),
+		"example.com/api/users.get.200": []byte(`{"users": []}`), // should be excluded
+		"api.test.com/_default.get.404": []byte(`{"error": "not found"}`),
+	}
+	for relPath, content := range files {
+		fullPath := filepath.Join(tempDir, relPath)
+		os.MkdirAll(filepath.Dir(fullPath), 0755)
+		os.WriteFile(fullPath, content, 0644)
+	}
+
+	service := &FilesystemContentService{
+		broadcaster:    &util.Broadcaster[ContentEvent]{},
+		mocksDirConfig: &config.MocksDirectoryConfig{Path: tempDir},
+	}
+
+	t.Run("returns only default mocks", func(t *testing.T) {
+		contents, err := service.ListDefaultContents("test-uuid")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if contents == nil {
+			t.Fatal("expected non-nil contents")
+		}
+		if len(*contents) != 3 {
+			t.Errorf("expected 3 default mocks, got %d", len(*contents))
+			for _, c := range *contents {
+				t.Logf("  found: host=%s uri=%s method=%s status=%d", c.Host, c.Uri, c.Method, c.StatusCode)
+			}
+		}
+		for _, c := range *contents {
+			if c.Uri != "/_default" {
+				t.Errorf("expected all URIs to be '/_default', got '%s'", c.Uri)
+			}
+		}
+	})
+
+	t.Run("returns empty slice for empty directory", func(t *testing.T) {
+		emptyDir, _ := os.MkdirTemp("", "empty_mock_test")
+		defer os.RemoveAll(emptyDir)
+
+		emptyService := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
+			mocksDirConfig: &config.MocksDirectoryConfig{Path: emptyDir},
+		}
+		contents, err := emptyService.ListDefaultContents("test-uuid")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(*contents) != 0 {
+			t.Errorf("expected 0 contents, got %d", len(*contents))
+		}
+	})
+
+	t.Run("returns error for non-existent directory", func(t *testing.T) {
+		badService := &FilesystemContentService{
+			broadcaster:    &util.Broadcaster[ContentEvent]{},
+			mocksDirConfig: &config.MocksDirectoryConfig{Path: "/non/existent/path"},
+		}
+		contents, err := badService.ListDefaultContents("test-uuid")
+		if err == nil {
+			t.Error("expected error for non-existent directory")
+		}
 		if contents != nil {
 			t.Error("expected nil contents on error")
 		}
@@ -859,7 +1007,7 @@ func TestFilesystemContentService_ErrorHandling(t *testing.T) {
 		}
 
 		testContent := []byte("test content")
-		err := service.SetContent("example.com", "/api/users", "POST", "test-uuid", &testContent)
+		err := service.SetContent("example.com", "/api/users", "POST", "test-uuid", 201, &testContent)
 
 		if err == nil {
 			t.Error("expected error when creating directories in restricted path")
@@ -913,7 +1061,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		// Create a test file
 		testDir := filepath.Join(tempDir, "example.com", "api")
 		os.MkdirAll(testDir, 0755)
-		testFile := filepath.Join(testDir, "users.get")
+		testFile := filepath.Join(testDir, "users.get.200")
 		os.WriteFile(testFile, []byte("test content"), 0644)
 
 		mocksDirConfig := &config.MocksDirectoryConfig{
@@ -975,7 +1123,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		eventChan := service.Subscribe(subscriberId, Removed)
 
 		// The file path that "was" removed (doesn't need to exist for Remove events)
-		removedFile := filepath.Join(tempDir, "example.com", "api", "users.get")
+		removedFile := filepath.Join(tempDir, "example.com", "api", "users.get.200")
 
 		// Create a Remove event
 		removeEvent := fsnotify.Event{
@@ -1030,7 +1178,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		subscriberId := "rename-test"
 		eventChan := service.Subscribe(subscriberId, Removed)
 
-		renamedFile := filepath.Join(tempDir, "example.com", "api", "users.post")
+		renamedFile := filepath.Join(tempDir, "example.com", "api", "users.post.200")
 
 		renameEvent := fsnotify.Event{
 			Name: renamedFile,
@@ -1064,7 +1212,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		// Create the test file first
 		testDir := filepath.Join(tempDir, "example.com", "api")
 		os.MkdirAll(testDir, 0755)
-		testFile := filepath.Join(testDir, "users.post")
+		testFile := filepath.Join(testDir, "users.post.201")
 		os.WriteFile(testFile, []byte("new content"), 0644)
 
 		mocksDirConfig := &config.MocksDirectoryConfig{
@@ -1120,7 +1268,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		// Create the test file
 		testDir := filepath.Join(tempDir, "example.com", "api")
 		os.MkdirAll(testDir, 0755)
-		testFile := filepath.Join(testDir, "users.put")
+		testFile := filepath.Join(testDir, "users.put.200")
 		os.WriteFile(testFile, []byte("updated content"), 0644)
 
 		mocksDirConfig := &config.MocksDirectoryConfig{
@@ -1171,7 +1319,7 @@ func TestFilesystemContentService_handleFilesystemEvent(t *testing.T) {
 		// Create a new directory with files
 		newDir := filepath.Join(tempDir, "example.com", "v2")
 		os.MkdirAll(newDir, 0755)
-		testFile := filepath.Join(newDir, "health.get")
+		testFile := filepath.Join(newDir, "health.get.200")
 		os.WriteFile(testFile, []byte("health check"), 0644)
 
 		mocksDirConfig := &config.MocksDirectoryConfig{
@@ -1422,7 +1570,7 @@ func TestFilesystemContentService_startContentWatcher(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 
 		// Create a new file to trigger an event
-		newFile := filepath.Join(hostDir, "users.get")
+		newFile := filepath.Join(hostDir, "users.get.200")
 		err := os.WriteFile(newFile, []byte("test content"), 0644)
 		if err != nil {
 			t.Fatalf("failed to create test file: %v", err)
@@ -1451,7 +1599,7 @@ func TestFilesystemContentService_startContentWatcher(t *testing.T) {
 		// Create initial file
 		hostDir := filepath.Join(tempDir, "example.com", "api")
 		os.MkdirAll(hostDir, 0755)
-		testFile := filepath.Join(hostDir, "users.post")
+		testFile := filepath.Join(hostDir, "users.post.201")
 		os.WriteFile(testFile, []byte("initial content"), 0644)
 
 		mocksDirConfig := &config.MocksDirectoryConfig{
@@ -1490,7 +1638,7 @@ func TestFilesystemContentService_startContentWatcher(t *testing.T) {
 		// Create initial file
 		hostDir := filepath.Join(tempDir, "example.com", "api")
 		os.MkdirAll(hostDir, 0755)
-		testFile := filepath.Join(hostDir, "users.delete")
+		testFile := filepath.Join(hostDir, "users.delete.200")
 		os.WriteFile(testFile, []byte("to be deleted"), 0644)
 
 		mocksDirConfig := &config.MocksDirectoryConfig{
@@ -1521,5 +1669,41 @@ func TestFilesystemContentService_startContentWatcher(t *testing.T) {
 		}
 
 		service.Unsubscribe(subscriberId)
+	})
+}
+
+func TestFilesystemContentService_GetContent_StatusSuffix(t *testing.T) {
+	t.Run("finds file with status suffix", func(t *testing.T) {
+		dir := t.TempDir()
+		apiDir := filepath.Join(dir, "example.com", "api")
+		os.MkdirAll(apiDir, 0755)
+		os.WriteFile(filepath.Join(apiDir, "users.get.200"), []byte("ok"), 0644)
+
+		svc := NewFilesystemContentService(&config.MocksDirectoryConfig{Path: dir})
+		result, err := svc.GetContent("example.com", "/api/users", "GET", "test", 200)
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if string(*result.Data) != "ok" {
+			t.Errorf("expected 'ok', got %q", string(*result.Data))
+		}
+	})
+
+	t.Run("falls back to _default.{method}.{status} file for non-200 status", func(t *testing.T) {
+		dir := t.TempDir()
+		hostDir := filepath.Join(dir, "example.com")
+		os.MkdirAll(hostDir, 0755)
+		os.WriteFile(filepath.Join(hostDir, "_default.get.500"), []byte("default 500"), 0644)
+
+		svc := NewFilesystemContentService(&config.MocksDirectoryConfig{Path: dir})
+		result, err := svc.GetContent("example.com", "/api/users", "GET", "test", 500)
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if string(*result.Data) != "default 500" {
+			t.Errorf("expected 'default 500', got %q", string(*result.Data))
+		}
 	})
 }

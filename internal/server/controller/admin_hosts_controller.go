@@ -16,11 +16,11 @@ import (
 )
 
 type AddDeleteGetHostRequest struct {
-	Host          string                        `json:"host" binding:"required"`
-	LatencyConfig *config.LatencyConfig         `json:"latency"`
-	ErrorConfig   map[string]config.ErrorConfig `json:"errors"`
-	UriConfig     map[string]config.UriConfig   `json:"uris"`
-	errorCode     string
+	Host          string                         `json:"host" binding:"required"`
+	LatencyConfig *config.LatencyConfig          `json:"latency"`
+	StatusConfig  map[string]config.StatusConfig `json:"statuses"`
+	UriConfig     map[string]config.UriConfig    `json:"uris"`
+	statusCode    string
 }
 
 type AdminHostsController struct {
@@ -69,7 +69,7 @@ func (a *AdminHostsController) handleHostConfigAddUpdate(c *gin.Context) {
 	hostConfig, err := a.service.AddUpdateHost(admin.HostAddDeleteRequest{
 		Host:          addReq.Host,
 		LatencyConfig: addReq.LatencyConfig,
-		ErrorConfig:   addReq.ErrorConfig,
+		StatusConfig:  addReq.StatusConfig,
 		UriConfig:     addReq.UriConfig,
 	})
 
@@ -273,10 +273,10 @@ func (a *AdminHostsController) handleLatencyDelete(c *gin.Context) {
 	})
 }
 
-func (a *AdminHostsController) handleErrorsAddUpdate(c *gin.Context) {
-	addErrorsReq := AddDeleteGetHostRequest{Host: c.Param("host")}
+func (a *AdminHostsController) handleStatusesAddUpdate(c *gin.Context) {
+	addStatusesReq := AddDeleteGetHostRequest{Host: c.Param("host")}
 
-	if err := c.ShouldBind(&addErrorsReq); err != nil {
+	if err := c.ShouldBind(&addStatusesReq); err != nil {
 		c.JSON(http.StatusBadRequest, rest.Response{
 			Status:  rest.Fail,
 			Message: fmt.Sprintf("invalid request: %v", err),
@@ -285,7 +285,7 @@ func (a *AdminHostsController) handleErrorsAddUpdate(c *gin.Context) {
 		return
 	}
 
-	if err := addErrorsReq.validate(false, true, false); err != nil {
+	if err := addStatusesReq.validate(false, true, false); err != nil {
 		c.JSON(http.StatusBadRequest, rest.Response{
 			Status:  rest.Fail,
 			Message: fmt.Sprintf("invalid request: %v", err),
@@ -296,16 +296,16 @@ func (a *AdminHostsController) handleErrorsAddUpdate(c *gin.Context) {
 
 	log.Info().
 		Str("uuid", c.GetString(util.UuidKey)).
-		Str("host", addErrorsReq.Host).
-		Msg("adding/updating host errors config")
+		Str("host", addStatusesReq.Host).
+		Msg("adding/updating host statuses config")
 
-	hostConfig, err := a.service.AddUpdateHostErrors(admin.HostAddDeleteRequest{
-		Host:        addErrorsReq.Host,
-		ErrorConfig: addErrorsReq.ErrorConfig,
+	hostConfig, err := a.service.AddUpdateHostStatuses(admin.HostAddDeleteRequest{
+		Host:         addStatusesReq.Host,
+		StatusConfig: addStatusesReq.StatusConfig,
 	})
 
 	if err != nil {
-		msg := fmt.Sprintf("error while adding/updating host errors config: %v", err)
+		msg := fmt.Sprintf("error while adding/updating host statuses config: %v", err)
 
 		c.JSON(http.StatusInternalServerError, rest.Response{
 			Status:  rest.Error,
@@ -315,7 +315,7 @@ func (a *AdminHostsController) handleErrorsAddUpdate(c *gin.Context) {
 		log.Err(err).
 			Stack().
 			Str("uuid", c.GetString(util.UuidKey)).
-			Str("host", addErrorsReq.Host).
+			Str("host", addStatusesReq.Host).
 			Msg("")
 
 		return
@@ -333,15 +333,15 @@ func (a *AdminHostsController) handleErrorsAddUpdate(c *gin.Context) {
 	// if success, return back 200
 	c.JSON(http.StatusOK, rest.Response{
 		Status:  rest.Success,
-		Message: "host errors config updated with success",
+		Message: "host statuses config updated with success",
 		Data:    hostConfig,
 	})
 }
 
-func (a *AdminHostsController) handleErrorDelete(c *gin.Context) {
-	errorDeleteReq := AddDeleteGetHostRequest{Host: c.Param("host"), errorCode: c.Param("error")}
+func (a *AdminHostsController) handleStatusDelete(c *gin.Context) {
+	statusDeleteReq := AddDeleteGetHostRequest{Host: c.Param("host"), statusCode: c.Param("status")}
 
-	if err := errorDeleteReq.validate(false, false, true); err != nil {
+	if err := statusDeleteReq.validate(false, false, true); err != nil {
 		c.JSON(http.StatusBadRequest, rest.Response{
 			Status:  rest.Fail,
 			Message: fmt.Sprintf("invalid request: %v", err),
@@ -350,10 +350,10 @@ func (a *AdminHostsController) handleErrorDelete(c *gin.Context) {
 		return
 	}
 
-	hostConfig, err := a.service.DeleteHostError(errorDeleteReq.Host, errorDeleteReq.errorCode)
+	hostConfig, err := a.service.DeleteHostStatus(statusDeleteReq.Host, statusDeleteReq.statusCode)
 
 	if err != nil {
-		msg := fmt.Sprintf("error while deleting host latency config: %v", err)
+		msg := fmt.Sprintf("error while deleting host status config: %v", err)
 
 		c.JSON(http.StatusInternalServerError, rest.Response{
 			Status:  rest.Error,
@@ -363,7 +363,7 @@ func (a *AdminHostsController) handleErrorDelete(c *gin.Context) {
 		log.Err(err).
 			Stack().
 			Str("uuid", c.GetString(util.UuidKey)).
-			Str("host", errorDeleteReq.Host).
+			Str("host", statusDeleteReq.Host).
 			Msg("")
 
 		return
@@ -381,7 +381,7 @@ func (a *AdminHostsController) handleErrorDelete(c *gin.Context) {
 	// if success, return back 200
 	c.JSON(http.StatusOK, rest.Response{
 		Status:  rest.Success,
-		Message: "host error config deleted with success",
+		Message: "host status config deleted with success",
 		Data:    hostConfig,
 	})
 }
@@ -451,7 +451,7 @@ func (a *AdminHostsController) handleUrisAddUpdate(c *gin.Context) {
 	})
 }
 
-func (a *AddDeleteGetHostRequest) validate(needsLatency, needsErrors, needsErrorCode bool) error {
+func (a *AddDeleteGetHostRequest) validate(needsLatency, needsStatuses, needsStatusCode bool) error {
 	a.Host = strings.ToLower(strings.TrimSpace(a.Host))
 
 	if len(a.Host) == 0 {
@@ -466,12 +466,12 @@ func (a *AddDeleteGetHostRequest) validate(needsLatency, needsErrors, needsError
 		return errors.New("invalid latency provided: it should not be empty")
 	}
 
-	if needsErrors && len(a.ErrorConfig) == 0 {
-		return errors.New("invalid errors provided: it should not be empty")
+	if needsStatuses && len(a.StatusConfig) == 0 {
+		return errors.New("invalid statuses provided: it should not be empty")
 	}
 
-	if needsErrorCode && len(a.errorCode) == 0 {
-		return errors.New("invalid error provided: it should not be empty")
+	if needsStatusCode && len(a.statusCode) == 0 {
+		return errors.New("invalid status provided: it should not be empty")
 	}
 
 	return nil

@@ -8,6 +8,7 @@ interface ApiMock {
   host: string;
   uri: string;
   method: string;
+  status_code: number;
 }
 
 interface ApiResponse<T> {
@@ -24,6 +25,7 @@ function toMockDefinition(item: ApiMock): MockDefinition {
     endpoint: item.uri,
     method: item.method,
     host: item.host,
+    statusCode: item.status_code,
   };
 }
 
@@ -31,7 +33,18 @@ function toMockDefinition(item: ApiMock): MockDefinition {
  * Get all mock definitions from the API
  */
 export async function getMocks(): Promise<MockDefinition[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/mocks`);
+  return fetchMocks('');
+}
+
+/**
+ * Get only default mock definitions (_default mocks) from the API
+ */
+export async function getDefaultMocks(): Promise<MockDefinition[]> {
+  return fetchMocks('?default=true');
+}
+
+async function fetchMocks(query: string): Promise<MockDefinition[]> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/mocks${query}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch mocks: ${response.statusText}`);
@@ -72,6 +85,7 @@ export interface MockData {
   host: string;
   uri: string;
   method: string;
+  statusCode: number;
   body: string;
 }
 
@@ -86,6 +100,7 @@ export async function createMock(mock: MockData): Promise<void> {
       'x-mock-host': mock.host,
       'x-mock-uri': mock.uri,
       'x-mock-method': mock.method,
+      'x-mock-status': String(mock.statusCode),
     },
     body: mock.body,
   });
@@ -106,6 +121,7 @@ export async function deleteMock(mock: MockDefinition): Promise<void> {
       'x-mock-host': mock.host,
       'x-mock-uri': mock.endpoint,
       'x-mock-method': mock.method,
+      'x-mock-status': String(mock.statusCode),
     },
   });
 
@@ -126,6 +142,7 @@ export async function updateMock(id: string, mock: MockData): Promise<void> {
       'x-mock-host': mock.host,
       'x-mock-uri': mock.uri,
       'x-mock-method': mock.method,
+      'x-mock-status': String(mock.statusCode),
     },
     body: mock.body,
   });
@@ -135,4 +152,3 @@ export async function updateMock(id: string, mock: MockData): Promise<void> {
     throw new Error(errorData.message || `Failed to update mock: ${response.statusText}`);
   }
 }
-

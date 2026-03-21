@@ -24,10 +24,10 @@ func (l *latencyMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 	// getting default appropriate latency config
 	latencyConfig, scope := l.hostsConfig.GetAppropriateLatencyConfig(mockRequest.Host, mockRequest.URI)
 
-	// overriding the default latency config, if an error has been drawn
-	if mockResponse.activeErrorConfig != nil && mockResponse.activeErrorConfig.LatencyConfig != nil {
-		latencyConfig = mockResponse.activeErrorConfig.LatencyConfig
-		scope = "Error Override"
+	// overriding the default latency config, if a status has been drawn
+	if mockResponse.activeStatusConfig != nil && mockResponse.activeStatusConfig.LatencyConfig != nil {
+		latencyConfig = mockResponse.activeStatusConfig.LatencyConfig
+		scope = "Status Override"
 	}
 
 	if latencyConfig == nil {
