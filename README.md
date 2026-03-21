@@ -206,3 +206,66 @@ curl -X DELETE \
 ```
 
 For the full list of API endpoints, see the [Swagger documentation](https://github.com/Caik/go-mock-server/blob/main/docs/swagger.json).
+
+<br />
+
+## ⚙️ Simulate Latency and Status Codes
+
+These features let you test how your application behaves under adverse conditions — slow responses, intermittent errors, or sustained failure rates — without touching the real API.
+
+### Latency Simulation
+
+Configure per-host latency using a percentile distribution. This lets you model realistic network conditions rather than a flat delay.
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "latency": {
+      "min": 100,
+      "p95": 1800,
+      "p99": 1900,
+      "max": 2000
+    }
+  }' \
+  http://localhost:9090/api/v1/config/hosts/example.host.com/latencies
+```
+
+| Field | Meaning |
+|-------|---------|
+| `min` | Minimum delay in milliseconds — every request waits at least this long |
+| `p95` | 95% of requests complete within this many milliseconds |
+| `p99` | 99% of requests complete within this many milliseconds |
+| `max` | Hard ceiling — no request waits longer than this |
+
+To remove latency simulation for a host, send a `DELETE` to the same endpoint.
+
+### Status Code Simulation
+
+Inject non-200 responses at a configurable rate. Useful for testing error handling and retry logic.
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "statuses": {
+      "500": {"percentage": 10},
+      "503": {"percentage": 5}
+    }
+  }' \
+  http://localhost:9090/api/v1/config/hosts/example.host.com/statuses
+```
+
+In this example, for requests to `example.host.com`:
+- **10%** receive a `500 Internal Server Error`
+- **5%** receive a `503 Service Unavailable`
+- **85%** receive the normal mock response
+
+Multiple status codes can be combined as long as the total percentage does not exceed 100%. Go Mock Server needs a corresponding mock file for each status code you inject (e.g. `api/v1/users.get.500`) to serve as the response body for that error.
+
+To remove a specific status simulation:
+```bash
+curl -X DELETE http://localhost:9090/api/v1/config/hosts/example.host.com/statuses/500
+```
+
+For the full API reference, see the [Swagger documentation](https://github.com/Caik/go-mock-server/blob/main/docs/swagger.json).
