@@ -473,7 +473,7 @@ func TestHostConfig_Validate_Invalid(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "invalid error code",
+			expectedErr: "invalid status code",
 		},
 		{
 			name: "invalid error code - below 1xx",

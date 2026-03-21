@@ -187,7 +187,7 @@ func (h *HostConfig) Validate() error {
 		intErrorCode, err := strconv.Atoi(statusCode)
 
 		if err != nil {
-			return fmt.Errorf("invalid host config found: invalid error code: %v", err)
+			return fmt.Errorf("invalid host config found: invalid status code: %v", err)
 		}
 
 		if intErrorCode < 100 || intErrorCode > 599 {

@@ -206,7 +206,7 @@ func TestHostsConfig_DeleteHostLatencyConfig(t *testing.T) {
 
 	// Verify other configs remain
 	if len(updatedConfig.StatusesConfig) != 1 {
-		t.Error("expected errors config to remain")
+		t.Error("expected statuses config to remain")
 	}
 
 	// Delete from non-existent host
