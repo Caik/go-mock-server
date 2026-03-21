@@ -22,7 +22,6 @@ func (m *MockServiceFactory) initServiceChain(
 	contentService content.ContentService,
 	cacheService cache.CacheService,
 	disableLatency,
-	disableStatusSimulation,
 	disableCache,
 	disableCors bool,
 	defaultContentType string,
@@ -69,9 +68,7 @@ func (m *MockServiceFactory) initServiceChain(
 		}
 
 		// status simulation
-		if !disableStatusSimulation {
-			addNextFn(newStatusSimulationMockService(hostsConfig))
-		}
+		addNextFn(newStatusSimulationMockService(hostsConfig))
 
 		// content type
 		addNextFn(newContentTypeMockService(MockServiceParams{defaultContentType: defaultContentType}))
@@ -96,7 +93,7 @@ func NewMockServiceFactory(
 	hostsConfig *config.HostsConfig,
 ) *MockServiceFactory {
 	factory := MockServiceFactory{}
-	factory.initServiceChain(contentService, cacheService, arguments.DisableLatency, arguments.DisableStatusSimulation, arguments.DisableCache, arguments.DisableCors, arguments.DefaultContentType, hostsConfig)
+	factory.initServiceChain(contentService, cacheService, arguments.DisableLatency, arguments.DisableCache, arguments.DisableCors, arguments.DefaultContentType, hostsConfig)
 
 	return &factory
 }

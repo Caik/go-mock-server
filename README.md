@@ -136,10 +136,6 @@ The status simulation configuration endpoint has been renamed:
 - Before: `POST /admin/config/hosts/{host}/errors`
 - After: `POST /admin/config/hosts/{host}/statuses`
 
-### CLI flag
-
-`--disable-error` has been renamed to `--disable-status-simulation`
-
 <br />
 
 ## 💿 Installation
@@ -352,7 +348,6 @@ To customize Go Mock Server's behavior, you can use the following command-line o
 | --default-content-type | Set the default content type for responses. Default is text/plain. |
 | --disable-cache        | Disable caching of responses.                                      |
 | --disable-latency      | Disable simulation of latency in responses.                        |
-| --disable-status-simulation | Disable simulation of non-200 status responses.               |
 | --disable-cors         | Disable CORS headers in responses.                                 |
 
 **Example:**

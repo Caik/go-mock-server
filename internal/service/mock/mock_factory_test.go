@@ -46,7 +46,6 @@ func TestNewMockServiceFactory(t *testing.T) {
 		}
 		appArgs := &config.AppArguments{
 			DisableLatency: false,
-			DisableStatusSimulation:   false,
 			DisableCache:   false,
 			DisableCors:    false,
 		}
@@ -75,7 +74,6 @@ func TestNewMockServiceFactory(t *testing.T) {
 		}
 		appArgs := &config.AppArguments{
 			DisableLatency: true, // Disabled
-			DisableStatusSimulation:   false,
 			DisableCache:   false,
 			DisableCors:    false,
 		}
@@ -116,7 +114,6 @@ func TestNewMockServiceFactory(t *testing.T) {
 		// Test case 1: DisableLatency=true should disable latency service
 		appArgs1 := &config.AppArguments{
 			DisableLatency: true,
-			DisableStatusSimulation:   false,
 			DisableCache:   false,
 			DisableCors:    false,
 		}
@@ -126,7 +123,6 @@ func TestNewMockServiceFactory(t *testing.T) {
 		// Test case 2: DisableCache=true should disable cache service
 		appArgs2 := &config.AppArguments{
 			DisableLatency: false,
-			DisableStatusSimulation:   false,
 			DisableCache:   true,
 			DisableCors:    false,
 		}
@@ -136,7 +132,6 @@ func TestNewMockServiceFactory(t *testing.T) {
 		// Test case 3: Both disabled
 		appArgs3 := &config.AppArguments{
 			DisableLatency: true,
-			DisableStatusSimulation:   false,
 			DisableCache:   true,
 			DisableCors:    false,
 		}
@@ -146,7 +141,6 @@ func TestNewMockServiceFactory(t *testing.T) {
 		// Test case 4: DisableCors=true should disable CORS service
 		appArgs4 := &config.AppArguments{
 			DisableLatency: false,
-			DisableStatusSimulation:   false,
 			DisableCache:   false,
 			DisableCors:    true,
 		}
@@ -181,7 +175,6 @@ func TestMockServiceFactory_DisableCorsFlag(t *testing.T) {
 		// Test case 1: CORS enabled (default)
 		appArgsEnabled := &config.AppArguments{
 			DisableLatency: true,  // Disable to simplify test
-			DisableStatusSimulation:   true,  // Disable to simplify test
 			DisableCache:   true,  // Disable to simplify test
 			DisableCors:    false, // CORS enabled
 		}
@@ -191,7 +184,6 @@ func TestMockServiceFactory_DisableCorsFlag(t *testing.T) {
 		// Test case 2: CORS disabled
 		appArgsDisabled := &config.AppArguments{
 			DisableLatency: true, // Disable to simplify test
-			DisableStatusSimulation:   true, // Disable to simplify test
 			DisableCache:   true, // Disable to simplify test
 			DisableCors:    true, // CORS disabled
 		}
@@ -269,7 +261,6 @@ func TestMockServiceFactory_GetMockResponse(t *testing.T) {
 		}
 		appArgs := &config.AppArguments{
 			DisableLatency: false,
-			DisableStatusSimulation:   false,
 			DisableCache:   false,
 			DisableCors:    false,
 		}
@@ -311,7 +302,6 @@ func TestMockServiceFactory_GetMockResponse(t *testing.T) {
 		}
 		appArgs := &config.AppArguments{
 			DisableLatency: true,
-			DisableStatusSimulation:   true,
 			DisableCache:   true, // Disable cache to test filesystem source
 			DisableCors:    true,
 		}
@@ -362,7 +352,6 @@ func TestMockServiceFactory_GetMockResponse(t *testing.T) {
 		}
 		appArgs := &config.AppArguments{
 			DisableLatency: true,
-			DisableStatusSimulation:   true,
 			DisableCache:   true,
 			DisableCors:    true,
 		}
@@ -414,10 +403,10 @@ func TestMockServiceFactory_initServiceChain(t *testing.T) {
 		factory := &MockServiceFactory{}
 
 		// Call initServiceChain multiple times
-		factory.initServiceChain(contentService, cacheService, false, false, false, false, gin.MIMEPlain, hostsConfig)
+		factory.initServiceChain(contentService, cacheService, false, false, false, gin.MIMEPlain, hostsConfig)
 		firstChain := factory.mockServiceChain
 
-		factory.initServiceChain(contentService, cacheService, false, false, false, false, gin.MIMEPlain, hostsConfig)
+		factory.initServiceChain(contentService, cacheService, false, false, false, gin.MIMEPlain, hostsConfig)
 		secondChain := factory.mockServiceChain
 
 		// Should be the same instance (sync.Once behavior)

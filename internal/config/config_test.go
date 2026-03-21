@@ -680,7 +680,6 @@ func TestParseAppArguments_WithValidArgs(t *testing.T) {
 		"--traffic-log-buffer-size", "500",
 		"--disable-cache",
 		"--disable-latency",
-		"--disable-status-simulation",
 	}
 
 	// Test ParseAppArguments
@@ -708,10 +707,6 @@ func TestParseAppArguments_WithValidArgs(t *testing.T) {
 
 	if !args.DisableLatency {
 		t.Error("expected DisableLatency to be true")
-	}
-
-	if !args.DisableStatusSimulation {
-		t.Error("expected DisableStatusSimulation to be true")
 	}
 
 	if args.TrafficLogBufferSize != 500 {
@@ -758,10 +753,6 @@ func TestParseAppArguments_WithMinimalArgs(t *testing.T) {
 
 	if args.DisableLatency {
 		t.Error("expected DisableLatency to be false by default")
-	}
-
-	if args.DisableStatusSimulation {
-		t.Error("expected DisableStatusSimulation to be false by default")
 	}
 
 	// Test default TrafficLogBufferSize
