@@ -44,11 +44,14 @@ func (e *statusSimulationMockService) getMockResponse(mockRequest MockRequest) *
 
 	resp := e.nextOrNil(mockRequest)
 
-	if drawnWrapper != nil && resp != nil {
+	if resp != nil {
 		resp.StatusCode = statusCode
-		resp.activeStatusConfig = &drawnWrapper.originalStatusConfig
-		resp.AddMetadata(MetadataSimulatedStatus, "true")
-		resp.AddMetadata(MetadataStatusRuleScope, scope)
+
+		if drawnWrapper != nil {
+			resp.activeStatusConfig = &drawnWrapper.originalStatusConfig
+			resp.AddMetadata(MetadataSimulatedStatus, "true")
+			resp.AddMetadata(MetadataStatusRuleScope, scope)
+		}
 	}
 
 	return resp
