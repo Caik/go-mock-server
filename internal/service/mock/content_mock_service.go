@@ -21,7 +21,10 @@ type contentMockService struct {
 
 func (c *contentMockService) getMockResponse(mockRequest MockRequest) *MockResponse {
 	result, err := c.contentService.GetContent(
-		mockRequest.Host, mockRequest.URI, mockRequest.Method, mockRequest.Uuid,
+		mockRequest.Host,
+		mockRequest.URI,
+		mockRequest.Method,
+		mockRequest.Uuid,
 		mockRequest.StatusCode,
 	)
 
@@ -32,15 +35,19 @@ func (c *contentMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 
 		// mock not found (200 path only returns error when file is missing)
 		empty := []byte("")
+
 		resp := &MockResponse{
 			StatusCode: mockRequest.StatusCode,
 			Data:       &empty,
 		}
+
 		resp.AddMetadata(MetadataMatched, "false")
+
 		return resp
 	}
 
 	statusCode := mockRequest.StatusCode
+
 	if statusCode == 0 {
 		statusCode = 200
 	}
@@ -49,6 +56,7 @@ func (c *contentMockService) getMockResponse(mockRequest MockRequest) *MockRespo
 		StatusCode: statusCode,
 		Data:       result.Data,
 	}
+
 	resp.AddMetadata(MetadataMatched, "true")
 	resp.AddMetadata(MetadataSource, result.Source)
 	resp.AddMetadata(MetadataPath, result.Path)

@@ -589,7 +589,7 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 				req.Header.Set("x-mock-host", "example.com")
 				req.Header.Set("x-mock-uri", "/api/test")
 				req.Header.Set("x-mock-method", method)
-		req.Header.Set("x-mock-status", "200")
+				req.Header.Set("x-mock-status", "200")
 
 				w := httptest.NewRecorder()
 				c, _ := gin.CreateTestContext(w)
@@ -649,7 +649,7 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 				req.Header.Set("x-mock-host", "example.com")
 				req.Header.Set("x-mock-uri", "/api/test") // Use simple URI
 				req.Header.Set("x-mock-method", "GET")
-		req.Header.Set("x-mock-status", "200")
+				req.Header.Set("x-mock-status", "200")
 				req.Header.Set("Content-Type", tc.contentType)
 
 				w := httptest.NewRecorder()
@@ -730,7 +730,7 @@ func TestAdminMocksController_HTTPIntegration(t *testing.T) {
 				req.Header.Set("x-mock-host", "example.com")
 				req.Header.Set("x-mock-uri", uri)
 				req.Header.Set("x-mock-method", "GET")
-		req.Header.Set("x-mock-status", "200")
+				req.Header.Set("x-mock-status", "200")
 
 				w := httptest.NewRecorder()
 				c, _ := gin.CreateTestContext(w)

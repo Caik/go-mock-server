@@ -16,10 +16,10 @@ import (
 )
 
 type AddDeleteGetHostRequest struct {
-	Host         string                         `json:"host" binding:"required"`
-	LatencyConfig *config.LatencyConfig         `json:"latency"`
+	Host          string                         `json:"host" binding:"required"`
+	LatencyConfig *config.LatencyConfig          `json:"latency"`
 	StatusConfig  map[string]config.StatusConfig `json:"statuses"`
-	UriConfig     map[string]config.UriConfig   `json:"uris"`
+	UriConfig     map[string]config.UriConfig    `json:"uris"`
 	statusCode    string
 }
 

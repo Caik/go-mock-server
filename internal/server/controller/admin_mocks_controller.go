@@ -469,6 +469,7 @@ func (a *AddDeleteMockRequest) validate() error {
 	if a.StatusCode < 100 || a.StatusCode > 599 {
 		return errors.New("invalid status code provided: must be between 100 and 599")
 	}
+
 	return nil
 }
 

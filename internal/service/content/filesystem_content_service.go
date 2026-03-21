@@ -73,7 +73,7 @@ func (f *FilesystemContentService) GetContent(host, uri, method, uuid string, st
 		Msg("mock not found")
 
 	empty := []byte("")
-	
+
 	return &ContentResult{
 		Data:   &empty,
 		Source: "filesystem",
@@ -254,6 +254,7 @@ func (f *FilesystemContentService) filePathToContentData(path string) (*ContentD
 	// Skip _default.* files — these are fallbacks, not real mocks
 	if firstSlashIndex != -1 {
 		fileName := relativePath[firstSlashIndex+1:]
+
 		if strings.HasPrefix(fileName, "_default.") {
 			return nil, fmt.Errorf("skipping fallback file: %s", path)
 		}
@@ -261,9 +262,11 @@ func (f *FilesystemContentService) filePathToContentData(path string) (*ContentD
 
 	// Expect format: host/uri.method.status — two trailing dots
 	lastDotIndex := strings.LastIndex(relativePath, ".")
+
 	if lastDotIndex == -1 {
 		return nil, fmt.Errorf("incorrect file name pattern, ignoring it: %s", path)
 	}
+
 	secondLastDotIndex := strings.LastIndex(relativePath[:lastDotIndex], ".")
 
 	if firstSlashIndex == -1 || secondLastDotIndex == -1 || firstSlashIndex >= secondLastDotIndex {
@@ -276,6 +279,7 @@ func (f *FilesystemContentService) filePathToContentData(path string) (*ContentD
 	statusStr := relativePath[lastDotIndex+1:]
 
 	statusCode, err := strconv.Atoi(statusStr)
+
 	if err != nil || statusCode < 100 || statusCode > 599 {
 		return nil, fmt.Errorf("invalid status code in filename: %s", path)
 	}
