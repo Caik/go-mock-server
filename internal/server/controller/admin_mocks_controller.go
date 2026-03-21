@@ -455,7 +455,7 @@ func (a *AddDeleteMockRequest) validate() error {
 	}
 
 	if !util.UriRegex.MatchString(a.Uri) {
-		return errors.New("invalid uri provided: it doesn't match a host pattern")
+		return errors.New("invalid uri provided: it doesn't match a uri pattern")
 	}
 
 	a.Method = strings.ToUpper(strings.TrimSpace(a.Method))
