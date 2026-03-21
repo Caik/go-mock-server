@@ -192,7 +192,7 @@ function LatencyFields({ value, errors, onChange }: {
   );
 }
 
-function ErrorRowsSection({ rows, rowErrors, onRowChange, onAdd, onRemove }: {
+function StatusRowsSection({ rows, rowErrors, onRowChange, onAdd, onRemove }: {
   rows: StatusRow[];
   rowErrors?: StatusRowError[];
   onRowChange: (index: number, field: 'code' | 'percentage', value: string) => void;
@@ -415,7 +415,7 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
   // ---------------------------------------------------------------------------
   // Global status row handlers
   // ---------------------------------------------------------------------------
-  const handleErrorRowChange = (index: number, field: 'code' | 'percentage', value: string) => {
+  const handleStatusRowChange = (index: number, field: 'code' | 'percentage', value: string) => {
     let updatedRows: StatusRow[] = [];
     setStatusRows((prev) => {
       updatedRows = prev.map((r, i) => (i === index ? { ...r, [field]: value } : r));
@@ -441,7 +441,7 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
     });
   };
 
-  const addErrorRow = () => {
+  const addStatusRow = () => {
     setStatusRows((prev) => [...prev, { code: '', percentage: '' }]);
     setErrors((prev) => ({
       ...prev,
@@ -450,7 +450,7 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
     }));
   };
 
-  const removeErrorRow = (index: number) => {
+  const removeStatusRow = (index: number) => {
     let remainingRows: StatusRow[] = [];
     setStatusRows((prev) => {
       remainingRows = prev.filter((_, i) => i !== index);
@@ -523,7 +523,7 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
     });
   };
 
-  const handleUriErrorRowChange = (uriIndex: number, rowIndex: number, field: 'code' | 'percentage', value: string) => {
+  const handleUriStatusRowChange = (uriIndex: number, rowIndex: number, field: 'code' | 'percentage', value: string) => {
     let updatedRow: StatusRow | null = null;
     setUris((prev) => prev.map((u, i) => {
       if (i !== uriIndex) return u;
@@ -552,13 +552,13 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
     });
   };
 
-  const addUriErrorRow = (uriIndex: number) => {
+  const addUriStatusRow = (uriIndex: number) => {
     setUris((prev) => prev.map((u, i) =>
       i === uriIndex ? { ...u, statusRows: [...u.statusRows, { code: '', percentage: '' }] } : u
     ));
   };
 
-  const removeUriErrorRow = (uriIndex: number, rowIndex: number) => {
+  const removeUriStatusRow = (uriIndex: number, rowIndex: number) => {
     let remainingRows: StatusRow[] = [];
     setUris((prev) => prev.map((u, i) => {
       if (i !== uriIndex) return u;
@@ -619,12 +619,12 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
         {/* Status Simulation */}
         <div className="form-group">
           <label>Status Simulation <span className="label-optional">(optional)</span></label>
-          <ErrorRowsSection
+          <StatusRowsSection
             rows={statusRows}
             rowErrors={errors.globalStatusRows}
-            onRowChange={handleErrorRowChange}
-            onAdd={addErrorRow}
-            onRemove={removeErrorRow}
+            onRowChange={handleStatusRowChange}
+            onAdd={addStatusRow}
+            onRemove={removeStatusRow}
           />
           {errors.globalErrorSum && <p className="form-error" style={{ marginTop: '6px' }}>{errors.globalErrorSum}</p>}
         </div>
@@ -666,12 +666,12 @@ export function HostEditModal({ isOpen, onClose, onSave, host, isLoading }: Host
                 {/* URI Status Simulation */}
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label style={{ fontSize: '13px' }}>Status Simulation <span className="label-optional">(optional)</span></label>
-                  <ErrorRowsSection
+                  <StatusRowsSection
                     rows={uri.statusRows}
                     rowErrors={uriErr.statusRows}
-                    onRowChange={(rowIndex, field, value) => handleUriErrorRowChange(uriIndex, rowIndex, field, value)}
-                    onAdd={() => addUriErrorRow(uriIndex)}
-                    onRemove={(rowIndex) => removeUriErrorRow(uriIndex, rowIndex)}
+                    onRowChange={(rowIndex, field, value) => handleUriStatusRowChange(uriIndex, rowIndex, field, value)}
+                    onAdd={() => addUriStatusRow(uriIndex)}
+                    onRemove={(rowIndex) => removeUriStatusRow(uriIndex, rowIndex)}
                   />
                   {uriErr.errorSum && <p className="form-error" style={{ marginTop: '6px' }}>{uriErr.errorSum}</p>}
                 </div>
